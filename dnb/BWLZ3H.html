@@ -1,0 +1,955 @@
+
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bài Tập Luyện Tập</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <script>
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$']]
+                },
+                chtml: {
+                    fontCache: 'global',
+                    linebreaks: {
+                        automatic: true
+                    }
+                }
+            };
+        </script>
+        <script type="text/javascript" id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+        </script>
+        <style>
+            body { font-family: 'Be Vietnam Pro', sans-serif; background-color: #f0f4f8; }
+            .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .question-card { 
+                background-color: white; 
+                border-radius: 1rem; 
+                padding: 1.5rem 2rem; 
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                border-left: 5px solid transparent;
+                transition: all 0.3s ease;
+            }
+            .ai-explanation { 
+                background-color: #f0f9ff; 
+                color: #0c4a6e;
+                padding: 1rem; 
+                border-radius: 0.75rem; 
+                font-size: 0.9rem; 
+                margin-top: 1rem; 
+                border-left: 4px solid #38bdf8;
+            }
+            .feedback-icon { width: 1.5rem; height: 1.5rem; }
+            .option-label {
+                transition: all 0.2s ease-in-out;
+                border: 2px solid #e5e7eb;
+            }
+            .option-label:hover {
+                border-color: #6366f1;
+                background-color: #eef2ff;
+            }
+            .option-label.correct { 
+                border-color: #10b981 !important; 
+                background-color: #ecfdf5 !important; 
+                color: #065f46;
+            }
+            .option-label.incorrect { 
+                border-color: #ef4444 !important; 
+                background-color: #fef2f2 !important;
+                color: #991b1b;
+            }
+            .statement-item.correct { background-color: #ecfdf5; border-color: #10b981; }
+            .statement-item.incorrect { background-color: #fef2f2; border-color: #ef4444; }
+            .tts-btn { transition: all 0.2s ease; }
+            .tts-btn:hover { background-color: #e0e7ff; }
+            .tts-btn.playing { color: #4f46e5; }
+            .prose { max-width: 100%; }
+            .prose h1, .prose h2, .prose h3 { font-weight: 600; }
+            .prose p { margin-top: 0.5em; margin-bottom: 0.5em; }
+            .prose ul, .prose ol { margin-top: 1em; margin-bottom: 1em; padding-left: 1.5em; }
+            .prose li > p { margin-top: 0; margin-bottom: 0; }
+            .prose code { background-color: #e5e7eb; padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 3px; }
+            .prose pre { background-color: #e5e7eb; padding: 1em; border-radius: 0.5em; overflow-x: auto; }
+            .prose pre code { background-color: transparent; padding: 0; }
+            details[open] > summary .details-arrow {
+                transform: rotate(180deg);
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 text-slate-800">
+        <div id="login-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all" style="animation: fadeIn 0.3s ease-out;">
+                <h2 class="text-2xl font-bold mb-2 text-center text-slate-800">Thông Tin Học Sinh</h2>
+                <p class="text-center text-slate-500 mb-6">Vui lòng nhập để bắt đầu làm bài.</p>
+                <form id="student-info-form">
+                    <div class="mb-4">
+                        <label for="student-name" class="block text-sm font-medium text-slate-700 mb-1">Họ và tên</label>
+                        <input type="text" id="student-name" required class="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2.5 px-3 focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="student-class" class="block text-sm font-medium text-slate-700 mb-1">Lớp</label>
+                        <input type="text" id="student-class" required class="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2.5 px-3 focus:border-indigo-500 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="exam-code" class="block text-sm font-medium text-slate-700 mb-1">Mã đề</label>
+                        <input type="text" id="exam-code" required class="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2.5 px-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Nhập mã đề giáo viên cung cấp">
+                    </div>
+                    <div class="mb-4">
+                        <label for="student-api-key" class="block text-sm font-medium text-slate-700 mb-1">Gemini API Key</label>
+                        <input type="password" id="student-api-key" required class="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2.5 px-3 focus:border-indigo-500 focus:ring-indigo-500" placeholder="Dán API Key của bạn vào đây">
+                        <p class="text-xs text-slate-500 mt-1">Để AI có thể chấm và phân tích bài làm, bạn cần cung cấp API Key. <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Lấy API Key tại đây</a>.</p>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Giáo viên:</label>
+                        <p class="mt-1 text-slate-800 bg-slate-100 p-2.5 rounded-lg">sdb</p>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105">Bắt đầu làm bài</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+            <header class="mb-10 p-8 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h1 class="text-4xl font-bold">Bài Tập Luyện Tập</h1>
+                        <p class="text-lg text-blue-100 mt-2">Hãy hoàn thành các câu hỏi dưới đây một cách tốt nhất!</p>
+                        <p class="text-sm text-blue-200 mt-4">Tác giả: sdb</p>
+                    </div>
+                    <div id="timer-container" class="text-right">
+                         <div id="timer-display" class="text-3xl font-bold tracking-wider bg-white/20 px-4 py-2 rounded-lg">--:--</div>
+                         <div id="retries-display" class="text-sm mt-1 text-blue-200"></div>
+                    </div>
+                </div>
+            </header>
+            <main id="student-quiz-container" class="space-y-8 hidden">
+                <!-- Questions will be rendered here by JS -->
+            </main>
+            <footer class="mt-10 text-center">
+                <button id="submit-quiz-btn" class="bg-indigo-600 text-white py-3 px-12 rounded-full font-bold text-lg hover:bg-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hidden transform hover:scale-105">Nộp Bài</button>
+                <div id="result-container" class="mt-6 hidden"></div>
+                <div id="ai-feedback-container" class="mt-8 text-left hidden"></div>
+                <div id="post-submit-options" class="hidden mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button id="retry-quiz-btn" class="w-full sm:w-auto bg-slate-600 text-white py-2.5 px-6 rounded-lg font-semibold hover:bg-slate-700 transition-transform transform hover:scale-105">Làm Lại Đề Này</button>
+                </div>
+            </footer>
+        </div>
+
+        <script type="module">
+            import { GoogleGenAI, Type } from "https://esm.sh/@google/genai@^1.13.0";
+
+            let quizData = [{"type":"multiple-choice","question":"Cho tập hợp $A = \\{x \\in \\mathbb{N}^* \\mid x \\le 5\\}$. Viết tập hợp $A$ bằng cách liệt kê các phần tử.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$A = \\{1; 2; 3; 4; 5\\}$","$A = \\{0; 1; 2; 3; 4; 5\\}$","$A = \\{1; 2; 3; 4\\}$","$A = \\{0; 1; 2; 3; 4\\}$"],"optionsImage":[],"correctAnswerIndex":0},{"type":"multiple-choice","question":"Cho tập hợp $B = \\{x \\in \\mathbb{Z} \\mid x^2 - 4 = 0\\}$. Viết tập hợp $B$ bằng cách liệt kê các phần tử.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$B = \\{2\\}$","$B = \\{-2\\}$","$B = \\{-2; 2\\}$","$B = \\{4\\}$"],"optionsImage":[],"correctAnswerIndex":2},{"type":"multiple-choice","question":"Cho tập hợp $C = \\{x \\in \\mathbb{R} \\mid (x-1)(x^2+1)=0\\}$. Mệnh đề nào sau đây đúng?","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$0 \\in C$","$1 \\in C$","$-1 \\in C$","$2 \\in C$"],"optionsImage":[],"correctAnswerIndex":1},{"type":"multiple-choice","question":"Cho tập hợp $X = \\{a; b; c\\}$. Số các tập con của tập hợp $X$ là bao nhiêu?","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$3$","$4$","$6$","$8$"],"optionsImage":[],"correctAnswerIndex":3},{"type":"multiple-choice","question":"Cho tập hợp $M = \\{1; 2; 3; 4\\}$. Tập hợp nào sau đây là tập con của $M$?","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$N = \\{0; 1\\}$","$P = \\{2; 5\\}$","$Q = \\{1; 3\\}$","$R = \\{1; 2; 3; 4; 5\\}$"],"optionsImage":[],"correctAnswerIndex":2},{"type":"multiple-choice","question":"Cho tập hợp $A = \\{x \\in \\mathbb{N} \\mid x \\text{ là ước của } 6\\}$ và $B = \\{1; 2; 3; 6\\}$. Mối quan hệ nào sau đây là đúng?","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$A \\subset B$","$B \\subset A$","$A = B$","$A \\ne B$"],"optionsImage":[],"correctAnswerIndex":2},{"type":"multiple-choice","question":"Cho hai tập hợp $E = \\{x \\in \\mathbb{Z} \\mid |x| \\le 1\\}$ và $F = \\{-1; 0; 1\\}$. Khẳng định nào sau đây là đúng?","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$E \\subset F$","$F \\subset E$","$E = F$","$E \\ne F$"],"optionsImage":[],"correctAnswerIndex":2},{"type":"multiple-choice","question":"Cho hai tập hợp $A = \\{1; 2; 3; 4\\}$ và $B = \\{3; 4; 5; 6\\}$. Xác định tập hợp $A \\cup B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$\\emptyset$","$\\left\\{3; 4\\right\\}$","$\\left\\{1; 2; 3; 4; 5; 6\\right\\}$","$\\left\\{1; 2; 5; 6\\right\\}$"],"optionsImage":[],"correctAnswerIndex":2},{"type":"multiple-choice","question":"Cho hai tập hợp $A = \\{0; 1; 2; 3\\}$ và $B = \\{2; 3; 4; 5\\}$. Xác định tập hợp $A \\cap B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$\\emptyset$","$\\left\\{0; 1; 2; 3; 4; 5\\right\\}$","$\\left\\{2; 3\\right\\}$","$\\left\\{0; 1; 4; 5\\right\\}$"],"optionsImage":[],"correctAnswerIndex":2},{"type":"multiple-choice","question":"Cho hai tập hợp $A = \\{1; 2; 3; 4\\}$ và $B = \\{3; 4; 5\\}$. Xác định tập hợp $A \\setminus B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$\\left\\{1; 2\\right\\}$","$\\left\\{3; 4\\right\\}$","$\\left\\{5\\right\\}$","$\\left\\{1; 2; 3; 4; 5\\right\\}$"],"optionsImage":[],"correctAnswerIndex":0},{"type":"multiple-choice","question":"Tập hợp nào dưới đây biểu diễn tập các số thực $x$ thỏa mãn $1 < x \\le 5$?","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$(1; 5]$","$[1; 5)$","$(1; 5)$","$[1; 5]$"],"optionsImage":[],"correctAnswerIndex":0},{"type":"multiple-choice","question":"Cho $A = (-\\infty; 3]$ và $B = [1; +\\infty)$. Xác định tập hợp $A \\cup B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$[1; 3]$","$(-\\infty; +\\infty)$","$(-\\infty; 1)$","$(3; +\\infty)$"],"optionsImage":[],"correctAnswerIndex":1},{"type":"multiple-choice","question":"Cho $A = (-2; 5]$ và $B = [3; 7)$. Xác định tập hợp $A \\cap B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$(-2; 7)$","$[3; 5]$","$(-2; 3)$","$(5; 7)$"],"optionsImage":[],"correctAnswerIndex":1},{"type":"multiple-choice","question":"Cho $A = (1; 5)$ và $B = [3; 7)$. Xác định tập hợp $A \\setminus B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$(1; 3)$","$[3; 5)$","$(1; 7)$","$(5; 7)$"],"optionsImage":[],"correctAnswerIndex":0},{"type":"multiple-choice","question":"Cho hai tập hợp $A = \\{x \\in \\mathbb{R} \\mid x^2 - 9 = 0\\}$ và $B = \\{x \\in \\mathbb{R} \\mid (x-3)(x+2) = 0\\}$. Xác định tập hợp $A \\cup B$.","questionImage":null,"explanation":null,"mappedType":"multiple-choice","options":["$\\left\\{-3; 3\\right\\}$","$\\left\\{3; -2\\right\\}$","$\\left\\{-3; 3; -2\\right\\}$","$\\left\\{-3; -2\\right\\}$"],"optionsImage":[],"correctAnswerIndex":2}];
+            const quizOptions = {"timeLimit":45,"retriesAllowed":1,"showAnswers":true,"showExplanation":true,"scoring":{"mc":5,"sa":2,"essay":1,"tfMethod":"progressive"}};
+            const googleScriptUrl = "https://script.google.com/macros/s/AKfycbw5NGADgGO4Kt7Tsyu66FCdSnc44uBXaxCZfPf0Tifl3-gG72TuDGlBUM7hKMKFNIXR/exec";
+            const correctExamCode = "BWLZ3H";
+            let studentInfo = {};
+            let isSubmitted = false;
+            let timerInterval;
+            let retriesLeft = quizOptions.retriesAllowed;
+            let currentAudio = null; // To manage audio playback
+            let studentApiKey = "";
+            let ai = null;
+
+            const studentQuizContainer = document.getElementById('student-quiz-container');
+            const submitBtn = document.getElementById('submit-quiz-btn');
+            const resultContainer = document.getElementById('result-container');
+            const postSubmitOptions = document.getElementById('post-submit-options');
+            const retryBtn = document.getElementById('retry-quiz-btn');
+            const loginModal = document.getElementById('login-modal');
+            const studentInfoForm = document.getElementById('student-info-form');
+            const timerDisplay = document.getElementById('timer-display');
+            const retriesDisplay = document.getElementById('retries-display');
+
+            function shuffleQuiz() {
+                // Shuffle options/statements within each question first
+                quizData.forEach(item => {
+                    // Shuffle multiple-choice options and their corresponding images
+                    if (item.mappedType === 'multiple-choice' && item.options && item.options.length > 0) {
+                        const correctAnswerText = item.options[item.correctAnswerIndex];
+                        let optionsWithImages = item.options.map((opt, index) => ({
+                            text: opt,
+                            image: (item.optionsImage && item.optionsImage[index]) ? item.optionsImage[index] : null
+                        }));
+
+                        // Fisher-Yates shuffle
+                        for (let i = optionsWithImages.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [optionsWithImages[i], optionsWithImages[j]] = [optionsWithImages[j], optionsWithImages[i]];
+                        }
+
+                        // Update the item with shuffled data
+                        item.options = optionsWithImages.map(opt => opt.text);
+                        item.optionsImage = optionsWithImages.map(opt => opt.image);
+                        item.correctAnswerIndex = item.options.indexOf(correctAnswerText);
+                    }
+
+                    // Shuffle true-false statements
+                    if (item.mappedType === 'true-false' && item.statements && item.statements.length > 0) {
+                         for (let i = item.statements.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [item.statements[i], item.statements[j]] = [item.statements[j], item.statements[i]];
+                        }
+                    }
+                });
+
+                // Then, group questions by type and shuffle within each group
+                const grouped = quizData.reduce((acc, q) => {
+                    const type = q.mappedType;
+                    if (!acc[type]) {
+                        acc[type] = [];
+                    }
+                    acc[type].push(q);
+                    return acc;
+                }, {});
+
+                let shuffledQuizData = [];
+                const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+                partOrder.forEach(partType => {
+                    if (grouped[partType]) {
+                        const partQuestions = grouped[partType];
+                        for (let i = partQuestions.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [partQuestions[i], partQuestions[j]] = [partQuestions[j], partQuestions[i]];
+                        }
+                        shuffledQuizData = shuffledQuizData.concat(partQuestions);
+                    }
+                });
+                
+                quizData = shuffledQuizData;
+            }
+
+            // --- Timer Function ---
+            function startTimer(duration, display) {
+                let timer = duration, minutes, seconds;
+                clearInterval(timerInterval); // Clear any existing timer
+                if(duration <= 0) {
+                     display.textContent = "∞";
+                     return;
+                }
+                timerInterval = setInterval(function () {
+                    minutes = parseInt(timer / 60, 10);
+                    seconds = parseInt(timer % 60, 10);
+
+                    minutes = minutes < 10 ? "0" + minutes : minutes;
+                    seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                    display.textContent = minutes + ":" + seconds;
+
+                    if (--timer < 0) {
+                        clearInterval(timerInterval);
+                        alert("Hết giờ làm bài!");
+                        handleSubmit();
+                    }
+                }, 1000);
+            }
+
+            // --- Gemini API Caller (for TTS) ---
+            async function callGeminiAPI(payload, model = 'gemini-2.5-flash-preview-tts') {
+                 if (!studentApiKey) {
+                    alert("API Key không hợp lệ. Không thể thực hiện yêu cầu.");
+                    return null;
+                }
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${studentApiKey}`;
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(`API Error: ${errorBody.error?.message || response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    const candidate = result.candidates && result.candidates[0];
+
+                    if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0]) {
+                        return candidate.content.parts[0]; // Return the whole part
+                    } else {
+                         if (result.promptFeedback && result.promptFeedback.blockReason) {
+                               throw new Error(`API call blocked: ${result.promptFeedback.blockReason}`);
+                         }
+                        return null;
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi gọi Gemini API:", error);
+                    return null;
+                }
+            }
+            
+            // --- TTS Feature Functions ---
+            function base64ToArrayBuffer(base64) {
+                const binaryString = window.atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            function pcmToWav(pcmData, sampleRate) {
+                const numChannels = 1;
+                const bytesPerSample = 2; // 16-bit
+                const blockAlign = numChannels * bytesPerSample;
+                const byteRate = sampleRate * blockAlign;
+                const dataSize = pcmData.byteLength;
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+
+                /* RIFF identifier */
+                writeString(view, 0, 'RIFF');
+                /* file length */
+                view.setUint32(4, 36 + dataSize, true);
+                /* RIFF type */
+                writeString(view, 8, 'WAVE');
+                /* format chunk identifier */
+                writeString(view, 12, 'fmt ');
+                /* format chunk length */
+                view.setUint32(16, 16, true);
+                /* sample format (raw) */
+                view.setUint16(20, 1, true);
+                /* channel count */
+                view.setUint16(22, numChannels, true);
+                /* sample rate */
+                view.setUint32(24, sampleRate, true);
+                /* byte rate (sample rate * block align) */
+                view.setUint32(28, byteRate, true);
+                /* block align (channel count * bytes per sample) */
+                view.setUint16(32, blockAlign, true);
+                /* bits per sample */
+                view.setUint16(34, 16, true);
+                /* data chunk identifier */
+                writeString(view, 36, 'data');
+                /* data chunk length */
+                view.setUint32(40, dataSize, true);
+
+                // Write PCM data
+                const pcm16 = new Int16Array(pcmData);
+                for (let i = 0; i < pcm16.length; i++) {
+                    view.setInt16(44 + i * 2, pcm16[i], true);
+                }
+
+                function writeString(view, offset, string) {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                }
+
+                return new Blob([view], { type: 'audio/wav' });
+            }
+
+            async function playTTS(text, button) {
+                if (currentAudio && !currentAudio.paused) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    document.querySelectorAll('.tts-btn.playing').forEach(b => b.classList.remove('playing'));
+                    if (currentAudio.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(currentAudio.src);
+                    }
+                    if (currentAudio.dataset.text === text) {
+                        currentAudio = null;
+                        return; // Stop if the same button is clicked again
+                    }
+                }
+
+                button.classList.add('playing');
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<div class="small-loader"></div>';
+                button.disabled = true;
+
+                try {
+                    const payload = {
+                        contents: [{ parts: [{ text: `Nói một cách rõ ràng, tự nhiên: ${text}` }] }],
+                        generationConfig: { responseModalities: ["AUDIO"] },
+                    };
+
+                    const resultPart = await callGeminiAPI(payload, 'gemini-2.5-flash-preview-tts');
+
+                    if (resultPart && resultPart.inlineData) {
+                        const audioData = resultPart.inlineData.data;
+                        const mimeType = resultPart.inlineData.mimeType;
+                        const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                        const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        const wavBlob = pcmToWav(pcmData, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+
+                        currentAudio = new Audio(audioUrl);
+                        currentAudio.dataset.text = text;
+                        currentAudio.play();
+                        currentAudio.onended = () => {
+                            button.classList.remove('playing');
+                            URL.revokeObjectURL(audioUrl);
+                            currentAudio = null;
+                        };
+                    } else {
+                        throw new Error("Không nhận được dữ liệu âm thanh.");
+                    }
+                } catch (error) {
+                    console.error("Lỗi TTS:", error);
+                    alert("Không thể phát âm thanh. Vui lòng thử lại.");
+                     button.classList.remove('playing');
+                } finally {
+                    button.innerHTML = originalIcon;
+                    button.disabled = false;
+                }
+            }
+
+            function getTextForTTS(item) {
+                let text = item.question || item.main_question || '';
+                text = text.replace(/\$/g, ''); // Remove LaTeX delimiters for cleaner speech
+
+                if (item.mappedType === 'multiple-choice' && item.options) {
+                    const optionsText = item.options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`).join(' ');
+                    text += ' ' + optionsText.replace(/\$/g, '');
+                } else if (item.mappedType === 'true-false' && item.statements) {
+                    const statementsText = item.statements.map((s, i) => `${String.fromCharCode(97 + i)}. ${s.statement}`).join(' ');
+                    text += ' ' + statementsText.replace(/\$/g, '');
+                }
+                return text;
+            }
+
+            function renderStudentQuiz() {
+                studentQuizContainer.innerHTML = '';
+                
+                const groupedQuestions = quizData.reduce((acc, q) => {
+                    const type = q.mappedType;
+                    if (!acc[type]) {
+                        acc[type] = [];
+                    }
+                    acc[type].push(q);
+                    return acc;
+                }, {});
+
+                const groupInfo = {
+                    'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN', subtitle: 'Chọn đáp án đúng nhất trong các lựa chọn sau.' },
+                    'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI', subtitle: 'Xác định tính đúng hoặc sai cho mỗi mệnh đề dưới đây.' },
+                    'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN', subtitle: 'Điền đáp án ngắn gọn vào phần trả lời.' },
+                    'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN', subtitle: 'Trình bày chi tiết bài giải của bạn.' }
+                };
+                
+                let questionCounter = 0;
+                const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+                partOrder.forEach(partType => {
+                    const questions = groupedQuestions[partType];
+                    if (!questions || questions.length === 0) return;
+                    
+                    const info = groupInfo[partType];
+                    let groupHTML = `<div class="group-container space-y-8 mb-12">`;
+                    groupHTML += `
+                        <div class="group-header pb-3 border-b-2 border-slate-300 mb-6">
+                            <h2 class="text-2xl font-bold text-slate-800">${info.title}</h2>
+                            ${info.subtitle ? `<p class="text-md text-slate-600 italic mt-1">${info.subtitle}</p>` : ''}
+                        </div>
+                    `;
+
+                    questions.forEach((item, localIndex) => {
+                        const globalIndex = quizData.indexOf(item);
+                        questionCounter++;
+                        groupHTML += `<div class="question-card" id="student-q-${globalIndex}">`;
+                        let questionText = (item.question || item.main_question || '').replace(/\n/g, '<br>');
+                        
+                        const textToSpeak = getTextForTTS(item);
+                        
+                        groupHTML += `<div class="flex items-start">
+                                     <div class="flex-grow">
+                                         <div class="flex items-center mb-2">
+                                             <span class="font-bold text-lg mr-3 text-indigo-600">Câu ${questionCounter}:</span>
+                                             <div id="q-${globalIndex}-feedback-icon"></div>
+                                         </div>
+                                         <div class="question-content mt-2 text-lg text-slate-700">${questionText}</div>
+                                         ${item.questionImage ? `<img src="${item.questionImage}" class="mt-4 rounded-lg max-w-full md:max-w-md border shadow-sm">` : ''}
+                                     </div>
+                                     <button class="tts-btn ml-4 p-2 rounded-full text-gray-500 hover:text-indigo-600" data-text-to-speak="${textToSpeak.replace(/"/g, '&quot;')}">
+                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.858 5.858a3 3 0 014.243 0L12 7.757l1.9-1.9a3 3 0 014.242 0 3 3 0 010 4.242L12 16.242l-6.042-6.042a3 3 0 010-4.242z" />
+                                         </svg>
+                                     </button>
+                                 </div>`;
+                        
+                        groupHTML += `<div class="mt-6">`;
+                        switch(item.mappedType) {
+                            case 'multiple-choice':
+                                groupHTML += `<div class="options-grid grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                                item.options.forEach((opt, i) => {
+                                    groupHTML += `<label for="q${globalIndex}-opt${i}" id="q${globalIndex}-opt-label${i}" class="option-label flex items-start p-4 border-2 rounded-xl cursor-pointer hover:bg-indigo-50 hover:border-indigo-400">
+                                                     <input type="radio" name="q${globalIndex}" id="q${globalIndex}-opt${i}" value="${i}" class="flex-shrink-0 mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                                                     <div class="ml-3 flex-grow">
+                                                         <span class="font-semibold text-slate-800">${String.fromCharCode(65 + i)}.</span>
+                                                         <span class="option-content text-slate-700">${opt || ''}</span>
+                                                         ${(item.optionsImage && item.optionsImage[i]) ? `<img src="${item.optionsImage[i]}" class="mt-2 rounded-lg max-w-xs border shadow-sm">` : ''}
+                                                     </div>
+                                                 </label>`;
+                                });
+                                groupHTML += `</div>`;
+                                break;
+                            case 'true-false':
+                                 groupHTML += `<div class="space-y-4">`;
+                                 item.statements.forEach((s, i) => {
+                                     groupHTML += `<div class="statement-item border-t pt-4">
+                                                  <p class="mb-3 text-slate-700">${String.fromCharCode(97 + i)}) ${s.statement || ''}</p>
+                                                  <div class="flex gap-x-6">
+                                                      <label class="flex items-center cursor-pointer"><input type="radio" name="q${globalIndex}-s${i}" value="true" class="mr-2 h-4 w-4"> Đúng</label>
+                                                      <label class="flex items-center cursor-pointer"><input type="radio" name="q${globalIndex}-s${i}" value="false" class="mr-2 h-4 w-4"> Sai</label>
+                                                  </div>
+                                              </div>`;
+                                 });
+                                 groupHTML += `</div>`;
+                                 break;
+                            case 'short-answer':
+                                groupHTML += `<input type="text" name="q${globalIndex}" class="mt-1 block w-full md:w-1/2 border border-slate-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Nhập đáp án của bạn...">`;
+                                break;
+                            case 'essay':
+                                groupHTML += `<textarea name="q${globalIndex}" class="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" rows="5" placeholder="Nhập câu trả lời tự luận của bạn..."></textarea>`;
+                                break;
+                        }
+                        groupHTML += `</div><div id="q-${globalIndex}-feedback" class="mt-4"></div></div>`;
+                    });
+                    groupHTML += `</div>`;
+                    studentQuizContainer.innerHTML += groupHTML;
+                });
+                
+
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    MathJax.typesetPromise([studentQuizContainer]);
+                }
+                
+                document.querySelectorAll('.tts-btn').forEach(btn => {
+                    btn.addEventListener('click', () => playTTS(btn.dataset.textToSpeak, btn));
+                });
+            }
+
+            async function generatePerformanceReview(allAnswersData) {
+                const feedbackContainer = document.getElementById('ai-feedback-container');
+                if (!feedbackContainer || !ai) return null;
+
+                feedbackContainer.classList.remove('hidden');
+                feedbackContainer.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4">📝 Phân Tích & Gợi Ý Từ Trợ Lý AI</h3>
+                        <div id="ai-feedback-loader" class="text-center py-6">
+                             <svg class="animate-spin mx-auto h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                             <p class="mt-3 text-slate-600">AI đang phân tích bài làm của bạn, vui lòng chờ trong giây lát...</p>
+                        </div>
+                        <div id="ai-feedback-content" class="hidden"></div>
+                    </div>
+                `;
+
+                const incorrectAnswers = allAnswersData.filter(a => !a.isCorrect);
+
+                if (incorrectAnswers.length === 0) {
+                     feedbackContainer.innerHTML = `
+                        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                            <h3 class="text-xl font-bold text-green-600">🎉 Chúc mừng!</h3>
+                            <p class="mt-2 text-slate-700">Bạn đã trả lời đúng tất cả các câu hỏi. Làm tốt lắm!</p>
+                        </div>
+                     `;
+                    return { overallFeedback: { summary: "Xuất sắc! Học sinh đã trả lời đúng tất cả các câu hỏi.", strengths: "Trả lời đúng tất cả các câu hỏi.", areasForImprovement: "Không có." } };
+                }
+
+                 const prompt = `Bạn là một trợ lý giáo viên chuyên nghiệp và thân thiện, nói tiếng Việt. Nhiệm vụ của bạn là phân tích kết quả bài làm của một học sinh và đưa ra nhận xét mang tính xây dựng.
+                
+                Dưới đây là toàn bộ bài làm của học sinh, bao gồm các câu trả lời sai:
+                ${JSON.stringify(incorrectAnswers, null, 2)}
+                
+                Dựa vào các lỗi sai này, hãy tạo một phản hồi. Lời văn phải khích lệ, rõ ràng, dễ hiểu.
+                QUAN TRỌNG: Với các câu hỏi Đúng/Sai (type: 'true-false'), hãy chú ý vào trường 'details' để phân tích lỗi sai ở từng mệnh đề nhỏ.
+                
+                - 'summary': Tóm tắt năng lực của học sinh trong 1-2 câu ngắn gọn, súc tích để gửi cho giáo viên. Ví dụ: 'Nắm vững kiến thức cơ bản nhưng cần cải thiện kỹ năng tính toán.'
+                - 'strengths': Nhận xét chi tiết về điểm mạnh, phần kiến thức học sinh đã nắm vững (suy luận từ các câu làm đúng, không có trong dữ liệu câu sai) để hiển thị cho học sinh.
+                - 'areasForImprovement': Nhận xét chi tiết về những mảng kiến thức học sinh cần cải thiện dựa trên các câu sai để hiển thị cho học sinh.
+                - 'studySuggestions': Gợi ý 2-3 chủ đề kiến thức cụ thể cần ôn tập lại, dựa trên bản chất của các câu hỏi sai.
+                - 'errorAnalysis': Chỉ bao gồm các câu hỏi học sinh trả lời sai. Giải thích chi tiết từng bước tại sao đáp án đúng là đúng, và phân tích lỗi sai trong câu trả lời của học sinh. Lời giải phải rõ ràng, logic, và sử dụng LaTeX cho công thức toán nếu cần.`;
+                
+                const schema = {
+                    type: Type.OBJECT,
+                    properties: {
+                        "overallFeedback": {
+                            type: Type.OBJECT,
+                            properties: {
+                                "summary": { type: Type.STRING },
+                                "strengths": { type: Type.STRING },
+                                "areasForImprovement": { type: Type.STRING }
+                            },
+                            required: ["summary", "strengths", "areasForImprovement"]
+                        },
+                        "studySuggestions": {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING }
+                        },
+                        "errorAnalysis": {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    "questionNumber": { type: Type.STRING },
+                                    "explanation": { type: Type.STRING }
+                                },
+                                required: ["questionNumber", "explanation"]
+                            }
+                        }
+                    },
+                    required: ["overallFeedback", "studySuggestions", "errorAnalysis"]
+                };
+
+                try {
+                    const response = await ai.models.generateContent({
+                        model: "gemini-2.5-flash",
+                        contents: prompt,
+                        config: {
+                            responseMimeType: "application/json",
+                            responseSchema: schema
+                        }
+                    });
+
+                    const resultText = response.text;
+                    const feedbackData = JSON.parse(resultText);
+
+                    const loader = document.getElementById('ai-feedback-loader');
+                    const contentDiv = document.getElementById('ai-feedback-content');
+
+                    let html = '';
+
+                    // Overall Feedback
+                    html += `
+                        <div class="mb-6 space-y-4">
+                            <div>
+                                <h4 class="font-bold text-lg text-slate-700 mb-2">👍 Phần làm tốt</h4>
+                                <p class="text-slate-600 bg-green-50 p-3 rounded-lg border border-green-200">${feedbackData.overallFeedback.strengths}</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg text-slate-700 mb-2">🤔 Phần cần cải thiện</h4>
+                                <p class="text-slate-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200">${feedbackData.overallFeedback.areasForImprovement}</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg text-slate-700 mb-2">📚 Gợi ý ôn tập</h4>
+                                <ul class="list-disc list-inside text-slate-600 bg-blue-50 p-3 rounded-lg border border-blue-200 space-y-1">
+                                    ${feedbackData.studySuggestions.map(s => `<li>${s}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+
+                    // Error Analysis
+                    html += `<h4 class="font-bold text-lg text-slate-700 mb-3 pt-4 border-t">🔎 Sửa lỗi chi tiết</h4>`;
+                    html += '<div class="space-y-4">';
+                    feedbackData.errorAnalysis.forEach(analysis => {
+                        const questionInfo = allAnswersData.find(q => q.questionNumber === analysis.questionNumber);
+                        if (!questionInfo) return;
+                        html += `
+                            <details class="bg-slate-50 border rounded-lg overflow-hidden">
+                                <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 flex justify-between items-center">
+                                    <span>Câu ${analysis.questionNumber}: Bạn chọn <span class="text-red-600">${questionInfo.yourAnswer}</span>, đáp án đúng là <span class="text-green-600">${questionInfo.correctAnswer}</span></span>
+                                    <svg class="w-5 h-5 transition-transform transform details-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                </summary>
+                                <div class="p-4 border-t bg-white prose prose-sm max-w-none">
+                                    ${(analysis.explanation || '').replace(/\n/g, '<br>')}
+                                </div>
+                            </details>
+                        `;
+                    });
+                    html += '</div>';
+
+                    contentDiv.innerHTML = html;
+                    loader.classList.add('hidden');
+                    contentDiv.classList.remove('hidden');
+
+                    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                        MathJax.typesetPromise([contentDiv]);
+                    }
+                    
+                    return feedbackData;
+
+                } catch (error) {
+                    console.error("Error generating or rendering feedback:", error);
+                    const feedbackContent = document.getElementById('ai-feedback-content');
+                    if (feedbackContent) {
+                        feedbackContent.innerHTML = `<p class="text-red-600">Xin lỗi, đã có lỗi xảy ra khi AI phân tích bài làm của bạn. Vui lòng thử lại sau.</p>`;
+                        feedbackContent.classList.remove('hidden');
+                        document.getElementById('ai-feedback-loader').classList.add('hidden');
+                    }
+                    return null;
+                }
+            }
+
+
+            async function handleSubmit() {
+                if (isSubmitted) return;
+                isSubmitted = true;
+                clearInterval(timerInterval);
+
+                let totalStudentScore = 0;
+                let totalCorrectAnswers = 0;
+                let allAnswersData = [];
+
+                const questionCounts = quizData.reduce((acc, q) => {
+                    const type = q.mappedType;
+                    acc[type] = (acc[type] || 0) + 1;
+                    return acc;
+                }, {});
+
+                // --- GRADING LOGIC ---
+                quizData.forEach((item, index) => {
+                    let questionNumber = index + 1;
+                    let answerData = { questionNumber };
+
+                    switch (item.mappedType) {
+                        case 'multiple-choice':
+                            const selectedOption = document.querySelector(`input[name="q${index}"]:checked`);
+                            const isCorrectMC = selectedOption ? parseInt(selectedOption.value) === item.correctAnswerIndex : false;
+                            if (isCorrectMC) {
+                                totalCorrectAnswers++;
+                                if (questionCounts['multiple-choice'] > 0) {
+                                   totalStudentScore += quizOptions.scoring.mc / questionCounts['multiple-choice'];
+                                }
+                            }
+                            answerData.type = 'multiple-choice';
+                            answerData.question = item.question;
+                            answerData.options = item.options;
+                            answerData.yourAnswer = selectedOption ? String.fromCharCode(65 + parseInt(selectedOption.value)) : "Không trả lời";
+                            answerData.correctAnswer = String.fromCharCode(65 + item.correctAnswerIndex);
+                            answerData.isCorrect = isCorrectMC;
+                            break;
+
+                        case 'true-false':
+                            let correctStatementsCount = 0;
+                            let yourAnswerPattern = [];
+                            let correctAnswerPattern = [];
+                            let details = [];
+
+                            item.statements.forEach((s, i) => {
+                                const selectedTF = document.querySelector(`input[name="q${index}-s${i}"]:checked`);
+                                const studentChoice = selectedTF ? selectedTF.value === 'true' : null;
+                                const isStatementCorrect = studentChoice === s.is_correct;
+                                
+                                if (isStatementCorrect) correctStatementsCount++;
+                                
+                                yourAnswerPattern.push(studentChoice === null ? '?' : (studentChoice ? 'Đ' : 'S'));
+                                correctAnswerPattern.push(s.is_correct ? 'Đ' : 'S');
+                                details.push({ statement: s.statement, yourChoice: studentChoice === null ? 'Không trả lời' : (studentChoice ? 'Đúng' : 'Sai'), correctChoice: s.is_correct ? 'Đúng' : 'Sai', isCorrect: isStatementCorrect });
+                            });
+
+                            let questionPoints = 0;
+                            if (quizOptions.scoring.tfMethod === 'progressive') {
+                                const progressivePoints = { 0: 0, 1: 0.1, 2: 0.25, 3: 0.5, 4: 1.0 };
+                                questionPoints = progressivePoints[correctStatementsCount];
+                            } else { // even
+                                questionPoints = correctStatementsCount * 0.25;
+                            }
+                            totalStudentScore += questionPoints;
+                            if(correctStatementsCount === 4) totalCorrectAnswers++;
+
+                            answerData.type = 'true-false';
+                            answerData.question = item.main_question;
+                            answerData.yourAnswer = yourAnswerPattern.join('-');
+                            answerData.correctAnswer = correctAnswerPattern.join('-');
+                            answerData.isCorrect = correctStatementsCount === 4;
+                            answerData.details = details;
+                            break;
+                        
+                        case 'short-answer':
+                            const saInput = document.querySelector(`input[name="q${index}"]`);
+                            const saAnswer = saInput ? saInput.value.trim().toLowerCase() : "";
+                            const isCorrectSA = saAnswer === item.answer.trim().toLowerCase();
+                             if (isCorrectSA) {
+                                totalCorrectAnswers++;
+                                if (questionCounts['short-answer'] > 0) {
+                                   totalStudentScore += quizOptions.scoring.sa / questionCounts['short-answer'];
+                                }
+                            }
+                            answerData.type = 'short-answer';
+                            answerData.question = item.question;
+                            answerData.yourAnswer = saInput.value || "Không trả lời";
+                            answerData.correctAnswer = item.answer;
+                            answerData.isCorrect = isCorrectSA;
+                            break;
+                            
+                        case 'essay':
+                             const essayInput = document.querySelector(`textarea[name="q${index}"]`);
+                             answerData.type = 'essay';
+                             answerData.question = item.question;
+                             answerData.yourAnswer = essayInput.value || "Không trả lời";
+                             answerData.correctAnswer = item.answer;
+                             answerData.isCorrect = null; // Needs manual grading
+                             break;
+                    }
+                    allAnswersData.push(answerData);
+                });
+
+                // --- SCORE CALCULATION & DISPLAY ---
+                // The teacher sets the points for each section. The final score is the sum of these points.
+                // It is displayed on a 10-point scale, so we assume the teacher sets the total points to 10.
+                const finalScore = totalStudentScore;
+                const totalQuestions = quizData.length;
+
+
+                // --- RENDER SUMMARY TABLE ---
+                let summaryTableHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">🎯 TỔNG KẾT:</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-center text-slate-600">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-100 rounded-t-lg">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 font-semibold">Câu</th>
+                                    <th scope="col" class="px-4 py-3 font-semibold">Đáp án của bạn</th>
+                                    <th scope="col" class="px-4 py-3 font-semibold">Đáp án đúng</th>
+                                    <th scope="col" class="px-4 py-3 font-semibold">Kết quả</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                
+                allAnswersData.forEach(ans => {
+                    summaryTableHTML += `
+                        <tr class="bg-white border-b">
+                            <td class="px-4 py-3 font-medium">${ans.questionNumber}</td>
+                            <td class="px-4 py-3 ${ans.isCorrect ? '' : 'text-red-500 font-bold'}">${ans.yourAnswer}</td>
+                            <td class="px-4 py-3">${ans.correctAnswer}</td>
+                            <td class="px-4 py-3 flex justify-center">${ans.isCorrect === true ? 
+                                '<svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' : 
+                                (ans.isCorrect === false ? '<svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>' : '<span>-</span>')
+                            }</td>
+                        </tr>`;
+                });
+
+                summaryTableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 space-y-1 text-left">
+                        <p class="font-semibold text-green-600">✅ Số câu đúng hoàn toàn: ${totalCorrectAnswers}/${totalQuestions}</p>
+                         <p class="font-semibold text-blue-600">📊 Điểm (thang 10): ${finalScore.toFixed(2)}/10</p>
+                         ${questionCounts['essay'] > 0 ? `<p class="text-sm text-gray-600 italic">Lưu ý: Điểm trên chưa bao gồm ${quizOptions.scoring.essay} điểm của phần Tự luận cần giáo viên chấm.</p>` : ''}
+                    </div>
+                </div>`;
+                
+                resultContainer.innerHTML = summaryTableHTML;
+                resultContainer.classList.remove('hidden');
+
+                // Wait for MathJax rendering to complete and add a small buffer time.
+                // This prevents a race condition where the AI is called before the results table is fully rendered,
+                // which can cause errors in data collection for the AI prompt.
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    await window.MathJax.typesetPromise([resultContainer]);
+                }
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // 3. Call AI feedback generation if enabled and create assessment string
+                let competencyAssessment = "Giáo viên không yêu cầu AI phân tích bài làm.";
+                if (quizOptions.showAnswers && quizOptions.showExplanation) {
+                    const feedbackData = await generatePerformanceReview(allAnswersData);
+                    if (feedbackData && feedbackData.overallFeedback && feedbackData.overallFeedback.summary) {
+                        competencyAssessment = feedbackData.overallFeedback.summary;
+                    } else {
+                        competencyAssessment = "Có lỗi xảy ra trong quá trình AI phân tích bài làm.";
+                    }
+                }
+
+                // 4. Disable inputs, show post-submit options, and send data
+                document.querySelectorAll('input, textarea').forEach(input => input.disabled = true);
+                submitBtn.classList.add('hidden');
+                postSubmitOptions.classList.remove('hidden');
+                if (retriesLeft > 0) {
+                    retryBtn.classList.remove('hidden');
+                } else {
+                    retryBtn.classList.add('hidden');
+                }
+                
+                const formData = new FormData();
+                formData.append('name', studentInfo.name);
+                formData.append('class', studentInfo.class);
+                formData.append('score', `${finalScore.toFixed(2)}/10`);
+                formData.append('assessment', competencyAssessment);
+                formData.append('timestamp', new Date().toLocaleString('vi-VN'));
+                
+                fetch(googleScriptUrl, { method: 'POST', body: formData})
+                    .then(res => console.log("Successfully submitted to Google Sheet"))
+                    .catch(err => console.error("Error submitting to Google Sheet:", err));
+            }
+            
+            function startNewAttempt() {
+                 isSubmitted = false;
+                renderStudentQuiz();
+                resultContainer.classList.add('hidden');
+                document.getElementById('ai-feedback-container').classList.add('hidden');
+                postSubmitOptions.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+                 if (quizOptions.timeLimit > 0) {
+                    const timeInSeconds = quizOptions.timeLimit * 60;
+                    startTimer(timeInSeconds, timerDisplay);
+                }
+                retriesLeft--;
+                retriesDisplay.textContent = `Lượt làm lại còn: ${retriesLeft}`;
+                window.scrollTo(0, 0);
+            }
+
+            studentInfoForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const enteredCode = document.getElementById('exam-code').value.trim().toUpperCase();
+                if (enteredCode !== correctExamCode) {
+                    alert('Mã đề không chính xác. Vui lòng kiểm tra lại!');
+                    return;
+                }
+                
+                studentApiKey = document.getElementById('student-api-key').value.trim();
+                if (!studentApiKey) {
+                    alert('Vui lòng nhập Gemini API Key của bạn.');
+                    return;
+                }
+        
+                try {
+                    ai = new GoogleGenAI({ apiKey: studentApiKey });
+                } catch(e) {
+                    console.error("Lỗi khởi tạo Gemini API với key của học sinh.", e);
+                    alert("API Key không hợp lệ. Vui lòng kiểm tra lại. AI sẽ không thể phân tích bài làm.");
+                    ai = null;
+                }
+
+                shuffleQuiz();
+                
+                studentInfo.name = document.getElementById('student-name').value;
+                studentInfo.class = document.getElementById('student-class').value;
+                loginModal.classList.add('hidden');
+                studentQuizContainer.classList.remove('hidden');
+                submitBtn.classList.remove('hidden');
+                
+                if (quizOptions.timeLimit > 0) {
+                    const timeInSeconds = quizOptions.timeLimit * 60;
+                    startTimer(timeInSeconds, timerDisplay);
+                } else {
+                    timerDisplay.textContent = "Không giới hạn";
+                }
+
+                retriesDisplay.textContent = `Lượt làm lại còn: ${retriesLeft}`;
+
+                renderStudentQuiz();
+            });
+
+            // Attach the submit listener once.
+            submitBtn.addEventListener('click', handleSubmit);
+
+            retryBtn.addEventListener('click', () => {
+                shuffleQuiz();
+                startNewAttempt();
+            });
+        </script>
+    </body>
+    </html>
+    
