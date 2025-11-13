@@ -1,0 +1,539 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eeeeeeeeeee</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        mjx-container { display: inline-block !important; }
+        .prose img { margin-top: 0.5em; margin-bottom: 0.5em; max-width: 100%; height: auto; display: block; margin-left: auto; margin-right: auto; }
+        .latex-image { max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto; }
+    </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/genai": "https://esm.sh/@google/genai@^1.13.0"
+        }
+    }
+    </script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\(', '\)']], displayMath: [['$$', '$$'], ['\[', '\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">eeeeeeeeeee</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">60A08K</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-6 pb-4 border-b">
+                <h2 class="text-2xl font-bold text-gray-800">eeeeeeeeeee</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg"></div>
+            </div>
+            <form id="quiz-form">
+                <div id="all-questions-container" class="space-y-8">
+                    <!-- Questions will be rendered here -->
+                </div>
+                <button id="submit-btn" type="button" class="mt-8 w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </form>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        let GoogleGenAI;
+        try {
+            const genaiModule = await import('@google/genai');
+            GoogleGenAI = genaiModule.GoogleGenAI;
+        } catch(e) {
+            console.error("Could not import @google/genai module.", e);
+        }
+
+        const rawQuizData = [{"question":"Biểu thức nào sau đây là đa thức?","options":["$3x^2 - \\dfrac{2}{x}$","$5xy^3 + \\sqrt{y}$","$\\dfrac{x^2+1}{y}$","$-7x^4y + 2x^2 - 5$"],"correctAnswerIndex":3,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"question":"Các hạng tử của đa thức $P(x,y) = 5x^2y - 3xy^3 + 7x - 8$ là gì?","options":["$5x^2y$, $3xy^3$, $7x$, $8$","$5x^2y$, $-3xy^3$, $7x$, $-8$","$5x^2y$, $3xy^3$, $7x$","$-5x^2y$, $3xy^3$, $-7x$, $8$"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"question":"Bậc của đơn thức $M = -6x^3yz^5$ là bao nhiêu?","options":["$3$","$5$","$9$","$6$"],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"question":"Bậc của đa thức $A = 2x^3y^2 - 5x^4y^3 + x^2y^2 - 7$ là bao nhiêu?","options":["$5$","$6$","$7$","$4$"],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"question":"Cho đa thức $P(x) = x^2 - 2x + 1$. Giá trị của $P(-1)$ là bao nhiêu?","options":["$0$","$2$","$4$","$-2$"],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"main_question":"Trong các phát biểu sau về đa thức, phát biểu nào đúng?","statements":[{"statement":"$x^2y - 5x + 7$ là một đa thức.","is_correct":true},{"statement":"Các hạng tử của đa thức $A = 3x^2y - xy^2 + 5$ là $3x^2y$, $xy^2$ và $5$.","is_correct":false},{"statement":"Đa thức $B = 2x^2y - 3xy^2 + x^2y + 4xy^2$ sau khi thu gọn là $3x^2y + xy^2$.","is_correct":true},{"statement":"Bậc của đa thức $C = x^3y^2 - 4x^2y^3 + 5x^5 - 2xy^5$ sau khi thu gọn là $6$.","is_correct":true}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"main_question":"Chọn phát biểu đúng về đa thức và giá trị của đa thức.","statements":[{"statement":"Mỗi đơn thức được gọi là một đa thức.","is_correct":true},{"statement":"Giá trị của đa thức $P = x - 2y$ tại $x = 1$, $y = -1$ là $P = -1$.","is_correct":false},{"statement":"Cho hai đa thức $M = 3x + y$ và $N = x - 2y$. Khi đó $M + N = 4x - y$.","is_correct":true},{"statement":"Bậc của đa thức $D = (x^2 + 2x^3y) - (2x^3y - 5x^2 + 7)$ sau khi thu gọn là $2$.","is_correct":true}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"question":"Thu gọn đa thức $P(x,y) = 3x^2y - 2xy^2 + x^2y - 5 + 4xy^2$ và cho biết bậc của đa thức đó.","answer":"Thu gọn đa thức:\n$P(x,y) = (3x^2y + x^2y) + (-2xy^2 + 4xy^2) - 5$\n$P(x,y) = 4x^2y + 2xy^2 - 5$\nBậc của đa thức:\nHạng tử $4x^2y$ có bậc là $2+1 = 3$.\nHạng tử $2xy^2$ có bậc là $1+2 = 3$.\nHạng tử $-5$ có bậc là $0$.\nBậc cao nhất của các hạng tử là $3$. Vậy, **bậc của đa thức $P(x,y)$ là $3$**.","type":"short-answer","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}},{"question":"Tính giá trị của đa thức $Q(x,y) = 2x^3 - 5xy + 3y^2 + 1$ tại $x = -1$ và $y = 2$. ","answer":"Thay $x = -1$ và $y = 2$ vào đa thức $Q(x,y)$, ta được:\n$Q(-1,2) = 2(-1)^3 - 5(-1)(2) + 3(2)^2 + 1$\n$Q(-1,2) = 2(-1) - 5(-2) + 3(4) + 1$\n$Q(-1,2) = -2 + 10 + 12 + 1$\n$Q(-1,2) = 21$\nVậy, **giá trị của đa thức $Q(x,y)$ tại $x = -1$ và $y = 2$ là $21$**.","type":"short-answer","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true}}];
+        const options = {"timeLimit":45,"retriesAllowed":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"scoring":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxV_S0rNHbOQx-hnjjlQGqdvLBN5GlTog0q8erd1XMpPX7XkuGjIxJnDEPPDJQnpGnf9g/exec";
+        const examCode = "60A08K";
+        const userApiKey = "AIzaSyAzvr2Py2_mr5Z4R3YWXi-dyO1ufA2paas";
+
+        let userAnswers = new Array(rawQuizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        let geminiAI = null;
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const allQuestionsContainer = document.getElementById('all-questions-container');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) { console.error('MathJax error: ' + err.message); });
+            }
+        }
+
+        function formatAIText(text) {
+            if (!text) return '';
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/\n/g, '<br>');
+            return formattedText;
+        }
+        
+        async function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            await renderAllQuestions();
+
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+
+        async function renderAllQuestions() {
+            let allHTML = '';
+            let questionCounter = 0;
+
+            const groupedQuestions = rawQuizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. TỰ LUẬN' },
+            };
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `<div class="mb-6 pb-3 border-b-2 border-gray-300"><h2 class="text-xl font-bold text-gray-800">${info.title}</h2></div>`;
+
+                questions.forEach((item) => {
+                    const qIndex = rawQuizData.indexOf(item);
+                    questionCounter++;
+                    const isTrueFalseType = partType === 'true-false';
+                    const questionText = isTrueFalseType ? item.main_question : item.question;
+
+                    allHTML += `<div class="mb-8" id="q-card-${qIndex}">
+                        <div class="prose max-w-none text-lg mb-4">
+                            <strong class="text-lg text-gray-800">Câu ${questionCounter}:</strong> ${formatAIText(questionText)}
+                        </div>`;
+
+                    const savedAnswer = userAnswers[qIndex];
+
+                    if (partType === 'multiple-choice') {
+                        allHTML += `<div class="space-y-3">`;
+                        item.options.forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            allHTML += `
+                                <div class="option ${isSelected ? 'selected' : ''} p-4 border-2 rounded-lg cursor-pointer transition" data-index="${i}" onclick="selectOption(this, ${qIndex})">
+                                    <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                    <span class="prose max-w-none">${formatAIText(opt)}</span>
+                                </div>`;
+                        });
+                        allHTML += `</div>`;
+                    } else if (partType === 'true-false') {
+                        allHTML += `<div class="space-y-3">`;
+                        item.statements.forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            allHTML += `
+                                <div class="p-4 border-2 rounded-lg flex items-center justify-between">
+                                    <div class="flex-grow prose max-w-none">${formatAIText(stmt.statement)}</div>
+                                    <div class="flex-shrink-0 ml-4 flex gap-2">
+                                        <button type="button" class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${qIndex}, ${i}, true)">Đúng</button>
+                                        <button type="button" class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${qIndex}, ${i}, false)">Sai</button>
+                                    </div>
+                                </div>`;
+                        });
+                        allHTML += `</div>`;
+                    } else if (partType === 'short-answer') {
+                        allHTML += `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswer || ''}" onchange="saveTextAnswer(this, ${qIndex})">`;
+                    } else if (partType === 'essay') {
+                        allHTML += `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${qIndex})">${savedAnswer || ''}</textarea>`;
+                    }
+                    allHTML += `</div>`; // Close q-card div
+                });
+            });
+
+            allQuestionsContainer.innerHTML = allHTML;
+            safeTypeset([allQuestionsContainer]);
+        }
+        
+        window.selectOption = (element, qIndex) => {
+            userAnswers[qIndex] = parseInt(element.dataset.index, 10);
+            const parentContainer = element.closest('.space-y-3');
+            parentContainer.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        };
+        
+        window.selectTFOption = (button, qIndex, stmtIndex, answer) => {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(rawQuizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+        };
+        
+        window.saveTextAnswer = (element, qIndex) => { userAnswers[qIndex] = element.value; };
+        
+        function confirmSubmit() {
+            const unanswered = userAnswers.filter(a => a === null || (Array.isArray(a) && a.some(sa => sa === null))).length;
+            const message = unanswered > 0 
+                ? `Bạn còn ${unanswered} câu chưa trả lời. Bạn có chắc chắn muốn nộp bài không?`
+                : "Bạn có chắc chắn muốn nộp bài không?";
+            if (confirm(message)) { submitQuiz(); }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment && userApiKey && GoogleGenAI) {
+                try {
+                    submitBtn.innerHTML = '<span class="animate-pulse">AI đang nhận xét bài làm...</span>';
+                    const assessmentPrompt = `Dựa trên kết quả bài làm của một học sinh, hãy đưa ra một nhận xét ngắn gọn (khoảng 3-4 câu) về năng lực của học sinh. Nhận xét cần mang tính xây dựng, chỉ ra điểm mạnh và những kiến thức cần củng cố. Dữ liệu bài làm: ${JSON.stringify(answerDetails)}`;
+                    if (!geminiAI) geminiAI = new GoogleGenAI({ apiKey: userApiKey });
+                    const response = await geminiAI.models.generateContent({ model: "gemini-2.5-flash", contents: assessmentPrompt });
+                    aiAssessment = formatAIText(response.text);
+                } catch (e) {
+                    console.error("AI assessment failed:", e);
+                    aiAssessment = "Lỗi khi tạo nhận xét từ AI.";
+                }
+            }
+
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try { await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) }); } 
+                catch (error) { console.error('Error submitting to Google Script:', error); }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment);
+        }
+        
+        function showResults(score, assessment) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            scoreDisplay.textContent = `${score} / 10`;
+            if (options.aiAssessment) {
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment}`;
+                assessmentDisplay.classList.remove('hidden');
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            if (options.showAnswers) renderReview(); else reviewContainer.innerHTML = '';
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = rawQuizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = rawQuizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = rawQuizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && rawQuizData.length > 0) totalPossibleScore = 10; 
+
+            rawQuizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else { isCorrect = null; }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail, questionText: item.question || item.main_question });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             const mcTypes = ['mc-grammar-vocab', 'mc-reading', 'mc-listening', 'cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'];
+             const tfTypes = ['tf-grammar-vocab', 'tf-reading', 'tf-listening', 'true-false'];
+             const saTypes = ['short-answer', 'sentence-transformation'];
+             if (mcTypes.includes(typeStr)) return 'multiple-choice';
+             if (tfTypes.includes(typeStr)) return 'true-false';
+             if (saTypes.includes(typeStr)) return 'short-answer';
+             return 'essay';
+        }
+
+        function renderReview() {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-4">Xem lại bài làm</h3>';
+            let questionCounter = 0;
+            
+            const groupedQuestions = rawQuizData.reduce((acc, q) => {
+                const type = mapType(q.type); if (!acc[type]) acc[type] = []; acc[type].push(q); return acc;
+            }, {});
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                questions.forEach((item) => {
+                    const qIndex = rawQuizData.indexOf(item);
+                    questionCounter++;
+                    reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                    reviewHTML += `<p class="font-semibold prose max-w-none">Câu ${questionCounter}: ${formatAIText(item.question || item.main_question)}</p>`;
+                    
+                    if (partType === 'multiple-choice') {
+                         reviewHTML += '<div class="mt-2 space-y-2">';
+                         item.options.forEach((opt, i) => {
+                            let classes = 'option p-2 border-2 rounded-lg flex items-start';
+                            if (i === item.correctAnswerIndex) classes += ' correct';
+                            if (userAnswers[qIndex] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                            reviewHTML += `<div class="${classes}"><strong class="mr-2">${String.fromCharCode(65 + i)}.</strong> <div class="prose max-w-none">${formatAIText(opt)}</div></div>`;
+                         });
+                         reviewHTML += '</div>';
+                    } else if (partType === 'true-false') {
+                        reviewHTML += '<div class="mt-2 space-y-2">';
+                        item.statements.forEach((stmt, i) => {
+                           const userAnswer = userAnswers[qIndex] ? userAnswers[qIndex][i] : null;
+                           const isUserCorrect = userAnswer === stmt.is_correct;
+                           let userChoiceText = userAnswer === true ? 'Đúng' : (userAnswer === false ? 'Sai' : 'Chưa chọn');
+                           reviewHTML += `<div class="p-2 border rounded-md ${isUserCorrect ? 'bg-green-50' : 'bg-red-50'}">
+                                <div class="prose max-w-none">${formatAIText(stmt.statement)}</div>
+                                <div class="mt-1 text-sm">Bạn chọn: <strong class="${isUserCorrect ? 'text-green-700' : 'text-red-700'}">${userChoiceText}</strong>. Đáp án đúng: <strong>${stmt.is_correct ? 'Đúng' : 'Sai'}</strong></div>
+                           </div>`;
+                        });
+                        reviewHTML += '</div>';
+                    } else if (partType === 'short-answer' || partType === 'essay') {
+                         reviewHTML += `<div class="mt-2 space-y-2">
+                            <div><strong>Câu trả lời của bạn:</strong> <div class="mt-1 p-2 border rounded bg-gray-50 prose max-w-none">${userAnswers[qIndex] || '<em>Chưa trả lời</em>'}</div></div>
+                            <div class="mt-2"><strong>Đáp án đúng:</strong> <div class="mt-1 p-2 bg-green-50 rounded prose max-w-none">${formatAIText(item.answer)}</div></div>
+                         </div>`;
+                    }
+                    
+                    if (options.showExplanation) {
+                         reviewHTML += `<div class="mt-3">
+                            <button class="text-sm font-semibold text-blue-600 hover:text-blue-800" onclick="handleExplainWithAI(this, ${qIndex})">Xem giải thích từ AI</button>
+                            <div id="explanation-${qIndex}" class="explanation-content-ai mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden prose max-w-none"></div>
+                         </div>`;
+                    }
+                    reviewHTML += '</div>';
+                });
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        window.handleExplainWithAI = async (button, qIndex) => {
+            if (!userApiKey || !GoogleGenAI) {
+                alert('Không thể sử dụng tính năng giải thích bằng AI lúc này. Vui lòng kiểm tra lại API Key của giáo viên.');
+                return;
+            }
+            const explanationContainer = document.getElementById(`explanation-${qIndex}`);
+            const isHidden = explanationContainer.classList.toggle('hidden');
+            if (isHidden) return;
+
+            if (rawQuizData[qIndex].ai_explanation) {
+                explanationContainer.innerHTML = rawQuizData[qIndex].ai_explanation;
+                safeTypeset([explanationContainer]);
+                return;
+            }
+
+            explanationContainer.innerHTML = '<p class="animate-pulse">AI đang suy nghĩ và giải thích...</p>';
+            button.disabled = true;
+
+            try {
+                if (!geminiAI) geminiAI = new GoogleGenAI({ apiKey: userApiKey });
+                
+                const item = rawQuizData[qIndex];
+                const type = mapType(item.type);
+                const questionText = (type === 'true-false') ? item.main_question : item.question;
+                
+                let promptText = `Bạn là một giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây. Lời giải phải chính xác, dễ hiểu. Định dạng công thức toán bằng LaTeX, in đậm thuật ngữ quan trọng bằng **...**.\n---\nCÂU HỎI:\n${questionText}\n---\n`;
+                
+                if (type === 'multiple-choice') {
+                    promptText += `ĐÁP ÁN ĐÚNG: ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${item.options[item.correctAnswerIndex]}`;
+                } else if (type === 'true-false') {
+                    promptText += `CÁC MỆNH ĐỀ VÀ ĐÁP ÁN: ${item.statements.map(s => `${s.statement} -> ${s.is_correct ? 'Đúng' : 'Sai'}`).join('; ')}`;
+                } else {
+                    promptText += `ĐÁP ÁN / GỢI Ý: ${item.answer}`;
+                }
+                promptText += '\n---';
+
+                const response = await geminiAI.models.generateContent({ model: "gemini-2.5-flash", contents: promptText });
+                const explanation = formatAIText(response.text);
+                rawQuizData[qIndex].ai_explanation = explanation; // Cache the explanation
+                explanationContainer.innerHTML = explanation;
+                safeTypeset([explanationContainer]);
+
+            } catch (error) {
+                console.error("AI explanation error:", error);
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi khi tạo giải thích. Vui lòng thử lại.</p>';
+            } finally {
+                button.disabled = false;
+            }
+        };
+
+        function retryQuiz() {
+            if(retriesCount < options.retriesAllowed) {
+                retriesCount++;
+                startQuiz();
+            }
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                if(timeRemaining < 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                    return;
+                }
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        function showWarning(message) { warningEl.textContent = message; warningEl.style.display = 'block'; warningEl.style.animation = 'none'; warningEl.offsetHeight; warningEl.style.animation = 'fade-in-out 5s ease-in-out'; }
+        function handleVisibilityChange() { if (document.hidden) { monitoringLog.thoatManHinh++; showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!'); } }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() { monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 }; document.addEventListener('visibilitychange', handleVisibilityChange); document.addEventListener('copy', handleCopy); document.addEventListener('paste', handlePaste); }
+        function stopMonitoring() { document.removeEventListener('visibilitychange', handleVisibilityChange); document.removeEventListener('copy', handleCopy); document.removeEventListener('paste', handlePaste); }
+    </script>
+</body>
+</html>
