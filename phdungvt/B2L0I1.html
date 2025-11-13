@@ -1,0 +1,913 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài Tập Luyện Tập</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\(', '\)']], displayMath: [['$$', '$$'], ['\[', '\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">Bài Tập Luyện Tập</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">B2L0I1</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6">
+                <h2 class="text-2xl font-bold text-gray-800">Bài Tập Luyện Tập</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "AIzaSyAzvr2Py2_mr5Z4R3YWXi-dyO1ufA2paas";
+        const quizData = [{"question":"Một người muốn làm một chiếc hộp chữ nhật không nắp từ một tấm tôn hình chữ nhật kích thước $60\\text{ cm} \\times 40\\text{ cm}$ bằng cách cắt đi bốn hình vuông bằng nhau ở bốn góc rồi gập các cạnh lên. Hỏi cạnh của hình vuông phải cắt có độ dài bằng bao nhiêu để thể tích khối hộp là lớn nhất?","answer":"Để thể tích khối hộp là lớn nhất, độ dài cạnh của hình vuông phải cắt là:\n\n1.  **Gọi biến:** Gọi $x$ là độ dài cạnh của hình vuông được cắt ($x > 0$).\n2.  **Kích thước hộp:**\n    *   Chiều dài đáy: $60 - 2x$ (cm)\n    *   Chiều rộng đáy: $40 - 2x$ (cm)\n    *   Chiều cao: $x$ (cm)\n3.  **Điều kiện xác định:** Để các kích thước là dương, ta có:\n    *   $60 - 2x > 0 \\implies x < 30$\n    *   $40 - 2x > 0 \\implies x < 20$\n    Vậy, miền xác định của $x$ là $0 < x < 20$.\n4.  **Hàm thể tích:** Thể tích của khối hộp $V(x)$ được tính bởi công thức:\n    $V(x) = x(60 - 2x)(40 - 2x) = x(2400 - 120x - 80x + 4x^2) = x(4x^2 - 200x + 2400) = 4x^3 - 200x^2 + 2400x$.\n5.  **Tìm đạo hàm:** Để tìm giá trị lớn nhất của $V(x)$, ta tính đạo hàm $V'(x)$:\n    $V'(x) = \\dfrac{d}{dx}(4x^3 - 200x^2 + 2400x) = 12x^2 - 400x + 2400$.\n6.  **Giải phương trình $V'(x) = 0$:**\n    $12x^2 - 400x + 2400 = 0 \\implies 3x^2 - 100x + 600 = 0$.\n    Sử dụng công thức nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$: $x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$.\n    $x = \\dfrac{100 \\pm \\sqrt{(-100)^2 - 4(3)(600)}}{2(3)} = \\dfrac{100 \\pm \\sqrt{10000 - 7200}}{6} = \\dfrac{100 \\pm \\sqrt{2800}}{6} = \\dfrac{100 \\pm 20\\sqrt{7}}{6} = \\dfrac{50 \\pm 10\\sqrt{7}}{3}$.\n    Ta có hai nghiệm:\n    *   $x_1 = \\dfrac{50 - 10\\sqrt{7}}{3} \\approx \\dfrac{50 - 10 \\times 2.646}{3} \\approx \\dfrac{50 - 26.46}{3} \\approx 7.847 \\text{ (thỏa mãn } 0 < x < 20)$.\n    *   $x_2 = \\dfrac{50 + 10\\sqrt{7}}{3} \\approx \\dfrac{50 + 26.46}{3} \\approx \\dfrac{76.46}{3} \\approx 25.487 \\text{ (không thỏa mãn } 0 < x < 20)$.\n7.  **Kiểm tra cực trị:** Ta dùng đạo hàm bậc hai $V''(x) = 24x - 400$.\n    Với $x_1 = \\dfrac{50 - 10\\sqrt{7}}{3}$:\n    $V''\\left(\\dfrac{50 - 10\\sqrt{7}}{3}\\right) = 24\\left(\\dfrac{50 - 10\\sqrt{7}}{3}\\right) - 400 = 8(50 - 10\\sqrt{7}) - 400 = 400 - 80\\sqrt{7} - 400 = -80\\sqrt{7}$.\n    Vì $-80\\sqrt{7} < 0$, nên $x = \\dfrac{50 - 10\\sqrt{7}}{3}$ là điểm cực đại, tức là thể tích đạt giá trị lớn nhất tại giá trị $x$ này.\n\n**Kết luận:** Để thể tích khối hộp là lớn nhất, cạnh của hình vuông phải cắt có độ dài là $\\dfrac{50 - 10\\sqrt{7}}{3}\\text{ cm}$.","type":"short-answer","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Một người muốn làm một chiếc hộp chữ nhật không nắp từ một tấm tôn hình chữ nhật kích thước $60\\text{ cm} \\times 40\\text{ cm}$ bằng cách cắt đi bốn hình vuông bằng nhau ở bốn góc rồi gập các cạnh lên. Hỏi cạnh của hình vuông phải cắt có độ dài bằng bao nhiêu để thể tích khối hộp là lớn nhất?","rendered_answer":"Để thể tích khối hộp là lớn nhất, độ dài cạnh của hình vuông phải cắt là:<br><br>1.  <strong>Gọi biến:</strong> Gọi $x$ là độ dài cạnh của hình vuông được cắt ($x > 0$).<br>2.  <strong>Kích thước hộp:</strong><br>    *   Chiều dài đáy: $60 - 2x$ (cm)<br>    *   Chiều rộng đáy: $40 - 2x$ (cm)<br>    *   Chiều cao: $x$ (cm)<br>3.  <strong>Điều kiện xác định:</strong> Để các kích thước là dương, ta có:<br>    *   $60 - 2x > 0 \\implies x < 30$<br>    *   $40 - 2x > 0 \\implies x < 20$<br>    Vậy, miền xác định của $x$ là $0 < x < 20$.<br>4.  <strong>Hàm thể tích:</strong> Thể tích của khối hộp $V(x)$ được tính bởi công thức:<br>    $V(x) = x(60 - 2x)(40 - 2x) = x(2400 - 120x - 80x + 4x^2) = x(4x^2 - 200x + 2400) = 4x^3 - 200x^2 + 2400x$.<br>5.  <strong>Tìm đạo hàm:</strong> Để tìm giá trị lớn nhất của $V(x)$, ta tính đạo hàm $V'(x)$:<br>    $V'(x) = \\dfrac{d}{dx}(4x^3 - 200x^2 + 2400x) = 12x^2 - 400x + 2400$.<br>6.  <strong>Giải phương trình $V'(x) = 0$:</strong><br>    $12x^2 - 400x + 2400 = 0 \\implies 3x^2 - 100x + 600 = 0$.<br>    Sử dụng công thức nghiệm của phương trình bậc hai $ax^2 + bx + c = 0$: $x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$.<br>    $x = \\dfrac{100 \\pm \\sqrt{(-100)^2 - 4(3)(600)}}{2(3)} = \\dfrac{100 \\pm \\sqrt{10000 - 7200}}{6} = \\dfrac{100 \\pm \\sqrt{2800}}{6} = \\dfrac{100 \\pm 20\\sqrt{7}}{6} = \\dfrac{50 \\pm 10\\sqrt{7}}{3}$.<br>    Ta có hai nghiệm:<br>    *   $x_1 = \\dfrac{50 - 10\\sqrt{7}}{3} \\approx \\dfrac{50 - 10 \\times 2.646}{3} \\approx \\dfrac{50 - 26.46}{3} \\approx 7.847 \\text{ (thỏa mãn } 0 < x < 20)$.<br>    *   $x_2 = \\dfrac{50 + 10\\sqrt{7}}{3} \\approx \\dfrac{50 + 26.46}{3} \\approx \\dfrac{76.46}{3} \\approx 25.487 \\text{ (không thỏa mãn } 0 < x < 20)$.<br>7.  <strong>Kiểm tra cực trị:</strong> Ta dùng đạo hàm bậc hai $V''(x) = 24x - 400$.<br>    Với $x_1 = \\dfrac{50 - 10\\sqrt{7}}{3}$:<br>    $V''\\left(\\dfrac{50 - 10\\sqrt{7}}{3}\\right) = 24\\left(\\dfrac{50 - 10\\sqrt{7}}{3}\\right) - 400 = 8(50 - 10\\sqrt{7}) - 400 = 400 - 80\\sqrt{7} - 400 = -80\\sqrt{7}$.<br>    Vì $-80\\sqrt{7} < 0$, nên $x = \\dfrac{50 - 10\\sqrt{7}}{3}$ là điểm cực đại, tức là thể tích đạt giá trị lớn nhất tại giá trị $x$ này.<br><br><strong>Kết luận:</strong> Để thể tích khối hộp là lớn nhất, cạnh của hình vuông phải cắt có độ dài là $\\dfrac{50 - 10\\sqrt{7}}{3}\\text{ cm}$."},{"question":"Một khối cầu tuyết đang tan chảy với bán kính $r$ giảm với tốc độ $0.8\\text{ cm/phút}$. Tìm tốc độ thay đổi thể tích của khối cầu tuyết khi bán kính của nó là $15\\text{ cm}$.","answer":"Để tìm tốc độ thay đổi thể tích của khối cầu tuyết, ta sử dụng quy tắc chuỗi:\n\n1.  **Công thức thể tích:** Thể tích của một khối cầu được cho bởi công thức $V = \\dfrac{4}{3}\\pi r^3$.\n2.  **Tốc độ thay đổi bán kính:** Theo đề bài, bán kính $r$ giảm với tốc độ $0.8\\text{ cm/phút}$. Điều này có nghĩa là $\\dfrac{dr}{dt} = -0.8\\text{ cm/phút}$ (dấu âm vì bán kính đang giảm).\n3.  **Tốc độ thay đổi thể tích:** Ta cần tìm $\\dfrac{dV}{dt}$. Áp dụng quy tắc chuỗi:\n    $\\dfrac{dV}{dt} = \\dfrac{dV}{dr} \\cdot \\dfrac{dr}{dt}$.\n4.  **Tính đạo hàm của $V$ theo $r$:**\n    $\\dfrac{dV}{dr} = \\dfrac{d}{dr}\\left(\\dfrac{4}{3}\\pi r^3\\right) = 4\\pi r^2$.\n5.  **Thay vào biểu thức $\\dfrac{dV}{dt}$:**\n    $\\dfrac{dV}{dt} = 4\\pi r^2 \\cdot (-0.8)$.\n6.  **Tính tốc độ thay đổi thể tích khi $r = 15\\text{ cm}$:**\n    $\\dfrac{dV}{dt} = 4\\pi (15)^2 \\cdot (-0.8)\n    \\dfrac{dV}{dt} = 4\\pi (225) \\cdot (-0.8)\n    \\dfrac{dV}{dt} = 900\\pi \\cdot (-0.8)\n    \\dfrac{dV}{dt} = -720\\pi\\text{ cm}^3\\text{/phút}$.\n\n**Kết luận:** Tốc độ thay đổi thể tích của khối cầu tuyết khi bán kính là $15\\text{ cm}$ là **$-720\\pi\\text{ cm}^3\\text{/phút}$**.","type":"short-answer","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Một khối cầu tuyết đang tan chảy với bán kính $r$ giảm với tốc độ $0.8\\text{ cm/phút}$. Tìm tốc độ thay đổi thể tích của khối cầu tuyết khi bán kính của nó là $15\\text{ cm}$.","rendered_answer":"Để tìm tốc độ thay đổi thể tích của khối cầu tuyết, ta sử dụng quy tắc chuỗi:<br><br>1.  <strong>Công thức thể tích:</strong> Thể tích của một khối cầu được cho bởi công thức $V = \\dfrac{4}{3}\\pi r^3$.<br>2.  <strong>Tốc độ thay đổi bán kính:</strong> Theo đề bài, bán kính $r$ giảm với tốc độ $0.8\\text{ cm/phút}$. Điều này có nghĩa là $\\dfrac{dr}{dt} = -0.8\\text{ cm/phút}$ (dấu âm vì bán kính đang giảm).<br>3.  <strong>Tốc độ thay đổi thể tích:</strong> Ta cần tìm $\\dfrac{dV}{dt}$. Áp dụng quy tắc chuỗi:<br>    $\\dfrac{dV}{dt} = \\dfrac{dV}{dr} \\cdot \\dfrac{dr}{dt}$.<br>4.  <strong>Tính đạo hàm của $V$ theo $r$:</strong><br>    $\\dfrac{dV}{dr} = \\dfrac{d}{dr}\\left(\\dfrac{4}{3}\\pi r^3\\right) = 4\\pi r^2$.<br>5.  <strong>Thay vào biểu thức $\\dfrac{dV}{dt}$:</strong><br>    $\\dfrac{dV}{dt} = 4\\pi r^2 \\cdot (-0.8)$.<br>6.  <strong>Tính tốc độ thay đổi thể tích khi $r = 15\\text{ cm}$:</strong><br>    $\\dfrac{dV}{dt} = 4\\pi (15)^2 \\cdot (-0.8)<br>    \\dfrac{dV}{dt} = 4\\pi (225) \\cdot (-0.8)<br>    \\dfrac{dV}{dt} = 900\\pi \\cdot (-0.8)<br>    \\dfrac{dV}{dt} = -720\\pi\\text{ cm}^3\\text{/phút}$.<br><br><strong>Kết luận:</strong> Tốc độ thay đổi thể tích của khối cầu tuyết khi bán kính là $15\\text{ cm}$ là <strong>$-720\\pi\\text{ cm}^3\\text{/phút}$</strong>."},{"question":"Một tấm kim loại hình chữ nhật có kích thước $40 \text{ cm} \times 25 \text{ cm}$. Người ta cắt bốn hình vuông bằng nhau ở bốn góc của tấm kim loại, mỗi hình vuông có cạnh là $x \text{ cm}$ ($x > 0$). Sau đó, gấp tấm kim loại lại để tạo thành một hộp không nắp.\na) Viết biểu thức tính thể tích $V(x)$ của hộp theo $x$.\nb) Tìm giá trị của $x$ để thể tích của hộp là lớn nhất. Tính thể tích lớn nhất đó.","answer":"a) Để tạo thành một hộp không nắp, chiều dài đáy hộp sẽ là $40 - 2x$ (cm), chiều rộng đáy hộp là $25 - 2x$ (cm) và chiều cao của hộp là $x$ (cm).\nĐiều kiện để các kích thước là số dương là: $x > 0$, $40 - 2x > 0 \\Rightarrow x < 20$, và $25 - 2x > 0 \\Rightarrow x < 12.5$. Vậy **miền xác định của $x$ là $0 < x < 12.5$**.\nBiểu thức thể tích của hộp là:\n$V(x) = x(40 - 2x)(25 - 2x) = x(1000 - 80x - 50x + 4x^2) = x(4x^2 - 130x + 1000) = 4x^3 - 130x^2 + 1000x$.\nb) Để tìm giá trị của $x$ để thể tích hộp lớn nhất, ta xét đạo hàm của $V(x)$:\n$V'(x) = \\dfrac{d}{dx}(4x^3 - 130x^2 + 1000x) = 12x^2 - 260x + 1000$.\nCho $V'(x) = 0$, ta có phương trình:\n$12x^2 - 260x + 1000 = 0 \\Leftrightarrow 3x^2 - 65x + 250 = 0$.\nTính biệt thức $\\Delta = (-65)^2 - 4 \\times 3 \\times 250 = 4225 - 3000 = 1225$. $\\sqrt{\\Delta} = 35$.\nCác nghiệm của phương trình là:\n$x_1 = \\dfrac{65 - 35}{2 \\times 3} = \\dfrac{30}{6} = 5$.\n$x_2 = \\dfrac{65 + 35}{2 \\times 3} = \\dfrac{100}{6} = \\dfrac{50}{3} \\approx 16.67$.\nSo sánh với điều kiện $0 < x < 12.5$, ta thấy $x_1 = 5$ thỏa mãn, còn $x_2 = \\dfrac{50}{3}$ không thỏa mãn.\nLập bảng biến thiên hoặc xét dấu của $V'(x)$ trên khoảng $(0; 12.5)$:\nTa thấy $V'(x) > 0$ khi $0 < x < 5$ và $V'(x) < 0$ khi $5 < x < 12.5$.\nVậy hàm số $V(x)$ tăng trên $(0; 5)$ và giảm trên $(5; 12.5)$. Do đó, **thể tích hộp đạt giá trị lớn nhất tại $x = 5 \\text{ cm}$**.\nGiá trị thể tích lớn nhất là:\n$V_{\\text{max}} = V(5) = 4(5)^3 - 130(5)^2 + 1000(5) = 4(125) - 130(25) + 5000 = 500 - 3250 + 5000 = 2250 \\text{ cm}^3$.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Một tấm kim loại hình chữ nhật có kích thước $40 \text{ cm} \times 25 \text{ cm}$. Người ta cắt bốn hình vuông bằng nhau ở bốn góc của tấm kim loại, mỗi hình vuông có cạnh là $x \text{ cm}$ ($x > 0$). Sau đó, gấp tấm kim loại lại để tạo thành một hộp không nắp.<br>a) Viết biểu thức tính thể tích $V(x)$ của hộp theo $x$.<br>b) Tìm giá trị của $x$ để thể tích của hộp là lớn nhất. Tính thể tích lớn nhất đó.","rendered_answer":"a) Để tạo thành một hộp không nắp, chiều dài đáy hộp sẽ là $40 - 2x$ (cm), chiều rộng đáy hộp là $25 - 2x$ (cm) và chiều cao của hộp là $x$ (cm).<br>Điều kiện để các kích thước là số dương là: $x > 0$, $40 - 2x > 0 \\Rightarrow x < 20$, và $25 - 2x > 0 \\Rightarrow x < 12.5$. Vậy <strong>miền xác định của $x$ là $0 < x < 12.5$</strong>.<br>Biểu thức thể tích của hộp là:<br>$V(x) = x(40 - 2x)(25 - 2x) = x(1000 - 80x - 50x + 4x^2) = x(4x^2 - 130x + 1000) = 4x^3 - 130x^2 + 1000x$.<br>b) Để tìm giá trị của $x$ để thể tích hộp lớn nhất, ta xét đạo hàm của $V(x)$:<br>$V'(x) = \\dfrac{d}{dx}(4x^3 - 130x^2 + 1000x) = 12x^2 - 260x + 1000$.<br>Cho $V'(x) = 0$, ta có phương trình:<br>$12x^2 - 260x + 1000 = 0 \\Leftrightarrow 3x^2 - 65x + 250 = 0$.<br>Tính biệt thức $\\Delta = (-65)^2 - 4 \\times 3 \\times 250 = 4225 - 3000 = 1225$. $\\sqrt{\\Delta} = 35$.<br>Các nghiệm của phương trình là:<br>$x_1 = \\dfrac{65 - 35}{2 \\times 3} = \\dfrac{30}{6} = 5$.<br>$x_2 = \\dfrac{65 + 35}{2 \\times 3} = \\dfrac{100}{6} = \\dfrac{50}{3} \\approx 16.67$.<br>So sánh với điều kiện $0 < x < 12.5$, ta thấy $x_1 = 5$ thỏa mãn, còn $x_2 = \\dfrac{50}{3}$ không thỏa mãn.<br>Lập bảng biến thiên hoặc xét dấu của $V'(x)$ trên khoảng $(0; 12.5)$:<br>Ta thấy $V'(x) > 0$ khi $0 < x < 5$ và $V'(x) < 0$ khi $5 < x < 12.5$.<br>Vậy hàm số $V(x)$ tăng trên $(0; 5)$ và giảm trên $(5; 12.5)$. Do đó, <strong>thể tích hộp đạt giá trị lớn nhất tại $x = 5 \\text{ cm}$</strong>.<br>Giá trị thể tích lớn nhất là:<br>$V_{\\text{max}} = V(5) = 4(5)^3 - 130(5)^2 + 1000(5) = 4(125) - 130(25) + 5000 = 500 - 3250 + 5000 = 2250 \\text{ cm}^3$."},{"question":"Vị trí của một vật thể chuyển động trên một đường thẳng được cho bởi hàm số $s(t) = t^3 - 6t^2 + 9t$, với $s$ được tính bằng mét và $t$ được tính bằng giây ($t \\ge 0$).\na) Tính hàm vận tốc $v(t)$ và hàm gia tốc $a(t)$ của vật thể.\nb) Tìm thời điểm $t$ khi vận tốc của vật thể bằng $0$.\nc) Tính gia tốc của vật thể tại thời điểm vận tốc bằng $0$.","answer":"a) Hàm vận tốc $v(t)$ là đạo hàm của hàm vị trí $s(t)$ theo thời gian $t$:\n$v(t) = s'(t) = \\dfrac{d}{dt}(t^3 - 6t^2 + 9t) = 3t^2 - 12t + 9$.\nHàm gia tốc $a(t)$ là đạo hàm của hàm vận tốc $v(t)$ theo thời gian $t$:\n$a(t) = v'(t) = \\dfrac{d}{dt}(3t^2 - 12t + 9) = 6t - 12$.\nb) Để tìm thời điểm vận tốc của vật thể bằng $0$, ta giải phương trình $v(t) = 0$:\n$3t^2 - 12t + 9 = 0$.\nChia cả hai vế cho 3, ta được: $t^2 - 4t + 3 = 0$.\nPhân tích thành nhân tử: $(t - 1)(t - 3) = 0$.\nVậy, các thời điểm mà vận tốc của vật thể bằng $0$ là **$t_1 = 1 \\text{ s}$ và $t_2 = 3 \\text{ s}$**.\nc) Tính gia tốc của vật thể tại các thời điểm vận tốc bằng $0$:\n- Tại thời điểm $t = 1 \\text{ s}$:\n$a(1) = 6(1) - 12 = -6 \\text{ m/s}^2$.\n- Tại thời điểm $t = 3 \\text{ s}$:\n$a(3) = 6(3) - 12 = 18 - 12 = 6 \\text{ m/s}^2$.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Vị trí của một vật thể chuyển động trên một đường thẳng được cho bởi hàm số $s(t) = t^3 - 6t^2 + 9t$, với $s$ được tính bằng mét và $t$ được tính bằng giây ($t \\ge 0$).<br>a) Tính hàm vận tốc $v(t)$ và hàm gia tốc $a(t)$ của vật thể.<br>b) Tìm thời điểm $t$ khi vận tốc của vật thể bằng $0$.<br>c) Tính gia tốc của vật thể tại thời điểm vận tốc bằng $0$.","rendered_answer":"a) Hàm vận tốc $v(t)$ là đạo hàm của hàm vị trí $s(t)$ theo thời gian $t$:<br>$v(t) = s'(t) = \\dfrac{d}{dt}(t^3 - 6t^2 + 9t) = 3t^2 - 12t + 9$.<br>Hàm gia tốc $a(t)$ là đạo hàm của hàm vận tốc $v(t)$ theo thời gian $t$:<br>$a(t) = v'(t) = \\dfrac{d}{dt}(3t^2 - 12t + 9) = 6t - 12$.<br>b) Để tìm thời điểm vận tốc của vật thể bằng $0$, ta giải phương trình $v(t) = 0$:<br>$3t^2 - 12t + 9 = 0$.<br>Chia cả hai vế cho 3, ta được: $t^2 - 4t + 3 = 0$.<br>Phân tích thành nhân tử: $(t - 1)(t - 3) = 0$.<br>Vậy, các thời điểm mà vận tốc của vật thể bằng $0$ là <strong>$t_1 = 1 \\text{ s}$ và $t_2 = 3 \\text{ s}$</strong>.<br>c) Tính gia tốc của vật thể tại các thời điểm vận tốc bằng $0$:<br>- Tại thời điểm $t = 1 \\text{ s}$:<br>$a(1) = 6(1) - 12 = -6 \\text{ m/s}^2$.<br>- Tại thời điểm $t = 3 \\text{ s}$:<br>$a(3) = 6(3) - 12 = 18 - 12 = 6 \\text{ m/s}^2$."}];
+        const options = {"timeLimit":45,"retriesAllowed":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"scoring":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxV_S0rNHbOQx-hnjjlQGqdvLBN5GlTog0q8erd1XMpPX7XkuGjIxJnDEPPDJQnpGnf9g/exec";
+        const examCode = "B2L0I1";
+
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.getAIExplanation = getAIExplanation;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) {
+                    acc[type] = [];
+                }
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' }
+            };
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let questionCounter = 0;
+
+            partOrder.forEach(partType => {
+                const questionsInPart = groupedQuestions[partType];
+                if (!questionsInPart || questionsInPart.length === 0) return;
+
+                if (groupInfo[partType]) {
+                    allHTML += `<h2 class="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b-2 border-indigo-300">${groupInfo[partType].title}</h2>`;
+                }
+                
+                questionsInPart.forEach(itemWithIndex => {
+                    questionCounter++;
+                    const { originalIndex, ...item } = itemWithIndex;
+                    const index = originalIndex;
+
+                    if (!item) return;
+
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswer || ''}" onchange="saveTextAnswer(this, ${index})">`;
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+
+            container.innerHTML = allHTML;
+            safeTypeset([container]);
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment && API_KEY) {
+                assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+                assessmentDisplay.classList.remove('hidden');
+                try {
+                    aiAssessment = await getAIAssessment(finalScore, answerDetails);
+                } catch (e) {
+                    console.error("Error getting AI assessment:", e);
+                    aiAssessment = "Đã xảy ra lỗi khi AI tạo nhận xét.";
+                }
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                assessmentDisplay.classList.remove('hidden');
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else {
+                    isCorrect = null;
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation && API_KEY) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="getAIExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        function stripHtml(html) {
+            if (!html) return "";
+            let doc = new DOMParser().parseFromString(html, 'text/html');
+            // Remove any images inside as they are not text
+            doc.body.querySelectorAll('img').forEach(img => img.remove());
+            // Replace <br> with newline for better readability in the prompt
+            doc.body.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+            return doc.body.textContent || "";
+        }
+
+        async function getAIExplanation(index, button) {
+            if (!API_KEY) return;
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+            
+            const isHidden = explanationContainer.classList.contains('hidden');
+
+            if (!isHidden && quizData[index].explanation) {
+                explanationContainer.classList.add('hidden');
+                button.textContent = 'Xem giải thích từ AI';
+                return;
+            }
+            
+            explanationContainer.classList.remove('hidden');
+
+            if (quizData[index].explanation) {
+                explanationContainer.innerHTML = quizData[index].rendered_explanation;
+                safeTypeset([explanationContainer]);
+                button.textContent = 'Ẩn giải thích';
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'AI đang giải thích...';
+            explanationContainer.innerHTML = '<div class="animate-pulse">Đang tải...</div>';
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const item = quizData[index];
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây. Lời giải phải chính xác, dễ hiểu và phù hợp với phương pháp giảng dạy của chương trình GDPT 2018.\n---**CÂU HỎI:**\n${stripHtml(item.rendered_question)}\n---`;
+
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**CÁC LỰA CHỌN:**\n`;
+                    item.options.forEach((opt, i) => { prompt += `${String.fromCharCode(65 + i)}. ${stripHtml(item.rendered_options[i])}\n`; });
+                    prompt += `---\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${stripHtml(item.rendered_options[item.correctAnswerIndex])}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n`;
+                    item.statements.forEach((s, i) => { prompt += `${String.fromCharCode(97 + i)}) ${stripHtml(s.rendered_statement)} -> ${s.is_correct ? 'Đúng' : 'Sai'}\n`; });
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${stripHtml(item.rendered_answer)}`;
+                }
+                
+                prompt += `
+---
+**YÊU CẦU (CỰC KỲ QUAN TRỌNG):** Hãy giải thích chi tiết từng bước để đi đến đáp án đúng. BẮT BUỘC phải tuân thủ các quy tắc sau:
+1. **Rõ ràng:** Trình bày lời giải khoa học, có khoảng cách hợp lý giữa các từ, số và ký hiệu.
+2. **Xuống dòng:** Dùng ký tự xuống dòng (\\n) để tách các bước giải hoặc các ý chính.
+3. **Toán và Văn bản:** TUYỆT ĐỐI KHÔNG đặt văn bản tiếng Việt (ví dụ: "suy ra", "từ đó ta có") vào trong dấu đô la ($) của LaTeX.
+4. **In đậm:** Dùng **...** để in đậm các thuật ngữ quan trọng hoặc kết quả cuối cùng.
+
+
+--- QUY TẮC BẮT BUỘC VỀ TOÁN HỌC (LaTeX) ---
+1. **PHÂN BIỆT RÕ RÀNG VĂN BẢN VÀ CÔNG THỨC:**
+    *   **CÔNG THỨC (Dùng $...$):** Chỉ các công thức, kí hiệu toán học (ví dụ: $+, -, \times, \div, =, <, >, \le, \ge, \in, \notin, \subset, \perp, //, \widehat{ABC}, \vec{a}$), biến số ($x, y, a, b, A, B$), hằng số ($pi, e$), tập hợp ($A, B, \mathbb{R}$), và các con số trong một ngữ cảnh toán học thì mới được bao bọc bởi mã LaTeX.
+    *   **VĂN BẢN (Không dùng $...$):** Các từ mô tả bằng tiếng Việt như "song song", "vuông góc", "cắt", "thuộc", "là trung điểm", "đường cao", "tam giác", "tứ giác", "hình chóp" LÀ VĂN BẢN THƯỜNG, **TUYỆT ĐỐI KHÔNG ĐƯỢC** đặt trong dấu đô la.
+    *   **VÍ DỤ SAI:** Cho tam giác $ABC$ $song song$ với đường thẳng $d$.
+    *   **VÍ DỤ ĐÚNG:** Cho tam giác $ABC$ song song với đường thẳng $d$.
+
+2. **DÙNG DẤU ĐÔ LA ($):**
+    * Dùng '$ công thức $' cho công thức trong cùng dòng (inline). VÍ DỤ: "Tập xác định $D$ của hàm số $y = \dfrac{x-3}{x}$."
+    * Dùng '$$ công thức $$' CHỈ KHI công thức cần nằm trên một dòng riêng (display). KHÔNG dùng cho công thức inline.
+
+3. **LỆNH VÀ KÍ HIỆU CHUẨN:**
+    * **Phép nhân (Multiplication):** Luôn dùng lệnh `\times` hoặc `\cdot`. TUYỆT ĐỐI KHÔNG viết chữ "nhân" hay "times".
+    * **Kí hiệu vô cực:** Luôn dùng `\infty`. TUYỆT ĐỐI KHÔNG dùng `\&infty;`, `&infty;`, `inf`.
+    * **Kí hiệu độ:** Luôn dùng `^{\circ}`.
+    * **DÙNG `\dfrac`:** Ưu tiên sử dụng `\dfrac{tử}{mẫu}` cho mọi loại phân số để đảm bảo hiển thị nhất quán.
+    * **Văn bản trong công thức:** Dùng lệnh `\text{...}`. VÍ DỤ: `$\text{Hàm số đồng biến trên } (0;1)$`.
+    * **Dấu ngoặc co giãn:** Dùng `\left( ... \right)`, `\left[ ... \right]`, `\left\{ ... \right\}` khi ngoặc chứa biểu thức cao như phân số.
+
+--- QUY TẮC CẤM TUYỆT ĐỐI (LỖI NGHIÊM TRỌNG CẦN TRÁNH) ---
+BẠN TUYỆT ĐỐI KHÔNG BAO GIỜ được viết các từ sai sau đây trong biểu thức toán học. Đây là một lỗi nghiêm trọng và sẽ làm cho câu trả lời không hợp lệ. Hãy luôn sử dụng lệnh đúng.
+
+*   **SAI:** `rac{...}{...}`   ->   **ĐÚNG:** `\dfrac{...}{...}`
+*   **SAI:** `ext{...}`     ->   **ĐÚNG:** `\text{...}`
+*   **SAI:** `imes`           ->   **ĐÚNG:** `\times`
+*   **SAI:** `dive`           ->   **ĐÚNG:** `\div` hoặc `:`
+*   **SAI:** `&infty;`, `\&infty;` hoặc `inf`  ->   **ĐÚNG:** `\infty`
+
+--- QUY TẮC BẮT BUỘC VỀ VẼ HÌNH (CỰC KỲ QUAN TRỌNG) ---
+5. **LỆNH CẤM TUYỆT ĐỐI VỀ HÌNH ẢNH GIẢ:** Cấm tuyệt đối việc viết các cụm từ tham chiếu đến hình ảnh mà không thực sự tạo ra hình ảnh bằng mã.
+    *   **TUYỆT ĐỐI KHÔNG VIẾT:** "Quan sát hình vẽ bên dưới", "Cho hình vẽ sau", "Như hình bên", "Xem hình vẽ", "[Hình vẽ]", "[Image]" hoặc bất kỳ cụm từ nào tương tự NẾU BẠN KHÔNG KÈM THEO mã shortcode (`DT[...]`, `BBT[...]`, `[HHKG][...]`, etc.) hoặc mã `<TIKZ>...</TIKZ>` ngay sau đó.
+    *   **HẬU QUẢ:** Vi phạm quy tắc này sẽ làm cho câu hỏi trở nên vô nghĩa và không thể sử dụng được. Đây là lỗi nghiêm trọng nhất cần tránh.
+    *   **QUY TRÌNH ĐÚNG:** Nếu một câu hỏi cần hình vẽ, BẠN PHẢI tạo mã cho hình vẽ đó.
+
+6. **TUYỆT ĐỐI KHÔNG ĐẶT SHORTCODE TRONG DẤU ĐÔ LA ($):** Các mã shortcode như `[HHP]...`, `DT[...]`, `BBT[...]`, `[HHKG]...`, v.v. là các lệnh đặc biệt, không phải công thức toán học. Cấm tuyệt đối việc viết `$[HHP]$[TG]$[A]$[B]$[C]$` hay `$[DT][B1][2][-1]$`. Chúng phải được viết trần, không có dấu $.
+
+7. **PHÂN BIỆT RÕ RÀNG 5 LOẠI MÃ HÌNH:**
+    a) **ĐỒ THỊ HÀM SỐ & BẢNG BIẾN THIÊN:** PHẢI dùng mã shortcode. Cú pháp: `DT[...]` hoặc `BBT[...]`.
+    b) **HÌNH HỌC KHÔNG GIAN (MẪU CÓ SẴN):** Nếu hình thuộc 19 mẫu có sẵn, PHẢI dùng mã shortcode. Cú pháp: `[HHKG][TÊN_ĐỈNH][MÃ_SỐ]`.
+    c) **BIỂU DIỄN TẬP HỢP SỐ TRÊN TRỤC SỐ:** PHẢI dùng mã shortcode. Cú pháp: `[KHOANG|DOAN|NUA_KHOANG][a][b][MÃ_SỐ]`.
+    d) **BIỂU DIỄN MIỀN NGHIỆM BPT:** Dùng shortcode `[BPT][a][b][c][LOẠI]` cho MỘT bất phương trình.
+    e) **HÌNH HỌC KHÁC (Tùy chỉnh) & HỆ BPT:** PHẢI dùng mã TikZ và đặt trong thẻ <TIKZ>...</TIKZ>.
+
+8. **QUY TẮC CHO ĐỒ THỊ & BẢNG BIẾN THIÊN (Dùng Shortcode `DT`/`BBT`):**
+    * **CÚ PHÁP:** `DT[LOẠI_HÀM][a][b][c]...` (Đồ thị) hoặc `BBT[LOẠI_HÀM][a][b][c]...` (Bảng biến thiên).
+    * **QUY ƯỚC MÃ `LOẠI_HÀM`:**
+        * `B1`: Hàm bậc nhất $y=ax+b$. Ví dụ: Cho đồ thị hàm số $y=2x-1$, viết: `DT[B1][2][-1]` và ví dụ `BBT[B1][2][-1]`
+        * `B2`: Hàm bậc hai $y=ax^2+bx+c$. Ví dụ: Cho đồ thị hàm số $y=x^2-2x+1$, viết: `DT[B2][1][-2][1]` và ví dụ `BBT[B2][1][-2][1]`
+        * `B3`: Hàm bậc ba $y=ax^3+bx^2+cx+d$. Ví dụ: Lập bảng biến thiên của $y=-x^3+2$, viết: `BBT[B3][-1][0][0][2]`
+        * `B4`: Hàm bậc bốn trùng phương $y=ax^4+bx^2+c$. Ví dụ: `DT[B4][1][-4][0]`
+        * `PT11`: Hàm phân thức $y=\dfrac{ax+b}{cx+d}$. Ví dụ: `BBT[PT11][2][1][1][-1]`
+        * `PT21`: Hàm phân thức $y=\dfrac{ax^2+bx+c}{dx+e}$. Ví dụ: `DT[PT21][1][-3][2][1][1]` và `BBT[PT21][1][-3][2][1][1]`
+
+9. **QUY TẮC CHO ĐỒ THỊ HÀM SỐ LƯỢNG GIÁC (Dùng Shortcode `LG_...`):**
+    * Dùng khi câu hỏi cần đồ thị của hàm số lượng giác dạng $y = a \cdot f(bx+c) + d$.
+    * **CÚ PHÁP TUYỆT ĐỐI:** Toàn bộ shortcode PHẢI được bao bọc bởi một cặp dấu ngoặc vuông `[]` ở ngoài cùng.
+      * **ĐÚNG:** `[MÃ_HÀM][a][b][c][d]`
+      * **SAI:** `MÃ_HÀM[a][b][c][d]` (Thiếu ngoặc vuông ngoài cùng)
+    * **[a], [b], [d]:** là các hệ số số thực.
+    * **[c]:** là hệ số pha, có thể là số thực hoặc biểu thức chứa `pi` (ví dụ: `pi/2`).
+    * **QUY ƯỚC MÃ HÀM:**
+        * `LG_SIN`: Cho hàm số sin. Ví dụ ĐÚNG: `[LG_SIN][2][1][pi/2][1]`. Ví dụ SAI: `LG_SIN[2][1][pi/2][1]`.
+        * `LG_COS`: Cho hàm số cos. Ví dụ ĐÚNG: `[LG_COS][1][2][0][0]`.
+        * `LG_TAN`: Cho hàm số tan.
+        * `LG_COTANG`: Cho hàm số cot.
+    * **LỆNH CẤM:** Cấm tuyệt đối việc mô tả bằng chữ. PHẢI sinh mã shortcode đúng cú pháp đã chỉ định.
+
+10. **QUY TẮC CHO HÌNH HỌC KHÔNG GIAN (Dùng Shortcode `HHKG`):**
+    * Dùng khi câu hỏi cần một hình không gian tiêu chuẩn đã được định nghĩa sẵn.
+    * **CÚ PHÁP:** `[HHKG][TÊN_ĐỈNH][MÃ_SỐ]`. Trong đó, **[TÊN_ĐỈNH]** là tên các đỉnh của hình được nêu trong câu hỏi (ví dụ: S.ABC, ABCD, ABC.A'B'C').
+    * **VÍ DỤ:**
+        * Câu hỏi "Cho hình chóp S.ABC có đường cao SA...", viết: `[HHKG][S.ABC][2]`.
+        * Câu hỏi "Cho tứ diện A.BCD...", viết: `[HHKG][ABCD][1]`.
+        * Câu hỏi "Cho hình lập phương ABCD.A'B'C'D'...", viết: `[HHKG][ABCD.A'B'C'D'][14]`.
+    * **DANH SÁCH MÃ SỐ VÀ MÔ TẢ:**
+        * 1: Tứ diện cơ bản
+        * 2: S.ABC có đường cao h = SA
+        * 3: S.ABC đều
+        * 4: S.ABC có SBC đứng (vuông góc đáy)
+        * 5: Chóp S.ABCD có h = SA
+        * 6: Hình chóp tứ giác đều S.ABCD
+        * 7: S.ABCD có SAB vuông góc mặt đáy
+        * 8: Lăng trụ đứng tam giác
+        * 9: Lăng trụ xiên tam giác
+        * 10: Hình hộp chữ nhật
+        * 11: Hình nón cơ bản
+        * 12: Hình trụ cơ bản
+        * 13: Hình cầu cơ bản
+        * 14: Hình hộp
+        * 15: Hình chóp có đáy là tứ giác có cặp cạnh đối không song song
+        * 16: Hình chóp có đáy là hình thang
+        * 17: Hình chóp có đáy là hình thang vuông
+        * 18: Hình chóp có đáy là tứ giác
+        * 19: Hình Lập phương
+
+11. **QUY TẮC VẼ TẬP HỢP SỐ THỰC (Dùng Shortcode `KHOANG`, `DOAN`, `NUA_KHOANG`):**
+    * Dùng khi câu hỏi yêu cầu biểu diễn một khoảng, đoạn hoặc nửa khoảng trên trục số.
+    * **CÚ PHÁP:** `[LOẠI_TẬP_HỢP][a][b][MÃ_SỐ]`.
+    * **[LOẠI_TẬP_HỢP]:** `KHOANG`, `DOAN`, hoặc `NUA_KHOANG`.
+    * **[a], [b]:** Là các giá trị số của hai đầu mút. Nếu là vô cực, hãy để trống.
+    * **VÍ DỤ:**
+        * "Biểu diễn khoảng $(2; 5)$ trên trục số", viết: `[KHOANG][2][5][1]`.
+        * "Biểu diễn đoạn `[-1; 3]` trên trục số", viết: `[DOAN][-1][3][4]`.
+        * "Biểu diễn nửa khoảng `[0; +\infty)`", viết: `[NUA_KHOANG][0][][7]`.
+    * **DANH SÁCH MÃ SỐ:**
+        * 1: Khoảng `(a; b)`
+        * 2: Khoảng `(a; +\infty)`
+        * 3: Khoảng `(-\infty; b)`
+        * 4: Đoạn `[a; b]`
+        * 5: Nửa khoảng `[a; b)`
+        * 6: Nửa khoảng `(a; b]`
+        * 7: Nửa khoảng `[a; +\infty)`
+        * 8: Nửa khoảng `(-\infty; b]`
+
+12. **QUY TẮC BIỂU DIỄN MIỀN NGHIỆM BPT (Dùng Shortcode `BPT`):**
+    * Dùng khi câu hỏi yêu cầu biểu diễn miền nghiệm của **MỘT** bất phương trình bậc nhất hai ẩn.
+    * **CÚ PHÁP:** `[BPT][a][b][c][LOẠI]`.
+    * **[a], [b], [c]:** là các hệ số của BPT `ax + by ? c`.
+    * **[LOẠI]:**
+        * `L1`: $ax+by \le c$
+        * `L2`: $ax+by < c$
+        * `L3`: $ax+by > c$
+        * `L4`: $ax+by \ge c$
+    * **VÍ DỤ:** "Biểu diễn miền nghiệm của $x - 2y < 4$", viết: `[BPT][1][-2][4][L2]`.
+
+13. **QUY TẮC CHO HÌNH HỌC TÙY CHỈNH (Dùng TikZ):**
+    * **KHI NÀO DÙNG:** Áp dụng cho MỌI hình vẽ không thuộc các mã shortcode đã định nghĩa (HHKG, DT, BBT, LG, HHP, DTLG, BXD, BPT, KHOANG...). Ví dụ: hình học phẳng phức tạp, đồ thị không chuẩn, sơ đồ Venn, hệ bất phương trình, hình không gian không có trong mẫu, v.v.
+    * **CÚ PHÁP BẮT BUỘC:** Toàn bộ mã TikZ để vẽ hình PHẢI được đặt bên trong một cặp thẻ đặc biệt: <TIKZ>...</TIKZ>.
+    * **YÊU CẦU CHẤT LƯỢNG MÃ TIKZ:**
+        * Mã phải đầy đủ và có thể biên dịch được, nằm trong môi trường `\begin{tikzpicture} ... \end{tikzpicture}`.
+        * Sử dụng các thư viện TikZ cần thiết (ví dụ: `\usetikzlibrary{calc, intersections, angles, quotes}`).
+        * Đảm bảo tất cả các điểm được định nghĩa trước khi sử dụng.
+        * Ghi nhãn các điểm, góc và các yếu tố quan trọng một cách rõ ràng.
+        * TUYỆT ĐỐI KHÔNG mô tả hình bằng chữ (ví dụ: "[Vẽ hình tam giác ABC]"). PHẢI tạo mã TikZ.
+    * **VÍ DỤ (Hệ BPT):** Để vẽ miền nghiệm của `{ x >= 0, y >= 0, x+y <= 2 }`, bạn PHẢI viết mã TikZ đầy đủ trong thẻ <TIKZ>, ví dụ: <TIKZ>\begin{tikzpicture}...\addplot[fill=cyan, fill opacity=0.4] coordinates {(0,0) (2,0) (0,2)} -- cycle;...\end{tikzpicture}</TIKZ>
+    * **VÍ DỤ (Góc trong tam giác):** Để vẽ và ghi nhãn góc trong của tam giác, hãy dùng thư viện `angles` và `quotes`.
+<TIKZ>\begin{tikzpicture}
+\usetikzlibrary{angles,quotes}
+\coordinate (A) at (0,3);
+\coordinate (B) at (-2,0);
+\coordinate (C) at (2,0);
+\draw (C) -- (B) -- (A) -- cycle;
+\node at (A) [above] {$A$};
+\node at (B) [below left] {$B$};
+\node at (C) [below right] {$C$};
+\pic[draw, angle radius=5mm, "{$40^{\circ}$}", angle eccentricity=1.2] {angle = B--A--C};
+\pic[draw, angle radius=5mm, "{$60^{\circ}$}", angle eccentricity=1.2] {angle = C--B--A};
+\pic[draw, angle radius=5mm, "{$80^{\circ}$}", angle eccentricity=1.2] {angle = A--C--B};
+\end{tikzpicture}</TIKZ>
+
+14. **QUY TẮC CHO HÌNH HỌC PHẲNG (HHP), ĐƯỜNG TRÒN LƯỢNG GIÁC (DTLG) VÀ BẢNG XÉT DẤU (BXD):**
+    * **HÌNH HỌC PHẲNG (HHP):**
+        * Cú pháp: `[HHP][MÃ_HÌNH][ĐỈNH_1][ĐỈNH_2]...` hoặc `HHP[MÃ_HÌNH][ĐỈNH_1]...`. Ví dụ: `[HHP][TG][A][B][C]`.
+        * **Mã Hình HHP:**
+            * `TG`: Tam giác thường.
+            * `HV`: Hình vuông.
+            * `HBH`: Hình bình hành.
+            * `HCN`: Hình chữ nhật.
+            * `HTHANG`: Hình thang.
+            * `TGD`: Tam giác đều.
+            * `TGVC_TAI_A`: Tam giác vuông cân tại đỉnh đầu tiên.
+            * `TGVTAI_A`: Tam giác vuông tại đỉnh đầu tiên.
+            * `ELIP`: Hình elip (không cần đỉnh).
+    * **ĐƯỜNG TRÒN LƯỢNG GIÁC (DTLG):**
+        * Dùng để biểu diễn góc trên đường tròn đơn vị.
+        * Cú pháp: `[DTLG][góc]`. Trong đó `góc` là số đo bằng độ.
+        * Ví dụ: `[DTLG][45]` để vẽ góc $45^\circ$.
+    * **BẢNG XÉT DẤU (BXD):**
+        * Cú pháp: `BXD[B3][a][b][c][d]`.
+        * Mục đích: Vẽ bảng xét dấu cho đạo hàm của hàm bậc ba $y=ax^3+bx^2+cx+d$.
+        * Ví dụ: `BXD[B3][1][0][-3][1]`
+
+--- QUY TẮC BẮT BUỘC VỀ VẼ BẢNG (TABLES) ---
+15. **MỌI BẢNG PHẢI CÓ ĐƯỜNG KẺ:** Tất cả các bảng BẮT BUỘC phải có đường kẻ ngang đầy đủ giữa các hàng (dùng `\hline`) và đường kẻ dọc giữa các cột (dùng ký tự `|` trong định nghĩa cột, ví dụ: `{|c|c|}`). Bảng không có đường kẻ là không hợp lệ và sẽ bị từ chối.
+
+16. **DÙNG MÔI TRƯỜNG BẢNG BIỂU (QUAN TRỌNG):** Khi câu hỏi yêu cầu hoặc nội dung có một bảng dữ liệu (ví dụ: bảng tần số dạng cột), BẮT BUỘC phải sử dụng môi trường `tabular` hoặc `array` của LaTeX. Toàn bộ khối bảng (từ `\begin{...}` đến `\end{...}`) PHẢI được đặt bên trong cặp dấu `$$...$$ ` để hiển thị đúng và được căn giữa. TUYỆT ĐỐI KHÔNG dùng môi trường `\begin{center}...end{center}` cho bảng.
+    * **VÍ DỤ MẪU (Bảng tần số dạng cột):**
+      $$
+      \begin{array}{|c|c|}
+      \hline
+      \textbf{Lớp ghép nhóm} & \textbf{Tần số} \\
+      \hline
+      [18; 25) & 7 \\
+      \hline
+      [25; 32) & 8 \\
+      \hline
+      [32; 39) & 6 \\
+      \hline
+      [39; 46) & 4 \\
+      \hline
+      \textbf{Tổng} & 25 \\
+      \hline
+      \end{array}
+      $$
+    * **LƯU Ý:**
+        * Toàn bộ khối `\begin{array} ... \end{array}` hoặc `\begin{tabular} ... \end{tabular}` PHẢI nằm trong `$$...$$ `.
+        * Các giá trị số hoặc biểu thức toán học trong các ô của bảng vẫn PHẢI tuân thủ quy tắc 1 (dùng $...$). Ví dụ: `$\dfrac{1}{2}$` hoặc `$n=25$`.
+        * Dùng `\hline` để kẻ dòng ngang.
+        * Dùng `|` trong định dạng cột (ví dụ: `{|c|c|c|}`) để kẻ dòng dọc.
+        * Dùng `\textbf{...}` để in đậm tiêu đề.
+        * Dùng `\\ ` để xuống dòng trong bảng.
+
+17. **BẢNG TẦN SỐ DẠNG NGANG:** Khi câu hỏi yêu cầu tạo bảng thống kê hoặc bảng tần số theo chiều ngang (các nhóm giá trị/dữ liệu ở hàng trên, tần số/số liệu tương ứng ở hàng dưới), BẮT BUỘC phải dùng định dạng mẫu sau. Lưu ý cột tiêu đề (cột đầu tiên) thường được căn lề trái (`l`) và nội dung chữ phải dùng lệnh `\text{...}`.
+    * **VÍ DỤ MẪU (Bảng tần số dạng ngang):**
+      $$
+      \begin{array}{|l|c|c|c|c|}
+      \hline
+      \text{Thời gian (phút)} & [25;30) & [30;35) & [35;40) & [40;45) \\
+      \hline
+      \text{Số học sinh} & 8 & 16 & 4 & 2 \\
+      \hline
+      \end{array}
+      $$
+
+18. **QUY TẮC VẼ GÓC NGOÀI (CHỈ ÁP DỤNG KHI ĐỀ BÀI YÊU CẦU RÕ):**
+    1. Chỉ sử dụng quy tắc này khi đề bài yêu cầu vẽ **'góc ngoài'**.
+    2. Góc ngoài tại đỉnh C của tam giác ABC là góc kề bù với góc trong ACB.
+    3. **Cách vẽ DUY NHẤT:** Kéo dài cạnh BC tới điểm D. Góc ngoài là góc ACD.
+    4. **Lệnh vẽ DUY NHẤT:** Dùng `\pic[..., "{$...$}"]{angle=D--C--A}`. Thứ tự `D--C--A` là bắt buộc để cung góc quay đúng (ngược chiều kim đồng hồ).
+    5. **LỆNH CẤM:** TUYỆT ĐỐI KHÔNG được áp dụng logic vẽ 'góc ngoài' này cho các góc trong thông thường. TUYỆT ĐỐI KHÔNG dùng lệnh `\tkzLabelAngles` cho góc ngoài.
+
+19. **QUY TẮC VẼ GÓC TRONG (MẶC ĐỊNH CHO MỌI GÓC KHÔNG PHẢI 'GÓC NGOÀI'):**
+    1. Khi vẽ một góc thông thường của đa giác (ví dụ $\widehat{B}$), nó được hiểu là góc **TRONG**.
+    2. Để cung góc luôn nằm **BÊN TRONG** đa giác, thứ tự các điểm trong lệnh `angle=P1--V--P2` phải tạo ra một vòng quay **ngược chiều kim đồng hồ**.
+    3. **QUY TẮC GHI NHỚ CHO TAM GIÁC (với các đỉnh A, B, C xếp ngược chiều kim đồng hồ):**
+        * Góc trong tại A: `angle=B--A--C`
+        * Góc trong tại B: `angle=C--B--A`
+        * Góc trong tại C: `angle=A--C--B`
+    4. AI phải luôn kiểm tra để đảm bảo quy tắc vòng quay ngược chiều kim đồng hồ được tuân thủ cho MỌI góc trong.
+
+20. **QUY TẮC THAM KHẢO: CÁC LỆNH TIKZ HÌNH HỌC PHẲNG HỮU ÍCH:** Khi cần vẽ hình học phẳng tùy chỉnh (không thuộc shortcode HHP), hãy tham khảo các lệnh sau đây để đánh dấu các yếu tố và tô màu miền. LUÔN dùng thẻ <TIKZ>.
+    *   **ĐÁNH DẤU ĐOẠN THẲNG BẰNG NHAU:**
+        `\tkzMarkSegments[mark=||](A,B A,C)`
+    *   **ĐÁNH DẤU GÓC VUÔNG:**
+        `\tkzMarkRightAngles[size=0.17](A,B,C)`
+    *   **ĐÁNH DẤU GÓC (KHÔNG VUÔNG):**
+        `\tkzMarkAngles[size=0.7cm,arc=ll,mark=|](A,B,C)`
+    *   **GÁN NHÃN CHO GÓC (BÊN TRONG CUNG TRÒN):**
+        `\tkzLabelAngles[pos=0.6](A,B,C){$\alpha$}` (Lưu ý: `pos` nhỏ hơn 1 để nhãn nằm trong cung tròn).
+    *   **TÔ MÀU MIỀN ĐA GIÁC:**
+        `\tkzFillPolygon[color=green!80, fill opacity=0.5](A,B,C)`
+    *   **TÔ MIỀN GIỚI HẠN BỞI ĐỒ THỊ (VÍ DỤ TÍCH PHÂN):**
+        `\fill[pattern=north east lines,opacity=0.8] plot[domain=-1:3](\x,{(\x)^3-3*(\x)^2-\x+3})--cycle;`
+`;
+                
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                quizData[index].explanation = explanationText;
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                quizData[index].rendered_explanation = htmlContent;
+                
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+
+            } catch (error) {
+                console.error("Error getting AI explanation:", error);
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi khi tạo giải thích.</p>';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Ẩn giải thích';
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) return "Không thể tạo nhận xét do thiếu API key.";
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const performanceSummary = quizData.map((item, index) => {
+                    const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                    if (!detail) return `- Câu ${index + 1}: Không có dữ liệu.`;
+
+                    const questionText = stripHtml(item.rendered_question || '').substring(0, 150);
+                    let resultText = '';
+                    
+                    const type = mapType(item.type);
+                    if (type === 'true-false' && detail.details) {
+                        const correctCount = detail.details.filter(d => d.isCorrect).length;
+                        resultText = `Đúng ${correctCount}/4 ý`;
+                    } else if (detail.isCorrect === true) {
+                        resultText = 'Đúng';
+                    } else if (detail.isCorrect === false) {
+                        resultText = 'Sai';
+                    } else {
+                        resultText = 'Tự luận (chưa chấm)';
+                    }
+
+                    return `- Câu ${index + 1} (Nội dung: "${questionText}..."): Kết quả - ${resultText}.`;
+                }).join('\n');
+
+
+                const prompt = `Bạn là một giáo viên AI giàu kinh nghiệm, tận tâm và luôn đưa ra những nhận xét mang tính xây dựng. Nhiệm vụ của bạn là phân tích kết quả bài làm của một học sinh và đưa ra một nhận xét ngắn gọn (khoảng 4-5 câu) về năng lực của học sinh đó.
+
+                **NGUYÊN TẮC BẮT BUỘC:**
+                1.  **CỤ THỂ, KHÔNG CHUNG CHUNG:** Nhận xét của bạn PHẢI dựa trên kết quả chi tiết của bài kiểm tra được cung cấp. TUYỆT ĐỐI KHÔNG đưa ra những lời khuyên sáo rỗng.
+                2.  **TRÍCH DẪN KIẾN THỨC:** Hãy đề cập đến nội dung cụ thể của câu hỏi mà học sinh làm đúng hoặc sai để minh họa cho nhận xét của bạn.
+                3.  **GIỌNG VĂN TÍCH CỰC:** Luôn sử dụng giọng văn thân thiện, khích lệ, tập trung vào sự tiến bộ.
+
+                **CẤU TRÚC NHẬN XÉT:**
+                1.  **Mở đầu:** Bắt đầu bằng một câu động viên chung về nỗ lực của học sinh.
+                2.  **Điểm mạnh:** Chỉ ra (các) mảng kiến thức hoặc dạng câu hỏi mà học sinh làm tốt. Ví dụ: "Em đã làm rất tốt các câu hỏi về [tên chủ đề], cho thấy em nắm vững kiến thức về [khái niệm cụ thể]."
+                3.  **Điểm cần cải thiện:** Nhẹ nhàng chỉ ra (các) câu hỏi hoặc khái niệm cụ thể mà học sinh còn nhầm lẫn. Ví dụ: "Ở câu [số], có vẻ em còn hơi nhầm lẫn giữa [khái niệm A] và [khái niệm B]. Em hãy xem lại phần [tên kiến thức] nhé."
+                4.  **Gợi ý hành động:** Đưa ra lời khuyên cụ thể để cải thiện. Ví dụ: "Để củng cố phần này, em có thể đọc lại bài [tên bài học] và làm thêm các bài tập về [dạng bài]."
+                5.  **Kết luận:** Kết thúc bằng một câu khích lệ, tạo động lực cho lần sau.
+
+                ---
+                **DỮ LIỆU BÀI LÀM CỦA HỌC SINH:**
+                - **Điểm số:** ${score} / 10
+                - **Chi tiết từng câu:**
+                ${performanceSummary}
+                ---
+                Bây giờ, hãy viết nhận xét của bạn.
+                `;
+
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                return response.text || "Không thể tạo nhận xét.";
+
+            } catch (error) {
+                console.error("Error generating AI assessment:", error);
+                return "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+            }
+        }
+    </script>
+</body>
+</html>
+    
