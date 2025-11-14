@@ -1,0 +1,661 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIỂM TRA 15 PHÚT LẦN 2 -HKI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\(', '\)']], displayMath: [['$$', '$$'], ['\[', '\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">KIỂM TRA 15 PHÚT LẦN 2 -HKI</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">S28AFU</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6">
+                <h2 class="text-2xl font-bold text-gray-800">KIỂM TRA 15 PHÚT LẦN 2 -HKI</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "AIzaSyAzvr2Py2_mr5Z4R3YWXi-dyO1ufA2paas";
+        const quizData = [{"type":"multiple-choice","question":"<strong></strong> Vectơ là gì?","main_question":null,"questionImage":null,"options":["</strong> Đoạn thẳng có hướng.","</strong> Đoạn thẳng.","</strong> Tia.","</strong> Đường thẳng."],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":1,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Vectơ là gì?","rendered_options":["</strong> Đoạn thẳng có hướng.","</strong> Đoạn thẳng.","</strong> Tia.","</strong> Đường thẳng."]},{"type":"multiple-choice","question":"<strong></strong> Cho hình vuông $\\text{ABCD}$.<br>Khẳng định nào sau đây là đúng về hai vectơ cùng phương?","main_question":null,"questionImage":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXgAAAFwCAYAAACyzmDLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAHYcAAB2HAY/l8WUAAAwkSURBVHhe7d2/kSzVGcbhDgADVx6OfBKgwJUsQqAUgIoQMPEIgRAIgRAIgRAIAdV3tUfVNXf/vKd370qv5nmqTt1ld2Z7rV+f+bpnOI6nfXEcxy8b66fjOL47juPL218EwGXfPPT1j+M4fjv19tfjOP48juOHm8f//NDiF80v/vb0i+YA88T5/nnNY+Ygvz88bg4AwHWzWZ6YT3enqU9tnif23z98Pf9Og2eDHpuDzJMm9C9ZB5jYbx0EgA+mo2vH/lTYz+YEMGvaO8/Zsnbmty8FnjKPS08IAPzb5w878tXP+e/EPG6esz1BmbPHeuKMYlLrpLDzHIB7dt6Fp3Ff1okhmr8va+QyLxd2DrgONuMdAJ53bm0ylrm1Jidbo/Gd+fvZOtj8sQA8bW5WmVbujMJvzbRkJidbdufvy7xMWKOdnZ0/wL1ZdypOb6/2cpq7NTG5On8f6+XG9ksGgDsybV2t3N1In02v55VA7Or8fayLBbMAeNwag09n33UzfHX+PtZzt2dCAHfifHvj1njlLVydv88fvS4YvPsfDVDifK1yvRv1Xbxm/n6eKe0+F+BenK9VvmsrXzN//6/NlACKnK9Vvmsrr87fz+OZ3dEOwD1Zbwid9RpbH08wrs7fz29w2t35A9yT86TkqvVpvrGr8/f1bqxZO88DuEfn65VXPp5gzLRl67lX5u/zuKc+gB6Aj51vk7xyF8327n3szt/nj1zP2T4YwB27+vHqs2vf+UjhD+bBO/P3Och8tOXs9rc+phKAD6ahOyPxS3EfyX2Z80tn3r7+d1JzoHe9xQfg/8j0c22snxvVTHvnzptZcdxn57124Svua81Bz2tdRJ3Hzw5/a7gPwJPWuGb1df1/ryf6cyvkbKa3PlBsmbNBugD4NKax6+LpBH0mJbNjn820/gIAAAAAAAAAAAAAAAC8ha+P4/ibZVlW2frsNmZ87J8Pb9X9yrIsq2T9eBzHX29jxscm8H+5/SbA/7B/CHxG4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/ChCfy3x3F8ZVmWVbJ+FPjM18dx/N2yLKtsfXYbMwAAAAAAAAAAAAAAAADe0OfHcfx+HMeXtz8AoNtPx3H8eRzH97c/ACDy3cNGeVp6Xn88sub789hfHp73yXxz+kN+uP0hANtW6H9+mJA8Zj6YcQK/Yv/F7QPewjrArNnJA3DdBH3t0ifiL1kN/u32B681I5nZta+zzRwIgOvOU5FkVz4ngZ3HR+YsM2eM+ffXh18+/wJw3Wyad3bk58AnO/7IjGPWcH/mRPPL52UFANetkUs68l4nhDfbwc9LiIn6su6iEXiA63bn759kgjJnmPM97+czyFNXfAF43u78fW2u3+wumnVh9ew8A/JmJ4Br0vn7bKRX3Gfn/iZxP19YPTufdeZrAPY9N3+f7s4GejbU0+FZs+G+7fFlc3Z57F1Tc/ZYgX/s5wA87zx/n135XOc8r4n/RH1+Pl+/ya59mTPH+cLq2fxhK/A+rgBgXzp/n96uUc5z73Tdcnth9dY689zO5wF4WTp/X9Y459V3z8zMZwI+v/CptQLv3awA+56bvz/mTUbj6z7Lefnw3FqzoVefTQDuzO797+Mc+MuTk6curN5a72ad+zEByKXz97NXf5LvHOipC6u3vJsV4Jrd+fs4v8H00u3pL11YPfNuVoBrdufv55HOzknhPx57x+pzvJsVYN+V+fs6IcxIfHtDPYGeA6azoOHdrAD7dj7Pfdq84j4797i1cxaYB89LhHU2ma+TA87z1kXWWXMnzXx/+8wCcAfWxw5MO9enQU5353uPrZmoTGPnMbO2P6JgHWjd1z5fz3ppJnR7P/z5uekFWoB7MoFenUzWdHVG5tPplzbdx78A1N0rTk7PsKAAAAAASUVORK5CYII=","options":["</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{BC}}$ cùng phương.","</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{AD}}$ cùng phương.","</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{DC}}$ cùng phương.","</strong> Vectơ $\\overrightarrow{\\text{AC}}$ và vectơ $\\overrightarrow{\\text{BD}}$ cùng phương."],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":2,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hình vuông $\\text{ABCD}$.<br>Khẳng định nào sau đây là đúng về hai vectơ cùng phương?<br><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXgAAAFwCAYAAACyzmDLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAHYcAAB2HAY/l8WUAAAwkSURBVHhe7d2/kSzVGcbhDgADVx6OfBKgwJUsQqAUgIoQMPEIgRAIgRAIgRAIAdV3tUfVNXf/vKd370qv5nmqTt1ld2Z7rV+f+bpnOI6nfXEcxy8b66fjOL47juPL218EwGXfPPT1j+M4fjv19tfjOP48juOHm8f//NDiF80v/vb0i+YA88T5/nnNY+Ygvz88bg4AwHWzWZ6YT3enqU9tnif23z98Pf9Og2eDHpuDzJMm9C9ZB5jYbx0EgA+mo2vH/lTYz+YEMGvaO8/Zsnbmty8FnjKPS08IAPzb5w878tXP+e/EPG6esz1BmbPHeuKMYlLrpLDzHIB7dt6Fp3Ff1okhmr8va+QyLxd2DrgONuMdAJ53bm0ylrm1Jidbo/Gd+fvZOtj8sQA8bW5WmVbujMJvzbRkJidbdufvy7xMWKOdnZ0/wL1ZdypOb6/2cpq7NTG5On8f6+XG9ksGgDsybV2t3N1In02v55VA7Or8fayLBbMAeNwag09n33UzfHX+PtZzt2dCAHfifHvj1njlLVydv88fvS4YvPsfDVDifK1yvRv1Xbxm/n6eKe0+F+BenK9VvmsrXzN//6/NlACKnK9Vvmsrr87fz+OZ3dEOwD1Zbwid9RpbH08wrs7fz29w2t35A9yT86TkqvVpvrGr8/f1bqxZO88DuEfn65VXPp5gzLRl67lX5u/zuKc+gB6Aj51vk7xyF8327n3szt/nj1zP2T4YwB27+vHqs2vf+UjhD+bBO/P3Och8tOXs9rc+phKAD6ahOyPxS3EfyX2Z80tn3r7+d1JzoHe9xQfg/8j0c22snxvVTHvnzptZcdxn57124Svua81Bz2tdRJ3Hzw5/a7gPwJPWuGb1df1/ryf6cyvkbKa3PlBsmbNBugD4NKax6+LpBH0mJbNjn820/gIAAAAAAAAAAAAAAAC8ha+P4/ibZVlW2frsNmZ87J8Pb9X9yrIsq2T9eBzHX29jxscm8H+5/SbA/7B/CHxG4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/AhgQfaCHxI4IE2Ah8SeKCNwIcEHmgj8CGBB9oIfEjggTYCHxJ4oI3AhwQeaCPwIYEH2gh8SOCBNgIfEnigjcCHBB5oI/ChCfy3x3F8ZVmWVbJ+FPjM18dx/N2yLKtsfXYbMwAAAAAAAAAAAAAAAADe0OfHcfx+HMeXtz8AoNtPx3H8eRzH97c/ACDy3cNGeVp6Xn88sub789hfHp73yXxz+kN+uP0hANtW6H9+mJA8Zj6YcQK/Yv/F7QPewjrArNnJA3DdBH3t0ifiL1kN/u32B681I5nZta+zzRwIgOvOU5FkVz4ngZ3HR+YsM2eM+ffXh18+/wJw3Wyad3bk58AnO/7IjGPWcH/mRPPL52UFANetkUs68l4nhDfbwc9LiIn6su6iEXiA63bn759kgjJnmPM97+czyFNXfAF43u78fW2u3+wumnVh9ew8A/JmJ4Br0vn7bKRX3Gfn/iZxP19YPTufdeZrAPY9N3+f7s4GejbU0+FZs+G+7fFlc3Z57F1Tc/ZYgX/s5wA87zx/n135XOc8r4n/RH1+Pl+/ya59mTPH+cLq2fxhK/A+rgBgXzp/n96uUc5z73Tdcnth9dY689zO5wF4WTp/X9Y459V3z8zMZwI+v/CptQLv3awA+56bvz/mTUbj6z7Lefnw3FqzoVefTQDuzO797+Mc+MuTk6curN5a72ad+zEByKXz97NXf5LvHOipC6u3vJsV4Jrd+fs4v8H00u3pL11YPfNuVoBrdufv55HOzknhPx57x+pzvJsVYN+V+fs6IcxIfHtDPYGeA6azoOHdrAD7dj7Pfdq84j4797i1cxaYB89LhHU2ma+TA87z1kXWWXMnzXx/+8wCcAfWxw5MO9enQU5353uPrZmoTGPnMbO2P6JgHWjd1z5fz3ppJnR7P/z5uekFWoB7MoFenUzWdHVG5tPplzbdx78A1N0rTk7PsKAAAAAASUVORK5CYII=\" class=\"question-image\" style=\"max-width: 100%; height: auto; display: block; margin: 8px auto;\">","rendered_options":["</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{BC}}$ cùng phương.","</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{AD}}$ cùng phương.","</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{DC}}$ cùng phương.","</strong> Vectơ $\\overrightarrow{\\text{AC}}$ và vectơ $\\overrightarrow{\\text{BD}}$ cùng phương."]},{"type":"multiple-choice","question":"<strong></strong> Cho hình bình hành $\\text{ABCD}$.<br>Cặp vectơ nào sau đây cùng hướng?","main_question":null,"questionImage":"data:image/png;base64,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","options":["</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{BA}}$.","</strong> Vectơ $\\overrightarrow{\\text{AD}}$ và vectơ $\\overrightarrow{\\text{DA}}$.","</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{CD}}$.","</strong> Vectơ $\\overrightarrow{\\text{AD}}$ và vectơ $\\overrightarrow{\\text{BC}}$."],"optionsImage":[null,null,null,null],"correctAnswerIndex":3,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":3,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hình bình hành $\\text{ABCD}$.<br>Cặp vectơ nào sau đây cùng hướng?<br><img src=\"data:image/png;base64,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\" class=\"question-image\" style=\"max-width: 100%; height: auto; display: block; margin: 8px auto;\">","rendered_options":["</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{BA}}$.","</strong> Vectơ $\\overrightarrow{\\text{AD}}$ và vectơ $\\overrightarrow{\\text{DA}}$.","</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{CD}}$.","</strong> Vectơ $\\overrightarrow{\\text{AD}}$ và vectơ $\\overrightarrow{\\text{BC}}$."]},{"type":"multiple-choice","question":"<strong></strong> Cho hình bình hành $\\text{ABCD}$.<br>Cặp vectơ nào sau đây bằng nhau?","main_question":null,"questionImage":"data:image/png;base64,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","options":["</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{CD}}$.","</strong> Vectơ $\\overrightarrow{\\text{BC}}$ và vectơ $\\overrightarrow{\\text{AD}}$.","</strong> Vectơ $\\overrightarrow{\\text{DA}}$ và vectơ $\\overrightarrow{\\text{BC}}$.","</strong> Vectơ $\\overrightarrow{\\text{AC}}$ và vectơ $\\overrightarrow{\\text{BD}}$."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":4,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hình bình hành $\\text{ABCD}$.<br>Cặp vectơ nào sau đây bằng nhau?<br><img src=\"data:image/png;base64,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\" class=\"question-image\" style=\"max-width: 100%; height: auto; display: block; margin: 8px auto;\">","rendered_options":["</strong> Vectơ $\\overrightarrow{\\text{AB}}$ và vectơ $\\overrightarrow{\\text{CD}}$.","</strong> Vectơ $\\overrightarrow{\\text{BC}}$ và vectơ $\\overrightarrow{\\text{AD}}$.","</strong> Vectơ $\\overrightarrow{\\text{DA}}$ và vectơ $\\overrightarrow{\\text{BC}}$.","</strong> Vectơ $\\overrightarrow{\\text{AC}}$ và vectơ $\\overrightarrow{\\text{BD}}$."]},{"type":"multiple-choice","question":"<strong></strong> Cho tam giác $\\text{ABC}$ vuông tại $A$ có $\\text{AB} = 6$ và $\\text{AC} = 8$.<br>Độ dài của vectơ $\\overrightarrow{\\text{BC}}$ là bao nhiêu?","main_question":null,"questionImage":"data:image/png;base64,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","options":["</strong> $6$.","</strong> $8$.","</strong> $10$.","</strong> $14$."],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":5,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho tam giác $\\text{ABC}$ vuông tại $A$ có $\\text{AB} = 6$ và $\\text{AC} = 8$.<br>Độ dài của vectơ $\\overrightarrow{\\text{BC}}$ là bao nhiêu?<br><img src=\"data:image/png;base64,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\" class=\"question-image\" style=\"max-width: 100%; height: auto; display: block; margin: 8px auto;\">","rendered_options":["</strong> $6$.","</strong> $8$.","</strong> $10$.","</strong> $14$."]},{"type":"multiple-choice","question":"<strong></strong> Cho hình chữ nhật $\\text{ABCD}$ có tâm $O$. Mệnh đề nào sau đây sai?","main_question":null,"questionImage":null,"options":["</strong> $\\overrightarrow{\\text{OA}}$ và $\\overrightarrow{\\text{OC}}$ cùng phương.","</strong> $\\overrightarrow{\\text{AB}} = \\overrightarrow{\\text{DC}}$.","</strong> $\\left| \\overrightarrow{\\text{AB}} \\right| = \\left| \\overrightarrow{\\text{CD}} \\right|$.","</strong> $\\overrightarrow{\\text{AD}}$ và $\\overrightarrow{\\text{BC}}$ ngược hướng."],"optionsImage":[null,null,null,null],"correctAnswerIndex":3,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":6,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hình chữ nhật $\\text{ABCD}$ có tâm $O$. Mệnh đề nào sau đây sai?","rendered_options":["</strong> $\\overrightarrow{\\text{OA}}$ và $\\overrightarrow{\\text{OC}}$ cùng phương.","</strong> $\\overrightarrow{\\text{AB}} = \\overrightarrow{\\text{DC}}$.","</strong> $\\left| \\overrightarrow{\\text{AB}} \\right| = \\left| \\overrightarrow{\\text{CD}} \\right|$.","</strong> $\\overrightarrow{\\text{AD}}$ và $\\overrightarrow{\\text{BC}}$ ngược hướng."]},{"type":"multiple-choice","question":"Cho hình bình hành $ABCD$. Theo quy tắc hình bình hành, tổng của hai vectơ $\\overrightarrow{AB}$ và $\\overrightarrow{AD}$ là vectơ nào?","options":["$\\overrightarrow{AC}$","$\\overrightarrow{BD}$","$\\overrightarrow{DA}$","$\\overrightarrow{CB}$"],"correctAnswerIndex":0,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho hình bình hành $ABCD$. Theo quy tắc hình bình hành, tổng của hai vectơ $\\overrightarrow{AB}$ và $\\overrightarrow{AD}$ là vectơ nào?","rendered_options":["$\\overrightarrow{AC}$","$\\overrightarrow{BD}$","$\\overrightarrow{DA}$","$\\overrightarrow{CB}$"]},{"type":"multiple-choice","question":"<strong></strong> Cho ba điểm bất kì $A,B,C$. Đẳng thức nào sau đây đúng?","main_question":null,"questionImage":null,"options":["</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{\\text{CA}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{\\text{AC}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{0}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{\\text{CB}}$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":8,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho ba điểm bất kì $A,B,C$. Đẳng thức nào sau đây đúng?","rendered_options":["</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{\\text{CA}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{\\text{AC}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{0}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{BC}} = \\overrightarrow{\\text{CB}}$"]},{"type":"multiple-choice","question":"<strong></strong> Cho hình bình hành $\\text{ABCD}$. Đẳng thức nào sau đây đúng?","main_question":null,"questionImage":null,"options":["</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{BD}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{DA}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{AC}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{CD}}$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":9,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hình bình hành $\\text{ABCD}$. Đẳng thức nào sau đây đúng?","rendered_options":["</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{BD}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{DA}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{AC}}$","</strong> $\\overrightarrow{\\text{AB}} + \\overrightarrow{\\text{AD}} = \\overrightarrow{\\text{CD}}$"]},{"type":"multiple-choice","question":"<strong></strong> Cho ba điểm $M,N,P$. Biểu thức $\\overrightarrow{\\text{MN}} - \\overrightarrow{\\text{MP}}$ bằng vectơ nào sau đây?","main_question":null,"questionImage":null,"options":["</strong> $\\overrightarrow{\\text{PN}}$","</strong> $\\overrightarrow{\\text{NP}}$","</strong> $\\overrightarrow{\\text{MN}}$","</strong> $\\overrightarrow{\\text{PM}}$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":10,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho ba điểm $M,N,P$. Biểu thức $\\overrightarrow{\\text{MN}} - \\overrightarrow{\\text{MP}}$ bằng vectơ nào sau đây?","rendered_options":["</strong> $\\overrightarrow{\\text{PN}}$","</strong> $\\overrightarrow{\\text{NP}}$","</strong> $\\overrightarrow{\\text{MN}}$","</strong> $\\overrightarrow{\\text{PM}}$"]}];
+        const options = {"timeLimit":15,"retriesAllowed":0,"showAnswers":false,"showExplanation":false,"aiAssessment":false,"scoring":{"mc":10,"tf":0,"sa":0,"essay":0,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxV_S0rNHbOQx-hnjjlQGqdvLBN5GlTog0q8erd1XMpPX7XkuGjIxJnDEPPDJQnpGnf9g/exec";
+        const examCode = "S28AFU";
+
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.getAIExplanation = getAIExplanation;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) {
+                    acc[type] = [];
+                }
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' }
+            };
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let questionCounter = 0;
+
+            partOrder.forEach(partType => {
+                const questionsInPart = groupedQuestions[partType];
+                if (!questionsInPart || questionsInPart.length === 0) return;
+
+                if (groupInfo[partType]) {
+                    allHTML += `<h2 class="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b-2 border-indigo-300">${groupInfo[partType].title}</h2>`;
+                }
+                
+                questionsInPart.forEach(itemWithIndex => {
+                    questionCounter++;
+                    const { originalIndex, ...item } = itemWithIndex;
+                    const index = originalIndex;
+
+                    if (!item) return;
+
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswer || ''}" onchange="saveTextAnswer(this, ${index})">`;
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+
+            container.innerHTML = allHTML;
+            safeTypeset([container]);
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment && API_KEY) {
+                assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+                assessmentDisplay.classList.remove('hidden');
+                try {
+                    aiAssessment = await getAIAssessment(finalScore, answerDetails);
+                } catch (e) {
+                    console.error("Error getting AI assessment:", e);
+                    aiAssessment = "Đã xảy ra lỗi khi AI tạo nhận xét.";
+                }
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                assessmentDisplay.classList.remove('hidden');
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else {
+                    isCorrect = null;
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation && API_KEY) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="getAIExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        function stripHtml(html) {
+            if (!html) return "";
+            let doc = new DOMParser().parseFromString(html, 'text/html');
+            // Remove any images inside as they are not text
+            doc.body.querySelectorAll('img').forEach(img => img.remove());
+            // Replace <br> with newline for better readability in the prompt
+            doc.body.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+            return doc.body.textContent || "";
+        }
+
+        async function getAIExplanation(index, button) {
+            if (!API_KEY) return;
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+            
+            const isHidden = explanationContainer.classList.contains('hidden');
+
+            if (!isHidden && quizData[index].explanation) {
+                explanationContainer.classList.add('hidden');
+                button.textContent = 'Xem giải thích từ AI';
+                return;
+            }
+            
+            explanationContainer.classList.remove('hidden');
+
+            if (quizData[index].explanation) {
+                explanationContainer.innerHTML = quizData[index].rendered_explanation;
+                safeTypeset([explanationContainer]);
+                button.textContent = 'Ẩn giải thích';
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'AI đang giải thích...';
+            explanationContainer.innerHTML = '<div class="animate-pulse">Đang tải...</div>';
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const item = quizData[index];
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây. Lời giải phải chính xác, dễ hiểu và phù hợp với phương pháp giảng dạy của chương trình GDPT 2018.\n---**CÂU HỎI:**\n${stripHtml(item.rendered_question)}\n---`;
+
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**CÁC LỰA CHỌN:**\n`;
+                    item.options.forEach((opt, i) => { prompt += `${String.fromCharCode(65 + i)}. ${stripHtml(item.rendered_options[i])}\n`; });
+                    prompt += `---\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${stripHtml(item.rendered_options[item.correctAnswerIndex])}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n`;
+                    item.statements.forEach((s, i) => { prompt += `${String.fromCharCode(97 + i)}) ${stripHtml(s.rendered_statement)} -> ${s.is_correct ? 'Đúng' : 'Sai'}\n`; });
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${stripHtml(item.rendered_answer)}`;
+                }
+                
+                prompt += `\n---\n**YÊU CẦU:** Hãy giải thích chi tiết từng bước để đi đến đáp án đúng. Định dạng tất cả các công thức toán học bằng LaTeX. Dùng **...** để in đậm các thuật ngữ quan trọng.`;
+                
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                quizData[index].explanation = explanationText;
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                quizData[index].rendered_explanation = htmlContent;
+                
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+
+            } catch (error) {
+                console.error("Error getting AI explanation:", error);
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi khi tạo giải thích.</p>';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Ẩn giải thích';
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) return "Không thể tạo nhận xét do thiếu API key.";
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const performanceSummary = quizData.map((item, index) => {
+                    const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                    if (!detail) return `- Câu ${index + 1}: Không có dữ liệu.`;
+
+                    const questionText = stripHtml(item.rendered_question || '').substring(0, 150);
+                    let resultText = '';
+                    
+                    const type = mapType(item.type);
+                    if (type === 'true-false' && detail.details) {
+                        const correctCount = detail.details.filter(d => d.isCorrect).length;
+                        resultText = `Đúng ${correctCount}/4 ý`;
+                    } else if (detail.isCorrect === true) {
+                        resultText = 'Đúng';
+                    } else if (detail.isCorrect === false) {
+                        resultText = 'Sai';
+                    } else {
+                        resultText = 'Tự luận (chưa chấm)';
+                    }
+
+                    return `- Câu ${index + 1} (Nội dung: "${questionText}..."): Kết quả - ${resultText}.`;
+                }).join('\n');
+
+
+                const prompt = `Bạn là một giáo viên AI giàu kinh nghiệm, tận tâm và luôn đưa ra những nhận xét mang tính xây dựng. Nhiệm vụ của bạn là phân tích kết quả bài làm của một học sinh và đưa ra một nhận xét ngắn gọn (khoảng 4-5 câu) về năng lực của học sinh đó.
+
+                **NGUYÊN TẮC BẮT BUỘC:**
+                1.  **CỤ THỂ, KHÔNG CHUNG CHUNG:** Nhận xét của bạn PHẢI dựa trên kết quả chi tiết của bài kiểm tra được cung cấp. TUYỆT ĐỐI KHÔNG đưa ra những lời khuyên sáo rỗng.
+                2.  **TRÍCH DẪN KIẾN THỨC:** Hãy đề cập đến nội dung cụ thể của câu hỏi mà học sinh làm đúng hoặc sai để minh họa cho nhận xét của bạn.
+                3.  **GIỌNG VĂN TÍCH CỰC:** Luôn sử dụng giọng văn thân thiện, khích lệ, tập trung vào sự tiến bộ.
+
+                **CẤU TRÚC NHẬN XÉT:**
+                1.  **Mở đầu:** Bắt đầu bằng một câu động viên chung về nỗ lực của học sinh.
+                2.  **Điểm mạnh:** Chỉ ra (các) mảng kiến thức hoặc dạng câu hỏi mà học sinh làm tốt. Ví dụ: "Em đã làm rất tốt các câu hỏi về [tên chủ đề], cho thấy em nắm vững kiến thức về [khái niệm cụ thể]."
+                3.  **Điểm cần cải thiện:** Nhẹ nhàng chỉ ra (các) câu hỏi hoặc khái niệm cụ thể mà học sinh còn nhầm lẫn. Ví dụ: "Ở câu [số], có vẻ em còn hơi nhầm lẫn giữa [khái niệm A] và [khái niệm B]. Em hãy xem lại phần [tên kiến thức] nhé."
+                4.  **Gợi ý hành động:** Đưa ra lời khuyên cụ thể để cải thiện. Ví dụ: "Để củng cố phần này, em có thể đọc lại bài [tên bài học] và làm thêm các bài tập về [dạng bài]."
+                5.  **Kết luận:** Kết thúc bằng một câu khích lệ, tạo động lực cho lần sau.
+
+                ---
+                **DỮ LIỆU BÀI LÀM CỦA HỌC SINH:**
+                - **Điểm số:** ${score} / 10
+                - **Chi tiết từng câu:**
+                ${performanceSummary}
+                ---
+                Bây giờ, hãy viết nhận xét của bạn.
+                `;
+
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                return response.text || "Không thể tạo nhận xét.";
+
+            } catch (error) {
+                console.error("Error generating AI assessment:", error);
+                return "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+            }
+        }
+    </script>
+</body>
+</html>
+    
