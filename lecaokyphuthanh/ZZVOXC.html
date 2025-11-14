@@ -1,0 +1,661 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tx1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\(', '\)']], displayMath: [['$$', '$$'], ['\[', '\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">tx1</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">ZZVOXC</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6">
+                <h2 class="text-2xl font-bold text-gray-800">tx1</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "AIzaSyDu2_ZnQFPTpxOyvdTH3sx7VJyTPHL09lQ";
+        const quizData = [{"question":"Phát biểu nào sau đây định nghĩa đúng về khoa học?","options":["Hoạt động ứng dụng các nguyên lí khoa học vào sản xuất.","Hệ thống tri thức về các quy luật của tự nhiên, xã hội và tư duy.","Tập hợp các phương tiện, giải pháp để sản xuất ra sản phẩm.","Quá trình thiết kế và chế tạo các sản phẩm phục vụ đời sống."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phát biểu nào sau đây định nghĩa đúng về khoa học?","rendered_options":["Hoạt động ứng dụng các nguyên lí khoa học vào sản xuất.","Hệ thống tri thức về các quy luật của tự nhiên, xã hội và tư duy.","Tập hợp các phương tiện, giải pháp để sản xuất ra sản phẩm.","Quá trình thiết kế và chế tạo các sản phẩm phục vụ đời sống."]},{"question":"Kĩ thuật là lĩnh vực hoạt động nào sau đây?","options":["Khám phá các quy luật tự nhiên.","Nghiên cứu lí thuyết để tạo ra sản phẩm mới.","Vận dụng kiến thức khoa học vào việc thiết kế và chế tạo sản phẩm, giải pháp.","Tập hợp các sản phẩm và phương pháp đã được phát minh."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Kĩ thuật là lĩnh vực hoạt động nào sau đây?","rendered_options":["Khám phá các quy luật tự nhiên.","Nghiên cứu lí thuyết để tạo ra sản phẩm mới.","Vận dụng kiến thức khoa học vào việc thiết kế và chế tạo sản phẩm, giải pháp.","Tập hợp các sản phẩm và phương pháp đã được phát minh."]},{"question":"Khái niệm \"công nghệ\" được hiểu là gì?","options":["Việc tìm hiểu và giải thích các hiện tượng tự nhiên.","Toàn bộ các phương tiện, giải pháp, quy trình, bí quyết được sử dụng để biến đổi các nguồn lực thành sản phẩm hoặc dịch vụ.","Lĩnh vực nghiên cứu chỉ tập trung vào việc tạo ra các thiết bị máy móc.","Hoạt động phân tích dữ liệu và đưa ra dự đoán về tương lai."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khái niệm \"công nghệ\" được hiểu là gì?","rendered_options":["Việc tìm hiểu và giải thích các hiện tượng tự nhiên.","Toàn bộ các phương tiện, giải pháp, quy trình, bí quyết được sử dụng để biến đổi các nguồn lực thành sản phẩm hoặc dịch vụ.","Lĩnh vực nghiên cứu chỉ tập trung vào việc tạo ra các thiết bị máy móc.","Hoạt động phân tích dữ liệu và đưa ra dự đoán về tương lai."]},{"question":"Mối quan hệ nào sau đây thể hiện đúng sự tương tác giữa khoa học, kĩ thuật và công nghệ?","options":["Khoa học là kết quả của công nghệ, công nghệ là nền tảng của kĩ thuật.","Khoa học cung cấp nền tảng lí thuyết cho kĩ thuật, kĩ thuật tạo ra công nghệ, và công nghệ thúc đẩy khoa học phát triển.","Kĩ thuật và công nghệ hoàn toàn độc lập với khoa học.","Công nghệ chỉ đơn thuần là việc áp dụng trực tiếp các phát minh khoa học mà không cần kĩ thuật."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Mối quan hệ nào sau đây thể hiện đúng sự tương tác giữa khoa học, kĩ thuật và công nghệ?","rendered_options":["Khoa học là kết quả của công nghệ, công nghệ là nền tảng của kĩ thuật.","Khoa học cung cấp nền tảng lí thuyết cho kĩ thuật, kĩ thuật tạo ra công nghệ, và công nghệ thúc đẩy khoa học phát triển.","Kĩ thuật và công nghệ hoàn toàn độc lập với khoa học.","Công nghệ chỉ đơn thuần là việc áp dụng trực tiếp các phát minh khoa học mà không cần kĩ thuật."]},{"question":"Việc sử dụng quá nhiều thiết bị điện tử, đặc biệt là điện thoại thông minh, có thể dẫn đến tác động tiêu cực nào đối với con người?","options":["Cải thiện khả năng giao tiếp xã hội trực tiếp.","Giảm sự tập trung, gây mỏi mắt và rối loạn giấc ngủ.","Tăng cường hoạt động thể chất.","Mở rộng kiến thức về thế giới tự nhiên."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Việc sử dụng quá nhiều thiết bị điện tử, đặc biệt là điện thoại thông minh, có thể dẫn đến tác động tiêu cực nào đối với con người?","rendered_options":["Cải thiện khả năng giao tiếp xã hội trực tiếp.","Giảm sự tập trung, gây mỏi mắt và rối loạn giấc ngủ.","Tăng cường hoạt động thể chất.","Mở rộng kiến thức về thế giới tự nhiên."]},{"question":"Phát biểu nào sau đây định nghĩa chính xác nhất về công nghệ?","options":["Công nghệ là việc nghiên cứu các quy luật tự nhiên và hiện tượng xã hội.","Công nghệ là việc ứng dụng kiến thức khoa học và kĩ thuật để giải quyết vấn đề thực tiễn, tạo ra sản phẩm, quy trình mới.","Công nghệ là tập hợp các phương pháp và quy trình sản xuất hàng hóa.","Công nghệ là sản phẩm cuối cùng của quá trình nghiên cứu khoa học."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phát biểu nào sau đây định nghĩa chính xác nhất về công nghệ?","rendered_options":["Công nghệ là việc nghiên cứu các quy luật tự nhiên và hiện tượng xã hội.","Công nghệ là việc ứng dụng kiến thức khoa học và kĩ thuật để giải quyết vấn đề thực tiễn, tạo ra sản phẩm, quy trình mới.","Công nghệ là tập hợp các phương pháp và quy trình sản xuất hàng hóa.","Công nghệ là sản phẩm cuối cùng của quá trình nghiên cứu khoa học."]},{"question":"Mối quan hệ giữa khoa học, kĩ thuật và công nghệ được thể hiện như thế nào?","options":["Khoa học là nền tảng, kĩ thuật phát triển dựa trên khoa học, và công nghệ là sản phẩm ứng dụng của kĩ thuật.","Công nghệ tạo ra khoa học, và khoa học cung cấp tri thức cho kĩ thuật.","Kĩ thuật chỉ là một phần nhỏ của công nghệ, và khoa học không liên quan trực tiếp đến cả hai.","Khoa học, kĩ thuật và công nghệ hoàn toàn độc lập và không có mối liên hệ nào."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Mối quan hệ giữa khoa học, kĩ thuật và công nghệ được thể hiện như thế nào?","rendered_options":["Khoa học là nền tảng, kĩ thuật phát triển dựa trên khoa học, và công nghệ là sản phẩm ứng dụng của kĩ thuật.","Công nghệ tạo ra khoa học, và khoa học cung cấp tri thức cho kĩ thuật.","Kĩ thuật chỉ là một phần nhỏ của công nghệ, và khoa học không liên quan trực tiếp đến cả hai.","Khoa học, kĩ thuật và công nghệ hoàn toàn độc lập và không có mối liên hệ nào."]},{"question":"Mối quan hệ hai chiều giữa công nghệ và tự nhiên được mô tả đúng nhất trong nhận định nào sau đây?","options":["Công nghệ chỉ đơn thuần khai thác tài nguyên từ tự nhiên mà không có tác động ngược lại.","Tự nhiên cung cấp nguyên liệu và môi trường cho công nghệ phát triển, đồng thời công nghệ tác động trở lại tự nhiên thông qua khai thác và thay đổi môi trường.","Tự nhiên và công nghệ không có mối liên hệ trực tiếp, chúng tồn tại độc lập.","Công nghệ luôn bảo vệ tự nhiên, và tự nhiên không bị ảnh hưởng bởi công nghệ."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Mối quan hệ hai chiều giữa công nghệ và tự nhiên được mô tả đúng nhất trong nhận định nào sau đây?","rendered_options":["Công nghệ chỉ đơn thuần khai thác tài nguyên từ tự nhiên mà không có tác động ngược lại.","Tự nhiên cung cấp nguyên liệu và môi trường cho công nghệ phát triển, đồng thời công nghệ tác động trở lại tự nhiên thông qua khai thác và thay đổi môi trường.","Tự nhiên và công nghệ không có mối liên hệ trực tiếp, chúng tồn tại độc lập.","Công nghệ luôn bảo vệ tự nhiên, và tự nhiên không bị ảnh hưởng bởi công nghệ."]},{"question":"Phát biểu nào dưới đây thể hiện đúng mối quan hệ hai chiều giữa công nghệ và xã hội?","options":["Xã hội hoàn toàn bị động tiếp nhận mọi công nghệ mới mà không có khả năng định hướng hay thay đổi công nghệ.","Công nghệ được tạo ra để phục vụ nhu cầu xã hội, đồng thời sự phát triển của công nghệ lại định hình và thay đổi các cấu trúc, thói quen và văn hóa xã hội.","Công nghệ chỉ ảnh hưởng đến kinh tế, không có tác động đáng kể đến văn hóa hay các giá trị xã hội.","Xã hội chỉ tạo ra công nghệ khi có sự yêu cầu từ chính phủ, không phải từ nhu cầu thực tiễn của người dân."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phát biểu nào dưới đây thể hiện đúng mối quan hệ hai chiều giữa công nghệ và xã hội?","rendered_options":["Xã hội hoàn toàn bị động tiếp nhận mọi công nghệ mới mà không có khả năng định hướng hay thay đổi công nghệ.","Công nghệ được tạo ra để phục vụ nhu cầu xã hội, đồng thời sự phát triển của công nghệ lại định hình và thay đổi các cấu trúc, thói quen và văn hóa xã hội.","Công nghệ chỉ ảnh hưởng đến kinh tế, không có tác động đáng kể đến văn hóa hay các giá trị xã hội.","Xã hội chỉ tạo ra công nghệ khi có sự yêu cầu từ chính phủ, không phải từ nhu cầu thực tiễn của người dân."]},{"question":"Trong các ví dụ sau, đâu là tác động tiêu cực của công nghệ đối với đời sống con người và xã hội?","options":["Sử dụng điện thoại thông minh để học trực tuyến trong mùa dịch.","Phát triển vắc xin mới giúp phòng ngừa bệnh tật hiệu quả.","Sự gia tăng rác thải điện tử và ô nhiễm môi trường do các sản phẩm công nghệ lỗi thời.","Tạo ra các phương tiện giao thông nhanh hơn, an toàn hơn."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong các ví dụ sau, đâu là tác động tiêu cực của công nghệ đối với đời sống con người và xã hội?","rendered_options":["Sử dụng điện thoại thông minh để học trực tuyến trong mùa dịch.","Phát triển vắc xin mới giúp phòng ngừa bệnh tật hiệu quả.","Sự gia tăng rác thải điện tử và ô nhiễm môi trường do các sản phẩm công nghệ lỗi thời.","Tạo ra các phương tiện giao thông nhanh hơn, an toàn hơn."]},{"question":"Nêu khái niệm hệ thống kĩ thuật. Lấy ví dụ là một **máy giặt tự động**, hãy mô tả các thành phần đầu vào, bộ phận xử lí và đầu ra của hệ thống này. Sau đó, vẽ sơ đồ khối cơ bản mô tả cấu trúc của máy giặt tự động.","answer":"Khái niệm hệ thống kĩ thuật: Một hệ thống kĩ thuật là tập hợp các bộ phận có mối quan hệ qua lại, tương tác với nhau để thực hiện một hoặc nhiều chức năng nhất định nhằm đạt được mục tiêu đã đề ra.\n\nĐối với **máy giặt tự động**:\n-   **Đầu vào:** Bao gồm nước, bột giặt/nước giặt, quần áo bẩn, năng lượng điện và các tín hiệu điều khiển từ người dùng (chọn chế độ giặt, nhiệt độ nước, thời gian giặt).\n-   **Bộ phận xử lí:** Là bộ điều khiển của máy giặt (vi mạch điện tử, bộ xử lí trung tâm) có chức năng tiếp nhận tín hiệu đầu vào, điều khiển các bộ phận cơ khí (mô tơ quay lồng giặt, bơm nước, van xả nước, bộ phận làm nóng nước), và xử lí theo chương trình đã chọn.\n-   **Đầu ra:** Là quần áo sạch (và đã vắt), nước thải, nhiệt lượng tỏa ra và tiếng ồn.\n\nSơ đồ khối cơ bản của máy giặt tự động:\n[Đầu vào (Nước, bột giặt, quần áo bẩn, điện, tín hiệu điều khiển)] --> [Bộ phận xử lí (Bộ điều khiển, mô tơ, bơm, van)] --> [Đầu ra (Quần áo sạch, nước thải, nhiệt, tiếng ồn)]","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Nêu khái niệm hệ thống kĩ thuật. Lấy ví dụ là một <strong>máy giặt tự động</strong>, hãy mô tả các thành phần đầu vào, bộ phận xử lí và đầu ra của hệ thống này. Sau đó, vẽ sơ đồ khối cơ bản mô tả cấu trúc của máy giặt tự động.","rendered_answer":"Khái niệm hệ thống kĩ thuật: Một hệ thống kĩ thuật là tập hợp các bộ phận có mối quan hệ qua lại, tương tác với nhau để thực hiện một hoặc nhiều chức năng nhất định nhằm đạt được mục tiêu đã đề ra.<br><br>Đối với <strong>máy giặt tự động</strong>:<br>-   <strong>Đầu vào:</strong> Bao gồm nước, bột giặt/nước giặt, quần áo bẩn, năng lượng điện và các tín hiệu điều khiển từ người dùng (chọn chế độ giặt, nhiệt độ nước, thời gian giặt).<br>-   <strong>Bộ phận xử lí:</strong> Là bộ điều khiển của máy giặt (vi mạch điện tử, bộ xử lí trung tâm) có chức năng tiếp nhận tín hiệu đầu vào, điều khiển các bộ phận cơ khí (mô tơ quay lồng giặt, bơm nước, van xả nước, bộ phận làm nóng nước), và xử lí theo chương trình đã chọn.<br>-   <strong>Đầu ra:</strong> Là quần áo sạch (và đã vắt), nước thải, nhiệt lượng tỏa ra và tiếng ồn.<br><br>Sơ đồ khối cơ bản của máy giặt tự động:<br>[Đầu vào (Nước, bột giặt, quần áo bẩn, điện, tín hiệu điều khiển)] --> [Bộ phận xử lí (Bộ điều khiển, mô tơ, bơm, van)] --> [Đầu ra (Quần áo sạch, nước thải, nhiệt, tiếng ồn)]"},{"question":"Phân biệt sự khác nhau cơ bản giữa hệ thống kĩ thuật mạch hở và hệ thống kĩ thuật mạch kín. Lấy ví dụ **hệ thống điều khiển nhiệt độ lò nướng tự động** và phân tích để chỉ ra tín hiệu phản hồi trong hệ thống mạch kín này.","answer":"Sự khác nhau cơ bản giữa hệ thống kĩ thuật mạch hở và mạch kín:\n-   **Hệ thống kĩ thuật mạch hở:** Là hệ thống mà tín hiệu đầu ra không có ảnh hưởng ngược trở lại tín hiệu đầu vào hoặc bộ phận xử lí. Việc điều khiển hoạt động độc lập với kết quả đầu ra. Hệ thống này thường đơn giản, chi phí thấp nhưng độ chính xác không cao và không tự động điều chỉnh được khi có nhiễu loạn.\n-   **Hệ thống kĩ thuật mạch kín (có phản hồi):** Là hệ thống mà một phần tín hiệu đầu ra (thông qua bộ phận phản hồi) sẽ được đưa trở lại đầu vào hoặc bộ phận xử lí để so sánh và điều chỉnh. Điều này giúp hệ thống tự động duy trì hoạt động theo yêu cầu, có độ chính xác cao và khả năng chống nhiễu tốt hơn.\n\nVí dụ **hệ thống điều khiển nhiệt độ lò nướng tự động**:\n-   Đây là một **hệ thống mạch kín** điển hình.\n-   **Mục tiêu:** Duy trì nhiệt độ trong lò nướng ở một giá trị đặt trước (ví dụ: $200^{\\circ}C$).\n-   **Phân tích tín hiệu phản hồi:**\n    -   **Tín hiệu đầu vào:** Nhiệt độ mong muốn (ví dụ: $200^{\\circ}C$) được người dùng cài đặt.\n    -   **Bộ phận xử lí:** Bộ điều khiển nhiệt độ (vi điều khiển) sẽ nhận tín hiệu nhiệt độ mong muốn và điều khiển bộ phận gia nhiệt (thanh nhiệt).\n    -   **Đầu ra:** Nhiệt độ thực tế trong lò nướng.\n    -   **Cảm biến (phản hồi):** Một cảm biến nhiệt độ (ví dụ: cặp nhiệt điện hoặc nhiệt điện trở) được đặt bên trong lò nướng để liên tục đo **nhiệt độ thực tế** trong lò.\n    -   **Tín hiệu phản hồi:** Dữ liệu nhiệt độ thực tế từ cảm biến sẽ được gửi về bộ điều khiển.\n    -   **So sánh và điều chỉnh:** Bộ điều khiển sẽ so sánh nhiệt độ thực tế với nhiệt độ mong muốn. Nếu nhiệt độ thực tế thấp hơn, bộ điều khiển sẽ tăng cường hoạt động của bộ phận gia nhiệt; nếu nhiệt độ thực tế cao hơn, nó sẽ giảm hoặc tắt bộ phận gia nhiệt. Quá trình này diễn ra liên tục để duy trì nhiệt độ trong lò ổn định ở mức mong muốn.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phân biệt sự khác nhau cơ bản giữa hệ thống kĩ thuật mạch hở và hệ thống kĩ thuật mạch kín. Lấy ví dụ <strong>hệ thống điều khiển nhiệt độ lò nướng tự động</strong> và phân tích để chỉ ra tín hiệu phản hồi trong hệ thống mạch kín này.","rendered_answer":"Sự khác nhau cơ bản giữa hệ thống kĩ thuật mạch hở và mạch kín:<br>-   <strong>Hệ thống kĩ thuật mạch hở:</strong> Là hệ thống mà tín hiệu đầu ra không có ảnh hưởng ngược trở lại tín hiệu đầu vào hoặc bộ phận xử lí. Việc điều khiển hoạt động độc lập với kết quả đầu ra. Hệ thống này thường đơn giản, chi phí thấp nhưng độ chính xác không cao và không tự động điều chỉnh được khi có nhiễu loạn.<br>-   <strong>Hệ thống kĩ thuật mạch kín (có phản hồi):</strong> Là hệ thống mà một phần tín hiệu đầu ra (thông qua bộ phận phản hồi) sẽ được đưa trở lại đầu vào hoặc bộ phận xử lí để so sánh và điều chỉnh. Điều này giúp hệ thống tự động duy trì hoạt động theo yêu cầu, có độ chính xác cao và khả năng chống nhiễu tốt hơn.<br><br>Ví dụ <strong>hệ thống điều khiển nhiệt độ lò nướng tự động</strong>:<br>-   Đây là một <strong>hệ thống mạch kín</strong> điển hình.<br>-   <strong>Mục tiêu:</strong> Duy trì nhiệt độ trong lò nướng ở một giá trị đặt trước (ví dụ: $200^{\\circ}C$).<br>-   <strong>Phân tích tín hiệu phản hồi:</strong><br>    -   <strong>Tín hiệu đầu vào:</strong> Nhiệt độ mong muốn (ví dụ: $200^{\\circ}C$) được người dùng cài đặt.<br>    -   <strong>Bộ phận xử lí:</strong> Bộ điều khiển nhiệt độ (vi điều khiển) sẽ nhận tín hiệu nhiệt độ mong muốn và điều khiển bộ phận gia nhiệt (thanh nhiệt).<br>    -   <strong>Đầu ra:</strong> Nhiệt độ thực tế trong lò nướng.<br>    -   <strong>Cảm biến (phản hồi):</strong> Một cảm biến nhiệt độ (ví dụ: cặp nhiệt điện hoặc nhiệt điện trở) được đặt bên trong lò nướng để liên tục đo <strong>nhiệt độ thực tế</strong> trong lò.<br>    -   <strong>Tín hiệu phản hồi:</strong> Dữ liệu nhiệt độ thực tế từ cảm biến sẽ được gửi về bộ điều khiển.<br>    -   <strong>So sánh và điều chỉnh:</strong> Bộ điều khiển sẽ so sánh nhiệt độ thực tế với nhiệt độ mong muốn. Nếu nhiệt độ thực tế thấp hơn, bộ điều khiển sẽ tăng cường hoạt động của bộ phận gia nhiệt; nếu nhiệt độ thực tế cao hơn, nó sẽ giảm hoặc tắt bộ phận gia nhiệt. Quá trình này diễn ra liên tục để duy trì nhiệt độ trong lò ổn định ở mức mong muốn."}];
+        const options = {"timeLimit":30,"retriesAllowed":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"scoring":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxMCb37nre9SOl1yQQ_mlSMxOnIBfl2hcXBk9eymyDn5Vv8WR0RT8okppd45WPBUDS1/exec";
+        const examCode = "ZZVOXC";
+
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.getAIExplanation = getAIExplanation;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) {
+                    acc[type] = [];
+                }
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' }
+            };
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let questionCounter = 0;
+
+            partOrder.forEach(partType => {
+                const questionsInPart = groupedQuestions[partType];
+                if (!questionsInPart || questionsInPart.length === 0) return;
+
+                if (groupInfo[partType]) {
+                    allHTML += `<h2 class="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b-2 border-indigo-300">${groupInfo[partType].title}</h2>`;
+                }
+                
+                questionsInPart.forEach(itemWithIndex => {
+                    questionCounter++;
+                    const { originalIndex, ...item } = itemWithIndex;
+                    const index = originalIndex;
+
+                    if (!item) return;
+
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswer || ''}" onchange="saveTextAnswer(this, ${index})">`;
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+
+            container.innerHTML = allHTML;
+            safeTypeset([container]);
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment && API_KEY) {
+                assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+                assessmentDisplay.classList.remove('hidden');
+                try {
+                    aiAssessment = await getAIAssessment(finalScore, answerDetails);
+                } catch (e) {
+                    console.error("Error getting AI assessment:", e);
+                    aiAssessment = "Đã xảy ra lỗi khi AI tạo nhận xét.";
+                }
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                assessmentDisplay.classList.remove('hidden');
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else {
+                    isCorrect = null;
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation && API_KEY) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="getAIExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        function stripHtml(html) {
+            if (!html) return "";
+            let doc = new DOMParser().parseFromString(html, 'text/html');
+            // Remove any images inside as they are not text
+            doc.body.querySelectorAll('img').forEach(img => img.remove());
+            // Replace <br> with newline for better readability in the prompt
+            doc.body.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+            return doc.body.textContent || "";
+        }
+
+        async function getAIExplanation(index, button) {
+            if (!API_KEY) return;
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+            
+            const isHidden = explanationContainer.classList.contains('hidden');
+
+            if (!isHidden && quizData[index].explanation) {
+                explanationContainer.classList.add('hidden');
+                button.textContent = 'Xem giải thích từ AI';
+                return;
+            }
+            
+            explanationContainer.classList.remove('hidden');
+
+            if (quizData[index].explanation) {
+                explanationContainer.innerHTML = quizData[index].rendered_explanation;
+                safeTypeset([explanationContainer]);
+                button.textContent = 'Ẩn giải thích';
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'AI đang giải thích...';
+            explanationContainer.innerHTML = '<div class="animate-pulse">Đang tải...</div>';
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const item = quizData[index];
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây. Lời giải phải chính xác, dễ hiểu và phù hợp với phương pháp giảng dạy của chương trình GDPT 2018.\n---**CÂU HỎI:**\n${stripHtml(item.rendered_question)}\n---`;
+
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**CÁC LỰA CHỌN:**\n`;
+                    item.options.forEach((opt, i) => { prompt += `${String.fromCharCode(65 + i)}. ${stripHtml(item.rendered_options[i])}\n`; });
+                    prompt += `---\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${stripHtml(item.rendered_options[item.correctAnswerIndex])}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n`;
+                    item.statements.forEach((s, i) => { prompt += `${String.fromCharCode(97 + i)}) ${stripHtml(s.rendered_statement)} -> ${s.is_correct ? 'Đúng' : 'Sai'}\n`; });
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${stripHtml(item.rendered_answer)}`;
+                }
+                
+                prompt += `\n---\n**YÊU CẦU:** Hãy giải thích chi tiết từng bước để đi đến đáp án đúng. Định dạng tất cả các công thức toán học bằng LaTeX. Dùng **...** để in đậm các thuật ngữ quan trọng.`;
+                
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                quizData[index].explanation = explanationText;
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                quizData[index].rendered_explanation = htmlContent;
+                
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+
+            } catch (error) {
+                console.error("Error getting AI explanation:", error);
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi khi tạo giải thích.</p>';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Ẩn giải thích';
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) return "Không thể tạo nhận xét do thiếu API key.";
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const performanceSummary = quizData.map((item, index) => {
+                    const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                    if (!detail) return `- Câu ${index + 1}: Không có dữ liệu.`;
+
+                    const questionText = stripHtml(item.rendered_question || '').substring(0, 150);
+                    let resultText = '';
+                    
+                    const type = mapType(item.type);
+                    if (type === 'true-false' && detail.details) {
+                        const correctCount = detail.details.filter(d => d.isCorrect).length;
+                        resultText = `Đúng ${correctCount}/4 ý`;
+                    } else if (detail.isCorrect === true) {
+                        resultText = 'Đúng';
+                    } else if (detail.isCorrect === false) {
+                        resultText = 'Sai';
+                    } else {
+                        resultText = 'Tự luận (chưa chấm)';
+                    }
+
+                    return `- Câu ${index + 1} (Nội dung: "${questionText}..."): Kết quả - ${resultText}.`;
+                }).join('\n');
+
+
+                const prompt = `Bạn là một giáo viên AI giàu kinh nghiệm, tận tâm và luôn đưa ra những nhận xét mang tính xây dựng. Nhiệm vụ của bạn là phân tích kết quả bài làm của một học sinh và đưa ra một nhận xét ngắn gọn (khoảng 4-5 câu) về năng lực của học sinh đó.
+
+                **NGUYÊN TẮC BẮT BUỘC:**
+                1.  **CỤ THỂ, KHÔNG CHUNG CHUNG:** Nhận xét của bạn PHẢI dựa trên kết quả chi tiết của bài kiểm tra được cung cấp. TUYỆT ĐỐI KHÔNG đưa ra những lời khuyên sáo rỗng.
+                2.  **TRÍCH DẪN KIẾN THỨC:** Hãy đề cập đến nội dung cụ thể của câu hỏi mà học sinh làm đúng hoặc sai để minh họa cho nhận xét của bạn.
+                3.  **GIỌNG VĂN TÍCH CỰC:** Luôn sử dụng giọng văn thân thiện, khích lệ, tập trung vào sự tiến bộ.
+
+                **CẤU TRÚC NHẬN XÉT:**
+                1.  **Mở đầu:** Bắt đầu bằng một câu động viên chung về nỗ lực của học sinh.
+                2.  **Điểm mạnh:** Chỉ ra (các) mảng kiến thức hoặc dạng câu hỏi mà học sinh làm tốt. Ví dụ: "Em đã làm rất tốt các câu hỏi về [tên chủ đề], cho thấy em nắm vững kiến thức về [khái niệm cụ thể]."
+                3.  **Điểm cần cải thiện:** Nhẹ nhàng chỉ ra (các) câu hỏi hoặc khái niệm cụ thể mà học sinh còn nhầm lẫn. Ví dụ: "Ở câu [số], có vẻ em còn hơi nhầm lẫn giữa [khái niệm A] và [khái niệm B]. Em hãy xem lại phần [tên kiến thức] nhé."
+                4.  **Gợi ý hành động:** Đưa ra lời khuyên cụ thể để cải thiện. Ví dụ: "Để củng cố phần này, em có thể đọc lại bài [tên bài học] và làm thêm các bài tập về [dạng bài]."
+                5.  **Kết luận:** Kết thúc bằng một câu khích lệ, tạo động lực cho lần sau.
+
+                ---
+                **DỮ LIỆU BÀI LÀM CỦA HỌC SINH:**
+                - **Điểm số:** ${score} / 10
+                - **Chi tiết từng câu:**
+                ${performanceSummary}
+                ---
+                Bây giờ, hãy viết nhận xét của bạn.
+                `;
+
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                return response.text || "Không thể tạo nhận xét.";
+
+            } catch (error) {
+                console.error("Error generating AI assessment:", error);
+                return "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+            }
+        }
+    </script>
+</body>
+</html>
+    
