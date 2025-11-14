@@ -1,0 +1,661 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTTX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\(', '\)']], displayMath: [['$$', '$$'], ['\[', '\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">KTTX</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">AJ4ZXC</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6">
+                <h2 class="text-2xl font-bold text-gray-800">KTTX</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "Long@321";
+        const quizData = [{"question":"Hiệp hội các quốc gia Đông Nam Á (ASEAN) chính thức được thành lập tại đâu và vào thời gian nào?","options":["Jakarta (In-đô-nê-xi-a), ngày 8 tháng 8 năm 1967.","Bangkok (Thái Lan), ngày 8 tháng 8 năm 1967.","Kuala Lumpur (Ma-lai-xi-a), ngày 8 tháng 8 năm 1967.","Singapore, ngày 8 tháng 8 năm 1967."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Hiệp hội các quốc gia Đông Nam Á (ASEAN) chính thức được thành lập tại đâu và vào thời gian nào?","rendered_options":["Jakarta (In-đô-nê-xi-a), ngày 8 tháng 8 năm 1967.","Bangkok (Thái Lan), ngày 8 tháng 8 năm 1967.","Kuala Lumpur (Ma-lai-xi-a), ngày 8 tháng 8 năm 1967.","Singapore, ngày 8 tháng 8 năm 1967."]},{"question":"5 quốc gia nào đã tham gia thành lập Hiệp hội các quốc gia Đông Nam Á (ASEAN)?","options":["In-đô-nê-xi-a, Ma-lai-xi-a, Phi-líp-pin, Thái Lan, Xin-ga-po.","In-đô-nê-xi-a, Ma-lai-xi-a, Phi-líp-pin, Thái Lan, Việt Nam.","In-đô-nê-xi-a, Ma-lai-xi-a, Xin-ga-po, Bru-nây, Việt Nam.","Thái Lan, Xin-ga-po, Việt Nam, Cam-pu-chia, Lào."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"5 quốc gia nào đã tham gia thành lập Hiệp hội các quốc gia Đông Nam Á (ASEAN)?","rendered_options":["In-đô-nê-xi-a, Ma-lai-xi-a, Phi-líp-pin, Thái Lan, Xin-ga-po.","In-đô-nê-xi-a, Ma-lai-xi-a, Phi-líp-pin, Thái Lan, Việt Nam.","In-đô-nê-xi-a, Ma-lai-xi-a, Xin-ga-po, Bru-nây, Việt Nam.","Thái Lan, Xin-ga-po, Việt Nam, Cam-pu-chia, Lào."]},{"question":"Mục tiêu ban đầu của Hiệp hội các quốc gia Đông Nam Á (ASEAN) khi mới thành lập là gì?","options":["Thiết lập một liên minh quân sự chống lại các cường quốc bên ngoài.","Thúc đẩy hợp tác kinh tế, văn hóa, xã hội giữa các nước thành viên.","Xây dựng một thị trường chung duy nhất cho toàn bộ khu vực.","Hỗ trợ các nước thành viên trong việc phát triển vũ khí hạt nhân."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Mục tiêu ban đầu của Hiệp hội các quốc gia Đông Nam Á (ASEAN) khi mới thành lập là gì?","rendered_options":["Thiết lập một liên minh quân sự chống lại các cường quốc bên ngoài.","Thúc đẩy hợp tác kinh tế, văn hóa, xã hội giữa các nước thành viên.","Xây dựng một thị trường chung duy nhất cho toàn bộ khu vực.","Hỗ trợ các nước thành viên trong việc phát triển vũ khí hạt nhân."]},{"question":"Quốc gia nào sau đây là thành viên thứ sáu gia nhập ASEAN, đánh dấu sự mở rộng đầu tiên của tổ chức này?","options":["Việt Nam","Bru-nây Đa-rút-xa-lam","Lào","Cam-pu-chia"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Quốc gia nào sau đây là thành viên thứ sáu gia nhập ASEAN, đánh dấu sự mở rộng đầu tiên của tổ chức này?","rendered_options":["Việt Nam","Bru-nây Đa-rút-xa-lam","Lào","Cam-pu-chia"]},{"question":"Để trở thành ASEAN 10 vào năm 1999, những quốc gia nào đã gia nhập tổ chức sau năm 1984 (sau Bru-nây)?","options":["Việt Nam, Lào, Mi-an-ma, Phi-líp-pin.","Bru-nây, Việt Nam, Lào, Cam-pu-chia.","Bru-nây, Việt Nam, Lào, Mi-an-ma, Cam-pu-chia.","Việt Nam, Lào, Mi-an-ma, Cam-pu-chia."],"correctAnswerIndex":3,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Để trở thành ASEAN 10 vào năm 1999, những quốc gia nào đã gia nhập tổ chức sau năm 1984 (sau Bru-nây)?","rendered_options":["Việt Nam, Lào, Mi-an-ma, Phi-líp-pin.","Bru-nây, Việt Nam, Lào, Cam-pu-chia.","Bru-nây, Việt Nam, Lào, Mi-an-ma, Cam-pu-chia.","Việt Nam, Lào, Mi-an-ma, Cam-pu-chia."]},{"question":"Sự kiện Việt Nam gia nhập ASEAN vào năm 1995 có ý nghĩa quan trọng như thế nào đối với tổ chức này?","options":["Đánh dấu sự khởi đầu của chính sách “Đông tiến” của ASEAN.","Hoàn thành mục tiêu mở rộng về mặt địa lý ra toàn bộ khu vực Đông Nam Á.","Thúc đẩy hợp tác quân sự giữa các nước thành viên trong bối cảnh Chiến tranh lạnh.","Mở ra một giai đoạn phát triển mới về hợp tác và đối thoại giữa các quốc gia trong khu vực."],"correctAnswerIndex":3,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Sự kiện Việt Nam gia nhập ASEAN vào năm 1995 có ý nghĩa quan trọng như thế nào đối với tổ chức này?","rendered_options":["Đánh dấu sự khởi đầu của chính sách “Đông tiến” của ASEAN.","Hoàn thành mục tiêu mở rộng về mặt địa lý ra toàn bộ khu vực Đông Nam Á.","Thúc đẩy hợp tác quân sự giữa các nước thành viên trong bối cảnh Chiến tranh lạnh.","Mở ra một giai đoạn phát triển mới về hợp tác và đối thoại giữa các quốc gia trong khu vực."]},{"question":"Một trong những mục tiêu chính của ASEAN trong giai đoạn phát triển mới (từ thập niên 90 của thế kỷ XX đến nay) là gì?","options":["Thiết lập một đơn vị tiền tệ chung cho toàn khu vực.","Xây dựng một Cộng đồng ASEAN vững mạnh trên ba trụ cột.","Hình thành một liên minh quân sự đối trọng với các cường quốc.","Phát triển mạnh mẽ ngành công nghiệp nặng tại các nước thành viên."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Một trong những mục tiêu chính của ASEAN trong giai đoạn phát triển mới (từ thập niên 90 của thế kỷ XX đến nay) là gì?","rendered_options":["Thiết lập một đơn vị tiền tệ chung cho toàn khu vực.","Xây dựng một Cộng đồng ASEAN vững mạnh trên ba trụ cột.","Hình thành một liên minh quân sự đối trọng với các cường quốc.","Phát triển mạnh mẽ ngành công nghiệp nặng tại các nước thành viên."]},{"question":"Trong giai đoạn từ năm 1976 đến 1991, ASEAN tập trung vào vấn đề hợp tác khu vực nào là chủ yếu?","options":["Giải quyết vấn đề Biển Đông.","Đối phó với vấn đề Cam-pu-chia.","Chống khủng bố xuyên quốc gia.","Hợp tác phát triển năng lượng hạt nhân."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong giai đoạn từ năm 1976 đến 1991, ASEAN tập trung vào vấn đề hợp tác khu vực nào là chủ yếu?","rendered_options":["Giải quyết vấn đề Biển Đông.","Đối phó với vấn đề Cam-pu-chia.","Chống khủng bố xuyên quốc gia.","Hợp tác phát triển năng lượng hạt nhân."]},{"question":"Cộng đồng Kinh tế ASEAN (AEC) được thành lập nhằm mục đích chính là gì?","options":["Tạo ra một không gian kinh tế duy nhất với sự lưu chuyển tự do của hàng hóa, dịch vụ, đầu tư, vốn và lao động có kỹ năng.","Xây dựng một khối quân sự chung để bảo vệ an ninh khu vực.","Thúc đẩy trao đổi văn hóa và giáo dục giữa các quốc gia thành viên.","Thành lập một ngân hàng trung ương chung cho toàn khu vực Đông Nam Á."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cộng đồng Kinh tế ASEAN (AEC) được thành lập nhằm mục đích chính là gì?","rendered_options":["Tạo ra một không gian kinh tế duy nhất với sự lưu chuyển tự do của hàng hóa, dịch vụ, đầu tư, vốn và lao động có kỹ năng.","Xây dựng một khối quân sự chung để bảo vệ an ninh khu vực.","Thúc đẩy trao đổi văn hóa và giáo dục giữa các quốc gia thành viên.","Thành lập một ngân hàng trung ương chung cho toàn khu vực Đông Nam Á."]},{"question":"Nguyên tắc cơ bản nào đã được các nước thành viên ASEAN nhất trí thực hiện trong quan hệ giữa các quốc gia?","options":["Ưu tiên quyền lợi quốc gia trên hết, bất kể ảnh hưởng đến nước khác.","Can thiệp vào công việc nội bộ của các quốc gia thành viên khi cần thiết.","Tôn trọng độc lập, chủ quyền, toàn vẹn lãnh thổ và bản sắc dân tộc của các thành viên.","Sử dụng vũ lực để giải quyết các tranh chấp trong khu vực."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Nguyên tắc cơ bản nào đã được các nước thành viên ASEAN nhất trí thực hiện trong quan hệ giữa các quốc gia?","rendered_options":["Ưu tiên quyền lợi quốc gia trên hết, bất kể ảnh hưởng đến nước khác.","Can thiệp vào công việc nội bộ của các quốc gia thành viên khi cần thiết.","Tôn trọng độc lập, chủ quyền, toàn vẹn lãnh thổ và bản sắc dân tộc của các thành viên.","Sử dụng vũ lực để giải quyết các tranh chấp trong khu vực."]},{"question":"Nhận định nào sau đây đánh giá đúng nhất về bối cảnh ra đời của Hiệp hội các quốc gia Đông Nam Á (ASEAN) vào năm 1967?","options":["Các quốc gia Đông Nam Á nhận thấy sự cần thiết phải hợp tác để cùng phát triển kinh tế, hạn chế ảnh hưởng của các cường quốc bên ngoài và giải quyết các tranh chấp nội bộ khu vực.","Mục tiêu chính là thành lập một liên minh quân sự vững mạnh để chống lại sự bành trướng của chủ nghĩa cộng sản ở Đông Nam Á.","Các quốc gia Đông Nam Á muốn thiết lập một thị trường chung duy nhất để cạnh tranh với các khối kinh tế lớn trên thế giới.","Nhu cầu thành lập một tổ chức để thống nhất chính sách đối ngoại, đối phó với các vấn đề toàn cầu như biến đổi khí hậu và khủng bố."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Nhận định nào sau đây đánh giá đúng nhất về bối cảnh ra đời của Hiệp hội các quốc gia Đông Nam Á (ASEAN) vào năm 1967?","rendered_options":["Các quốc gia Đông Nam Á nhận thấy sự cần thiết phải hợp tác để cùng phát triển kinh tế, hạn chế ảnh hưởng của các cường quốc bên ngoài và giải quyết các tranh chấp nội bộ khu vực.","Mục tiêu chính là thành lập một liên minh quân sự vững mạnh để chống lại sự bành trướng của chủ nghĩa cộng sản ở Đông Nam Á.","Các quốc gia Đông Nam Á muốn thiết lập một thị trường chung duy nhất để cạnh tranh với các khối kinh tế lớn trên thế giới.","Nhu cầu thành lập một tổ chức để thống nhất chính sách đối ngoại, đối phó với các vấn đề toàn cầu như biến đổi khí hậu và khủng bố."]},{"question":"Việc ASEAN mở rộng từ 6 thành viên ban đầu lên 10 thành viên vào cuối thế kỉ XX, trong đó có Việt Nam (1995), có ý nghĩa quan trọng nhất nào đối với sự phát triển của khu vực Đông Nam Á?","options":["Thúc đẩy quá trình hình thành một nhà nước thống nhất với một hệ thống pháp luật chung cho toàn khu vực.","Hoàn thành mục tiêu về địa lý, tạo cơ sở cho một Đông Nam Á hòa bình, ổn định và hợp tác toàn diện, tăng cường vị thế khu vực trên trường quốc tế.","Tăng cường khả năng phòng thủ quân sự chung, sẵn sàng đối phó với mọi mối đe dọa từ bên ngoài.","Thống nhất hoàn toàn hệ thống tiền tệ và chính sách kinh tế vĩ mô giữa các quốc gia thành viên."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Việc ASEAN mở rộng từ 6 thành viên ban đầu lên 10 thành viên vào cuối thế kỉ XX, trong đó có Việt Nam (1995), có ý nghĩa quan trọng nhất nào đối với sự phát triển của khu vực Đông Nam Á?","rendered_options":["Thúc đẩy quá trình hình thành một nhà nước thống nhất với một hệ thống pháp luật chung cho toàn khu vực.","Hoàn thành mục tiêu về địa lý, tạo cơ sở cho một Đông Nam Á hòa bình, ổn định và hợp tác toàn diện, tăng cường vị thế khu vực trên trường quốc tế.","Tăng cường khả năng phòng thủ quân sự chung, sẵn sàng đối phó với mọi mối đe dọa từ bên ngoài.","Thống nhất hoàn toàn hệ thống tiền tệ và chính sách kinh tế vĩ mô giữa các quốc gia thành viên."]},{"question":"Một quốc gia thành viên ASEAN đang phải đối mặt với một tranh chấp về tài nguyên biển với một quốc gia láng giềng không phải thành viên ASEAN. Thay vì sử dụng vũ lực, quốc gia này quyết định thúc đẩy các cuộc đàm phán song phương và đa phương, đồng thời kêu gọi sự hỗ trợ của luật pháp quốc tế. Hành động này thể hiện rõ nhất nguyên tắc hoạt động nào của ASEAN?","options":["Nguyên tắc không can thiệp vào công việc nội bộ của nhau.","Nguyên tắc hợp tác chặt chẽ trong lĩnh vực quân sự và an ninh.","Nguyên tắc giải quyết mọi tranh chấp bằng biện pháp hòa bình.","Nguyên tắc liên kết kinh tế để đạt tăng trưởng nhanh chóng."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Một quốc gia thành viên ASEAN đang phải đối mặt với một tranh chấp về tài nguyên biển với một quốc gia láng giềng không phải thành viên ASEAN. Thay vì sử dụng vũ lực, quốc gia này quyết định thúc đẩy các cuộc đàm phán song phương và đa phương, đồng thời kêu gọi sự hỗ trợ của luật pháp quốc tế. Hành động này thể hiện rõ nhất nguyên tắc hoạt động nào của ASEAN?","rendered_options":["Nguyên tắc không can thiệp vào công việc nội bộ của nhau.","Nguyên tắc hợp tác chặt chẽ trong lĩnh vực quân sự và an ninh.","Nguyên tắc giải quyết mọi tranh chấp bằng biện pháp hòa bình.","Nguyên tắc liên kết kinh tế để đạt tăng trưởng nhanh chóng."]},{"question":"Trong bối cảnh hội nhập kinh tế toàn cầu và sự xuất hiện của các Hiệp định thương mại tự do thế hệ mới, vai trò nào của ASEAN được xem là then chốt nhất để thúc đẩy sự phát triển bền vững và cạnh tranh của các quốc gia thành viên?","options":["Phát triển các sáng kiến bảo tồn di sản văn hóa và đa dạng sinh học trong khu vực.","Thành lập một cơ chế phối hợp quân sự chung để tăng cường sức mạnh phòng thủ khu vực.","Tạo lập một môi trường kinh doanh thuận lợi, thúc đẩy thương mại nội khối và thu hút đầu tư nước ngoài thông qua liên kết kinh tế sâu rộng.","Xây dựng một chương trình giáo dục thống nhất cho tất cả các quốc gia thành viên."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong bối cảnh hội nhập kinh tế toàn cầu và sự xuất hiện của các Hiệp định thương mại tự do thế hệ mới, vai trò nào của ASEAN được xem là then chốt nhất để thúc đẩy sự phát triển bền vững và cạnh tranh của các quốc gia thành viên?","rendered_options":["Phát triển các sáng kiến bảo tồn di sản văn hóa và đa dạng sinh học trong khu vực.","Thành lập một cơ chế phối hợp quân sự chung để tăng cường sức mạnh phòng thủ khu vực.","Tạo lập một môi trường kinh doanh thuận lợi, thúc đẩy thương mại nội khối và thu hút đầu tư nước ngoài thông qua liên kết kinh tế sâu rộng.","Xây dựng một chương trình giáo dục thống nhất cho tất cả các quốc gia thành viên."]},{"question":"Thách thức lớn nhất mà ASEAN phải đối mặt trong việc duy trì vai trò trung tâm của mình trong cấu trúc khu vực, đặc biệt khi các cường quốc lớn gia tăng cạnh tranh ảnh hưởng, là gì?","options":["Nguy cơ bị chia rẽ, thiếu sự đồng thuận trong các vấn đề lớn, khiến các quốc gia thành viên dễ bị lôi kéo vào quỹ đạo ảnh hưởng của các cường quốc bên ngoài, làm suy yếu tiếng nói chung của ASEAN.","Sự khác biệt về trình độ phát triển kinh tế giữa các quốc gia thành viên gây khó khăn cho quá trình hội nhập kinh tế sâu rộng.","Các vấn đề về an ninh phi truyền thống như biến đổi khí hậu, dịch bệnh, tội phạm xuyên quốc gia.","Việc thiếu một quân đội chung đủ mạnh để đảm bảo an ninh khu vực."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Thách thức lớn nhất mà ASEAN phải đối mặt trong việc duy trì vai trò trung tâm của mình trong cấu trúc khu vực, đặc biệt khi các cường quốc lớn gia tăng cạnh tranh ảnh hưởng, là gì?","rendered_options":["Nguy cơ bị chia rẽ, thiếu sự đồng thuận trong các vấn đề lớn, khiến các quốc gia thành viên dễ bị lôi kéo vào quỹ đạo ảnh hưởng của các cường quốc bên ngoài, làm suy yếu tiếng nói chung của ASEAN.","Sự khác biệt về trình độ phát triển kinh tế giữa các quốc gia thành viên gây khó khăn cho quá trình hội nhập kinh tế sâu rộng.","Các vấn đề về an ninh phi truyền thống như biến đổi khí hậu, dịch bệnh, tội phạm xuyên quốc gia.","Việc thiếu một quân đội chung đủ mạnh để đảm bảo an ninh khu vực."]}];
+        const options = {"timeLimit":15,"retriesAllowed":1,"showAnswers":false,"showExplanation":false,"aiAssessment":false,"scoring":{"mc":10,"tf":0,"sa":0,"essay":0,"tfMethod":"progressive"}};
+        const googleScriptUrl = "Long@321";
+        const examCode = "AJ4ZXC";
+
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.getAIExplanation = getAIExplanation;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) {
+                    acc[type] = [];
+                }
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' }
+            };
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let questionCounter = 0;
+
+            partOrder.forEach(partType => {
+                const questionsInPart = groupedQuestions[partType];
+                if (!questionsInPart || questionsInPart.length === 0) return;
+
+                if (groupInfo[partType]) {
+                    allHTML += `<h2 class="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b-2 border-indigo-300">${groupInfo[partType].title}</h2>`;
+                }
+                
+                questionsInPart.forEach(itemWithIndex => {
+                    questionCounter++;
+                    const { originalIndex, ...item } = itemWithIndex;
+                    const index = originalIndex;
+
+                    if (!item) return;
+
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswer || ''}" onchange="saveTextAnswer(this, ${index})">`;
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+
+            container.innerHTML = allHTML;
+            safeTypeset([container]);
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment && API_KEY) {
+                assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+                assessmentDisplay.classList.remove('hidden');
+                try {
+                    aiAssessment = await getAIAssessment(finalScore, answerDetails);
+                } catch (e) {
+                    console.error("Error getting AI assessment:", e);
+                    aiAssessment = "Đã xảy ra lỗi khi AI tạo nhận xét.";
+                }
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                assessmentDisplay.classList.remove('hidden');
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else {
+                    isCorrect = null;
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation && API_KEY) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="getAIExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        function stripHtml(html) {
+            if (!html) return "";
+            let doc = new DOMParser().parseFromString(html, 'text/html');
+            // Remove any images inside as they are not text
+            doc.body.querySelectorAll('img').forEach(img => img.remove());
+            // Replace <br> with newline for better readability in the prompt
+            doc.body.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+            return doc.body.textContent || "";
+        }
+
+        async function getAIExplanation(index, button) {
+            if (!API_KEY) return;
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+            
+            const isHidden = explanationContainer.classList.contains('hidden');
+
+            if (!isHidden && quizData[index].explanation) {
+                explanationContainer.classList.add('hidden');
+                button.textContent = 'Xem giải thích từ AI';
+                return;
+            }
+            
+            explanationContainer.classList.remove('hidden');
+
+            if (quizData[index].explanation) {
+                explanationContainer.innerHTML = quizData[index].rendered_explanation;
+                safeTypeset([explanationContainer]);
+                button.textContent = 'Ẩn giải thích';
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'AI đang giải thích...';
+            explanationContainer.innerHTML = '<div class="animate-pulse">Đang tải...</div>';
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const item = quizData[index];
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây. Lời giải phải chính xác, dễ hiểu và phù hợp với phương pháp giảng dạy của chương trình GDPT 2018.\n---**CÂU HỎI:**\n${stripHtml(item.rendered_question)}\n---`;
+
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**CÁC LỰA CHỌN:**\n`;
+                    item.options.forEach((opt, i) => { prompt += `${String.fromCharCode(65 + i)}. ${stripHtml(item.rendered_options[i])}\n`; });
+                    prompt += `---\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${stripHtml(item.rendered_options[item.correctAnswerIndex])}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n`;
+                    item.statements.forEach((s, i) => { prompt += `${String.fromCharCode(97 + i)}) ${stripHtml(s.rendered_statement)} -> ${s.is_correct ? 'Đúng' : 'Sai'}\n`; });
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${stripHtml(item.rendered_answer)}`;
+                }
+                
+                prompt += `\n---\n**YÊU CẦU:** Hãy giải thích chi tiết từng bước để đi đến đáp án đúng. Định dạng tất cả các công thức toán học bằng LaTeX. Dùng **...** để in đậm các thuật ngữ quan trọng.`;
+                
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                quizData[index].explanation = explanationText;
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                quizData[index].rendered_explanation = htmlContent;
+                
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+
+            } catch (error) {
+                console.error("Error getting AI explanation:", error);
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi khi tạo giải thích.</p>';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Ẩn giải thích';
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) return "Không thể tạo nhận xét do thiếu API key.";
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const performanceSummary = quizData.map((item, index) => {
+                    const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                    if (!detail) return `- Câu ${index + 1}: Không có dữ liệu.`;
+
+                    const questionText = stripHtml(item.rendered_question || '').substring(0, 150);
+                    let resultText = '';
+                    
+                    const type = mapType(item.type);
+                    if (type === 'true-false' && detail.details) {
+                        const correctCount = detail.details.filter(d => d.isCorrect).length;
+                        resultText = `Đúng ${correctCount}/4 ý`;
+                    } else if (detail.isCorrect === true) {
+                        resultText = 'Đúng';
+                    } else if (detail.isCorrect === false) {
+                        resultText = 'Sai';
+                    } else {
+                        resultText = 'Tự luận (chưa chấm)';
+                    }
+
+                    return `- Câu ${index + 1} (Nội dung: "${questionText}..."): Kết quả - ${resultText}.`;
+                }).join('\n');
+
+
+                const prompt = `Bạn là một giáo viên AI giàu kinh nghiệm, tận tâm và luôn đưa ra những nhận xét mang tính xây dựng. Nhiệm vụ của bạn là phân tích kết quả bài làm của một học sinh và đưa ra một nhận xét ngắn gọn (khoảng 4-5 câu) về năng lực của học sinh đó.
+
+                **NGUYÊN TẮC BẮT BUỘC:**
+                1.  **CỤ THỂ, KHÔNG CHUNG CHUNG:** Nhận xét của bạn PHẢI dựa trên kết quả chi tiết của bài kiểm tra được cung cấp. TUYỆT ĐỐI KHÔNG đưa ra những lời khuyên sáo rỗng.
+                2.  **TRÍCH DẪN KIẾN THỨC:** Hãy đề cập đến nội dung cụ thể của câu hỏi mà học sinh làm đúng hoặc sai để minh họa cho nhận xét của bạn.
+                3.  **GIỌNG VĂN TÍCH CỰC:** Luôn sử dụng giọng văn thân thiện, khích lệ, tập trung vào sự tiến bộ.
+
+                **CẤU TRÚC NHẬN XÉT:**
+                1.  **Mở đầu:** Bắt đầu bằng một câu động viên chung về nỗ lực của học sinh.
+                2.  **Điểm mạnh:** Chỉ ra (các) mảng kiến thức hoặc dạng câu hỏi mà học sinh làm tốt. Ví dụ: "Em đã làm rất tốt các câu hỏi về [tên chủ đề], cho thấy em nắm vững kiến thức về [khái niệm cụ thể]."
+                3.  **Điểm cần cải thiện:** Nhẹ nhàng chỉ ra (các) câu hỏi hoặc khái niệm cụ thể mà học sinh còn nhầm lẫn. Ví dụ: "Ở câu [số], có vẻ em còn hơi nhầm lẫn giữa [khái niệm A] và [khái niệm B]. Em hãy xem lại phần [tên kiến thức] nhé."
+                4.  **Gợi ý hành động:** Đưa ra lời khuyên cụ thể để cải thiện. Ví dụ: "Để củng cố phần này, em có thể đọc lại bài [tên bài học] và làm thêm các bài tập về [dạng bài]."
+                5.  **Kết luận:** Kết thúc bằng một câu khích lệ, tạo động lực cho lần sau.
+
+                ---
+                **DỮ LIỆU BÀI LÀM CỦA HỌC SINH:**
+                - **Điểm số:** ${score} / 10
+                - **Chi tiết từng câu:**
+                ${performanceSummary}
+                ---
+                Bây giờ, hãy viết nhận xét của bạn.
+                `;
+
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                return response.text || "Không thể tạo nhận xét.";
+
+            } catch (error) {
+                console.error("Error generating AI assessment:", error);
+                return "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+            }
+        }
+    </script>
+</body>
+</html>
+    
