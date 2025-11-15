@@ -1,0 +1,222 @@
+
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bài Tập Luyện Tập - Mã đề Q1JRW4</title>
+        
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <script>
+            window.MathJax = {
+                tex: {
+                    packages: {'[+]': ['ams']},
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                },
+                chtml: { fontCache: 'global' }
+            };
+        </script>
+        <script type="text/javascript" id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+        </script>
+
+        <style>
+            body { font-family: 'Inter', sans-serif; background-color: #111827; color: #f3f4f6; overflow-x: hidden; position: relative; min-height: 100vh; }
+            .view { transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out; width: 100%; }
+            .view.hidden { opacity: 0; transform: scale(0.95); pointer-events: none; position: absolute; top: 0; left: 0; }
+            .answer-btn.correct { background-color: #22c55e !important; border-color: #16a34a !important; transform: scale(1.05); }
+            .answer-btn.wrong { background-color: #ef4444 !important; border-color: #dc2626 !important; }
+            .answer-btn.disabled { opacity: 0.7; cursor: not-allowed; }
+            @keyframes shake-horizontal {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+            .shake { animation: shake-horizontal 0.4s; }
+            @keyframes gift-reveal { 0% { transform: translateY(50px) scale(0.5); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+            .gift-reveal-animation { animation: gift-reveal 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
+        </style>
+    </head>
+    <body class="flex items-center justify-center p-4">
+
+        <div class="w-full max-w-4xl mx-auto relative">
+            <div id="game-view" class="view">
+                <div id="game-header" class="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg mb-4">
+                    <div id="progress-display" class="font-bold text-lg"></div>
+                    <div id="score-display" class="font-bold text-lg text-yellow-400">Điểm: 0</div>
+                </div>
+                <div id="quiz-content" class="bg-gray-800 p-8 rounded-2xl shadow-2xl text-center">
+                    <h2 id="question-display" class="text-3xl font-bold mb-8 min-h-[100px] flex items-center justify-center"></h2>
+                    <div id="answers-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <div id="feedback-message" class="mt-8 text-2xl font-bold h-8"></div>
+                </div>
+                <button id="next-question-btn" class="hidden w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-md transition-transform transform hover:scale-105">Câu tiếp theo</button>
+            </div>
+            
+            <div id="end-view" class="view hidden bg-gray-800 p-8 rounded-2xl shadow-2xl text-center">
+                <h1 id="end-title" class="text-4xl font-extrabold text-yellow-400 mb-2"></h1>
+                <p id="end-score" class="text-lg text-gray-300 mb-6"></p>
+                <div class="bg-gray-900 p-6 rounded-xl my-8">
+                    <p class="text-gray-400 mb-4">Phần quà của bạn là:</p>
+                    <div id="gift-display" class="text-8xl gift-reveal-animation"></div>
+                </div>
+                <button id="play-again-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg text-lg transition-transform transform hover:scale-105">Chơi Lại</button>
+            </div>
+        </div>
+
+        <audio id="sfx-correct" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c3c3c7274e.mp3" preload="auto"></audio>
+        <audio id="sfx-wrong" src="https://cdn.pixabay.com/audio/2022/03/10/audio_514298a59c.mp3" preload="auto"></audio>
+        <audio id="sfx-complete" src="https://cdn.pixabay.com/audio/2022/03/15/audio_5514068e69.mp3" preload="auto"></audio>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const preloadedQuestions = [{"question":"Căn bậc hai dương của $16$ là bao nhiêu?","answers":["$4$","$-4$","$256$","$8$"],"correctAnswerIndex":0},{"question":"Căn bậc hai số học của $81$ là bao nhiêu?","answers":["$9$","$-9$","$\\\\\\pm 9$","$3$"],"correctAnswerIndex":0},{"question":"Số nào dưới đây là căn bậc hai của $49$?","answers":["$7$","$-7$","$\\\\\\pm 7$","$14$"],"correctAnswerIndex":2},{"question":"Giá trị của biểu thức $\\\\\\sqrt{25}$ là bao nhiêu?","answers":["$5$","$-5$","$\\\\\\pm 5$","$12.5$"],"correctAnswerIndex":0},{"question":"Trong các số sau, số nào không có căn bậc hai trong tập số thực?","answers":["$0$","$1$","$-2$","$4$"],"correctAnswerIndex":2}];
+                let quizData = { questions: [], currentQuestionIndex: 0, score: 0 };
+                const GIFTS = ['📱', '👜', '💎', '🚗', '⌚️', '💻', '🎁', '👑', '🚀'];
+
+                const gameView = document.getElementById('game-view');
+                const endView = document.getElementById('end-view');
+                const views = document.querySelectorAll('.view');
+                const progressDisplay = document.getElementById('progress-display');
+                const scoreDisplay = document.getElementById('score-display');
+                const questionDisplay = document.getElementById('question-display');
+                const answersContainer = document.getElementById('answers-container');
+                const feedbackMessage = document.getElementById('feedback-message');
+                const nextQuestionBtn = document.getElementById('next-question-btn');
+                const endTitle = document.getElementById('end-title');
+                const endScore = document.getElementById('end-score');
+                const giftDisplay = document.getElementById('gift-display');
+                const playAgainBtn = document.getElementById('play-again-btn');
+
+                function switchView(targetId) {
+                    views.forEach(view => {
+                        view.classList.toggle('hidden', view.id !== targetId);
+                    });
+                }
+
+                function playSound(type) {
+                    const audio = document.getElementById('sfx-' + type);
+                    if (audio) {
+                        audio.currentTime = 0;
+                        audio.play().catch(e => console.error("Audio playback error:", e));
+                    }
+                }
+
+                function renderCurrentQuestion() {
+                    feedbackMessage.textContent = '';
+                    feedbackMessage.className = 'mt-8 text-2xl font-bold h-8';
+                    nextQuestionBtn.classList.add('hidden');
+                    answersContainer.innerHTML = '';
+                    const questionData = quizData.questions[quizData.currentQuestionIndex];
+                    
+                    progressDisplay.textContent = `Câu ${quizData.currentQuestionIndex + 1}/${quizData.questions.length}`;
+                    scoreDisplay.textContent = `Điểm: ${quizData.score}`;
+                    questionDisplay.innerHTML = questionData.question;
+                    
+                    questionData.answers.forEach((answer, index) => {
+                        const button = document.createElement('button');
+                        button.className = "answer-btn w-full bg-gray-700 hover:bg-indigo-600 border-2 border-transparent text-white font-semibold py-6 px-4 rounded-lg text-lg transition-all duration-300";
+                        button.innerHTML = answer;
+                        button.dataset.index = index;
+                        button.addEventListener('click', handleAnswerClick);
+                        answersContainer.appendChild(button);
+                    });
+
+                    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                        MathJax.typesetPromise([questionDisplay, answersContainer]).catch(err => console.error('MathJax error:', err));
+                    }
+                }
+
+                function handleAnswerClick(e) {
+                    const selectedIndex = parseInt(e.target.dataset.index, 10);
+                    const correctAnswerIndex = quizData.questions[quizData.currentQuestionIndex].correctAnswerIndex;
+                    
+                    document.querySelectorAll('.answer-btn').forEach(btn => {
+                        btn.removeEventListener('click', handleAnswerClick);
+                        btn.classList.add('disabled');
+                    });
+                    
+                    if (selectedIndex === correctAnswerIndex) {
+                        quizData.score += 10;
+                        e.target.classList.add('correct');
+                        feedbackMessage.textContent = "🎉 Chính xác! 🎉";
+                        feedbackMessage.classList.add('text-green-400');
+                        playSound('correct');
+                    } else {
+                        e.target.classList.add('wrong', 'shake');
+                        feedbackMessage.textContent = "Rất tiếc, sai rồi!";
+                        feedbackMessage.classList.add('text-red-400');
+                        playSound('wrong');
+                        const correctButton = document.querySelector(`.answer-btn[data-index='${correctAnswerIndex}']`);
+                        if(correctButton) correctButton.classList.add('correct');
+                    }
+                    
+                    scoreDisplay.textContent = `Điểm: ${quizData.score}`;
+                    nextQuestionBtn.classList.remove('hidden');
+                }
+
+                function showEndScreen() {
+                    switchView('end-view');
+                    playSound('complete');
+                    const total = quizData.questions.length;
+                    const correctCount = quizData.score / 10;
+                    const percentage = total > 0 ? (correctCount / total) * 100 : 0;
+                    
+                    if (percentage >= 80) endTitle.textContent = "🏆 Xuất Sắc! 🏆";
+                    else if (percentage >= 50) endTitle.textContent = "👍 Rất Tốt! 👍";
+                    else endTitle.textContent = "💪 Cố gắng hơn nhé! 💪";
+                    
+                    endScore.textContent = `Bạn đã trả lời đúng ${correctCount}/${total} câu hỏi và đạt được ${quizData.score} điểm.`;
+                    giftDisplay.textContent = GIFTS[Math.floor(Math.random() * GIFTS.length)];
+                }
+
+                function startGame() {
+                    quizData.questions = JSON.parse(JSON.stringify(preloadedQuestions));
+                    quizData.currentQuestionIndex = 0;
+                    quizData.score = 0;
+
+                    for (let i = quizData.questions.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [quizData.questions[i], quizData.questions[j]] = [quizData.questions[j], quizData.questions[i]];
+                    }
+
+                    quizData.questions.forEach(q => {
+                        if (q.answers && q.answers.length > 0) {
+                            const correctAnswerText = q.answers[q.correctAnswerIndex];
+                            for (let i = q.answers.length - 1; i > 0; i--) {
+                                const j = Math.floor(Math.random() * (i + 1));
+                                [q.answers[i], q.answers[j]] = [q.answers[j], q.answers[i]];
+                            }
+                            q.correctAnswerIndex = q.answers.indexOf(correctAnswerText);
+                        }
+                    });
+
+                    switchView('game-view');
+                    renderCurrentQuestion();
+                }
+
+                playAgainBtn.addEventListener('click', startGame);
+
+                nextQuestionBtn.addEventListener('click', () => {
+                    quizData.currentQuestionIndex++;
+                    if (quizData.currentQuestionIndex < quizData.questions.length) {
+                        renderCurrentQuestion();
+                    } else {
+                        showEndScreen();
+                    }
+                });
+                
+                if (preloadedQuestions.length > 0) {
+                    startGame();
+                } else {
+                    document.body.innerHTML = '<h1 class="text-white text-2xl font-bold text-center">Không có câu hỏi nào để chơi.</h1>';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    
