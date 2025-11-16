@@ -1,0 +1,634 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài kiểm tra - 16/11/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\(', '\)']], displayMath: [['$$', '$$'], ['\[', '\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">Bài kiểm tra - 16/11/2025</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">NLGKIL</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6">
+                <h2 class="text-2xl font-bold text-gray-800">Bài kiểm tra - 16/11/2025</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "AIzaSyAzvr2Py2_mr5Z4R3YWXi-dyO1ufA2paas";
+        const quizData = [{"type":"multiple-choice","question":"<strong></strong> Cho hàm số <strong>$f(x) = {x^2} - 2x + 3$</strong>. Tính <strong>$f(2)$</strong>.","main_question":null,"questionImage":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASEAAAEnCAIAAABpJmJRAAAAAXNSR0IArs4c6QAALMZJREFUeF7tnXn4VVX1/8UkBUEBRTBmUr4kRBD0lIBRmEpphSFpgRY5MZiCmmMFEiQC9iAmChQhThhZgIqSiEHIYCCVZhQyqSCCYAjhgPH7vXD5HC73nnvvOftM+5yz9h88fD6fPb73XmfvvfZ7rXXY/yuf/vOf/1T465/+9CfjspVrNv7rQw89dMYZZ9jWK/pjIVY//vGPBw0apFg5CES02qn28MMylJ5++umnnnoqQwPSoWQBgUzJ2F//+lfm5IMPPsjCzOgYsoJAdmRs48aNImNr1qzJyuzoOLKAQHZkbOXKlbKD8Z8szIyOISsI1OBOVm4s//3vf48++uhyf2XT6Nixo1nZyjWb/fXqq6+eNm0a/enVq9fMmTNdO2ZWs1QVpKxtWDGcW2+99e233+Zfe2ZQemIhVsa9OvbYY3ft2nWYsWbJNl3ZSSedJJPUtGnTcoMy1lhSYZCytmHFcFSvWLRIVK9Y5dwAQNzHJNNrr72mV7KsnLOyMI6M3Mdmz55dqE5csGBBFiZHx5AJBDIiY6tWrSqcjqIfMzFTOoi0IpARGSvauIq2tbROTpT9/tnPfnb++edH2YLW/RECWZCx0gtY4fVMp1oRSBaBLMiYPD0XJXa2l19+uUaNGm3bti3606ZNm/h9mzZtkoVeW88JAlmQsUceeaR0tuAuos3v2bPnv/71r0WLFhVmmD9/Pj/qSSknSzzxYWZBxlyJHUL7GDZsGBCPGzeuEOh58+bxY58+fRJHXzuQBwRSz/PYsmVLhw4dXHnAzzzzzGc+8xn++vrrr3OebNasGVyNI4888sQTT2zevHmp7jEIkyNdnBhZ2VliVMiIbJvBjPA87rvvvnLfwqlTp/KWP2rUKDL86Ec/Eq7GE088wY+wHEq5IEGYHBGxBALyS7RXhbMcZH6NmTpZsB/729/+Vk7GuJLxp8suu6xmzZq/+c1v3n//fX588skn+bd37955OKXoGG1AIPX3sd/97nflcJRHs4YNG6LeePPNNx944AF+5DLWunXrzp0724B+gn34yU9+8vDDDyfYgfw0nXoZ27BhQ+F5gJlzfty+fbtM5ODBg/n3/vvvX7hw4dq1a/v27ZufCdaRJo5A6mXMC4Knnnpqp06d0OD379+f/KpR9AKa5gkLgVzImNzK/ve//+3du7dly5af+9znwoJP61EEqiKQFxm76KKLBAt9eq66JjRDuAjkRcYef/xxgPvYxz4mx0VNikBsCGRfxlDZo/wYPXo0mPJK1r59+9jA1YYUARBIPc+jaBbr1atX5KGE30geCB/sZnXr1i038baxBKSfEfXK1Z8HvARaPOCCIrJ2q9acJfZJRngeRXQNprDoN9CmatWq9fWvf33r1q1BXvqDlDVmCUTH83D15yFSLQAGGW+QshZiFcTTcxZ4HlVPI1iyoE6cO3duo0aNqmbWDIpA6Ahk/z4WOmTZqFDtoGObR5Wx2KDWhnKKgMpYTidehx0bAipjsUGtDeUUAZWxnE68Djs2BFTGYoNaG8opAipjOZ14HXZsCGSf51EIZUScCZrIgD8PSAm4xJM3aKgeilXhyjFjn+SF5xGWR4eMcReU56FxW2LbybUhRSBaBPQ+Fi2+WrsikCYZ279/P461KxDndToVAQsRSJOMEY0Wx9qHH56mPls45dqlmBFIzXpFwLp16xYzOnlrTtQAeRt11ONNjYzhEVF9toW1GtCRPvfcc3//+9+xqQurTq2nHAKpkbF+/frpLIaCwLZt2z772c9iCrlixYovfOELOJwMpVqtJPUyplNojABWqnj5nzFjBr6Bv/Od7xAv6tVXX8XNCYE4CI947rnnfvvb37755pt/+ctfkg2HysYNaUFXBGrwPUsLND169ICIwIWhKJ5YYf+/9KUvpWhEkSKPFL344ovPP//8+vXrCxsiis0rr7yCt0l+iQKpRYsWBLJxMvCbVq1atWvX7tOf/vTRRx8daQ8zXzkrFsbMgSVbbqj8WZyouCYWOlWYla1cc4W/ioxVmJvKGYzbpcUgZWPGigCixNP485//vGPHDuJpCFwf//jH/+/DdNRRR6FA2rlzJ28hJ5xwwpgxYxga2xfROSTshqR9+/ZxpBwwYAChEksBD4KGheuq6vwaz6DK2CGLJwPrBpIhbv2feuopkRbkpEmTJl/+8pe7dOnC7oSYyYDReUyfPn3dunUcERs3buygwNPI0qVLEU5EjrIin2xoeFlmuysEKwNYFX04IpJ8qk2NziPz54qAA0SoCGFzySWX4N9OBIxj8zXXXDNp0iTURWxfjoDxJ/zhDR069LzzzisUMH5PNjauadOm4e3jtNNOky698MILP/zhD3/+85/rVc1sjlTGzHCzq9Ty5csRA7Qa7GP0jIfEX/ziFxwI8exfKFreO0380SFDhkyePPmrX/0qzpUpSBOEv+Ff75VoTkEgZTImZhc6eYUIPPTQQ7fddhuaDH7J3Yn71fXXX+96ifKLG7qQQYMG3Xnnnaeccgpl3333XXYzJ1qi39pymz9lMpbbeXIdOIc3fIwjYygJ2a+QB6LLizyEmJo2bYrcXnXVVaJm/MMf/sA5U1/VvCOsMuYdK7tyogZkrXNZolsoJCZMmOCc66Lo6Omnn86GhqaRynlV48Km50aPOKuMeQTKrmyEmeVB+e2336ZbrH62L3abqLt4/PHHjxgxgihTaP9Rq3BuRMsi72yaKiCgMpa+5UFga4ltTeJ8yCmORe93GMbxoNFGUlbOjWhZUK5wT/Pbeq7yqz+Pg9MdnQcLM28Q0rOiXk2ZMoWo1vz+uOOOQzWPE/8KbIwKI3KN21K49CujwUvar3/9a/giFOEBjaBThQrMIEiGiFWRJMffK/XnUeTQIcJIJaHEIoFeyI2IADQkXrHeeOONINFVXP15+PJ9smfPnptuukn6Q23vvfeeUzxjvk80bktezh2cyv74xz8yWq5eI0eOhAaV7MjZP4cPHy6PBChgxo8fr3cz1xnR+1iyC9Vr6zwHQ3EiN6p5NOkxaDi89IzzIQpGETPUjGhBVMxKcVMZ87KWEs6D+k7iWbdu3Rp9wzHHHJNwhwqaZzdD2Sgy/5e//IXXcBWzotlRGbNnubr3ZMmSJaJFRHXO2cxCexNk3nk8YDf77W9/azum8fZPZSxevH22hvXX3Xffzc6AaKFXqF+/vs8KYspO9xwxg3fChhZTw2loRmXM3lnCDIyrl/Ck0OBxULS3r4cdhphde+21osFH//nSSy/Z3Ns4+6YyFifaPtriYdd53mXt8gblo3BCWfkK8C2gcVggXMzeeuuthDpiV7MqY3bNh/SGvQsBgxbI/+FV4Nkm9F5GFA8aQiMuQ+gtAoaYFRpWhz6EtFSoPI+DMxWEBxBu3BbUBr///e/pGQZgl156aQVFYpA+R8eouOOOO5YtWyb9h4xSJAzhYlVYeRA0ouiV8jws5XmsWrWqd+/ekCdg32IsF4QzUblsKOyTYhA//Bk/IpxvhQIyc+bMeCKkBGG9VC1rjBVToGdFu04cnA85JXJWxPrYtqcw70jReR7NeGygyKxZs3A+571s9nKqjNk1p5yyxGIFNzWh2DInNTzUjBgEIGyi/8jzw7TKWFKL0KVdrMLgs/MHTMIwuLSoZ0ZdwSnI2WefTVE2Z6xgjOrIQiGVMVtmEYccHKvoDbwkrMJs6VawfmAfIL4P8FAAbzhYZWktrTJmxcxxlIInwbGKN9wrrrjCzJmUFSM5tBOcFRmOeLbininH4LwllTErZhxlPawOunLBBReE7vTGdYTGdtB+8WJbRkFKKV7MfvWrX/ktnoH8KmPJTyL+6IVHy3L8xje+kXyHwu4BYSu4m1ErGnC5cOYqqYwlPN1wpiZOnMhZEZ8cEJEyc0osghUXq+J0RF4mEgY93uaV53EQ70RYAuxgqDq4sUBB+uY3v1k6+xH1KqA/D4Ne4YUfFyAMkGEK38o1Rcc+Meiz00OzXinPI3meBz45CA7aq1cvFIm463DlTETE8wjuz8O1t/LLcn3GgTHMD87D4ozENRkzKqpyNYIgadwr5XnEe2goac1h1stzbcK9ib55UZmiPkWJGn1rtrSg97HEZgKTYTGyIkIKAVMS60eMDaPU6dOnDw2i+RD/P3lIKmPJzDL3foIz0DacI1Ft5yQRF7d58+YMluGn5bns85//PIGm5s6d68zRvHnziCZZ4VZZOJsqY8msbVQdEmmFeapbt24ynUiiVY7E3//+92kZDYR8ZexP9JMQvpznxSPy3r17CRwF45kI2l46rzLmBaWQ88BDlwcxnpuF0ZerxKglNgWKBLFDtTzRYeIkbty4EUURXcWkgP8TxANXzV56rjLmBaWQ82BSJdYr0PmSUnVEZAftEanLL7+cgQMCHoE8Fkk2G+d5PCkgV3gEQmGDdhSp89gllTGPQIWWjWhGElUIlX1OVB2l2BE9kBsOvweNVHCFCY1NCF8+Ct/97nd59fL1aVAZC014PFYkmxiqDhhGHotkMhs7g7iyI2J1KpgfPXr0EIOjH/zgB0Sy9z4pyvM4iFUQHoBHbxA4Hrz99ttpsn///uecc460HV27Hnvlulxi6NX8+fNF7YFBas+ePaUbZoyKqJGkV9y+UDCi8KhTpw7eSpo1a+bgVg4r5XnEzfOAycFiEkcd77zzTihRThLhLoTFqCDUCzdSAMHagCgwAogxoyKsXpVjn3zlK1/hDolPf0Tri1/8oscYN8rz8L7hh5DzySefFH09q8ogKl8IPbCsCjgffHRkJ589e7ZlvTukO7yYL1iwgODAN954I5/IxYsXe1TcU4vex2KaWQhEoq/nup/zm1gh4riOFLclGEoTQj6myfDZzPbt2++6666WLVuitacoDDgCU91www0YJXmpSWXMC0oh5IElIH5zITokpa8PYRgRVMFxkVr5BnE9i6D6EKrkxRknfLgz4iZGdVzM0Cuy937ve9/zUrvKmBeUguZhPmQTQ1kvOuvEU2x20FVHiptx8TTOVrZt27aq+ePMwKEDk4gzzzwT+6NC89lvfetb3MckIlzVpDJWFaIQMvAgJjQc1Im6iZUCynuueIlDzEKAO7wqtm7des899+CqGROkk08+GeIbTy/iFcJ7UhnzjpVhTpiv8sGDKNC+fXvDWjJdDLKSOCNALWRtJApECwFDzBA2EoKH+CGEVWdGZawqREEzEAJTQiugj9JNrByassPzGI3uPiji0ZdH3vD/wzGSwyQPZVdeeeX999+/Zs0a15ZVxqKdEL7Kcv5hE5NPtSZXBNAuYkfHn1avXp0KorAzCvHQeuGFF37qw8R/kLd0DUHXZCQIIPAq85Eg+2Gl7GyO24XDDbwy2Pwez/CMRxSEM+FaFoUvDAZenLkx29Mr6Qm96tq1q229IgAnvSJsTTmHH6HPUWW2jRchbNy4MfTuqVOnwm926Dso+p2yelb0AqNhnkcffRStPYXxX29YRc6KIV2MmFsZJiQ2D71evXpcIPkiIFdwd9CFXHLJJSi0XOk7KmNRTSXqxCeeeILaeRNr27ZtVM1kq14cfjjmm7Z5IoDnQUxT5Oqf//wnzI/77rsPF0BeFMUqY1Et0kceeURWiXiJ0eQRAc6KspXJq32yCYcCyBWsjsmTJ69du5aXaOSKL+YRRxzhvWMqY96x8pGTF2fRQfPyE0U0Zx9dKZM1WTvoCv3/xCc+IYjxVpb4VsZ+hVwNHDiQw4gvuSocYPpkrFatWsFXWNQ1zJkzR95S5YJhZ+revbuFHaNXsvPzqCiH7bSncGRs//79kV45gBu6Te3atSFl8vDH18Vm3DnnLFy4kB5yuyDoOP859dRTI8XHLxoYGg4ePBgLQiCFkovtlt8aIsoPmR3j6M6dO2/ZsoVFhcGLKI0ST+yubGj4ezPoSTgydvXVV0cajwNz9A4dOrAUODzwrA513WCosRV5+umnxU6MTUyIHdddd12k+PgdGsEruKyjBwdS+Lj86LeGKPKPHz+eatn/mWUM+3HwioBZQvvgoMgiNBt1CDKGgHXr1s2seY+lMImDro6POxLNeeQ7e6w89GxcJKiT7zHWsvwnBnz8DgFeAneMZ599Fjx5LcUbjN8aosiPagGH+PCn6RW+n4QqgeZD6NTJJnZ71B5mfQjqzwN/PaCAV0q2UZ7zeHWVfoToDQIXn+xdGzZs4IGPmvmRzaGwrcKR83DB57kcFiH2qqgJp2a8LBEShb9KHJZy+BQWj6FXRb095phj2CvEcwZ4cmJkHTtzF/oMlsOq6Pf0hH0VLhW9wqcQR1neFfft21fo7SN+rLj/jx07lv4MGzasaJE7/Y/JnwftefRwYOB34cgjjyysvKgtj38yaNdgRJy7ihxUSCUV+hwzd8EZlHjOWLly5VlnnVVK+EiqVzA8kCs2tFGjRl188cWAibq8Mhsj0r8+99xzePJAiipMYgWsUuPPA+cqZtt0zKWgY/PwT6NY9fHli7l1s+Yw0Bg9erRZ2ShK4TOjQYMG9957Lx4Z5LCNW2UJvhF/Yl9FxwbHN4gTSK/3MXbJosStNLYxc+IqbIttLbamfTUkYQc4yvL19VUw/szYQWMQwM0W5Sd6vPg7UK5FfPFyjoWahLfQr33taxJYNClqFeE/OZg0atQIzbAxRF5lrPQssWjRIuNW/RZkkE4RVLp+i8eTH5cvooxBPQM/IJ5Gg7TClwtd2fDhw4NUEnpZmErUSa/Yu4BR/Auxjfi1Pg6lY9OnT+exztldqNNAfe9VxkLpsXEl+I503nDQfNgZNBkBE3+3qSBPgScL11hXZjyVFQryJeXlU84sfEnRefAfZysrDE0UReuudRZtLeSRW5mvlA4ZY2fA+Ra4kyBltmvXztcgY8jMK7l4COS5idNXDC0GaQJvgQgY7FsUjEHqCbcs+nH2Vb6nzPItt9wirhd5AhHbzaVLlyboHC7IqS0dMoaVPo85qJhJhO727j4y3EVQobZVq1Y5rt1ia9S4IVbzzp07eccrPAUZ1xZWQRSJO3bsQFeE5HMicDQxZ5xxBk3wFWPqw2orznpCkzGDPdT7OAGdowJvOCS88Fl1R5dRiG9AXFu6GjvwFYwUH+9ISs7NmzejlSE5ZyG/NUSRHy7FxIkT4Xlxjh0zZozTBLzqFi1a8COPDclGnzCbxNBkLArQXeu0hMBW2Ddu5+IvBRd8KfKKw6YR26x5b8iVxCPsORhqBHPwXpUlOYPyPMoNI/73eOlJIjyPKVOmcIzh5sAh1lUfY2EsEsgoqMiFklLuW1bhiS+6+XXFioMi71Q02qZNm5EjR8bfZ7MZ1Lgtxe8RZswGLjYoEvHowGNuOfcYFsYiIewqq9Y2fx70pxxWqEM43IJzOVcfkfJ4jGcwNTwPSzZ9127Ashf3iRopItJpEs0HyTZfwlVHnb77WNUhxZmBK7gou3hOQOERZ9MB27LWDrrcuHDAKM7quLDJRy0tSWUs0EzxaCOmYpxhAlWkhT0gIOE4uEZaYlTmocsHsqiMeQTKPZsowXDILN6UNEWKAI/R6LRoAqd6ySrxfQ1TZcwXXIdkZgcjvjO/4vuaIpW9+YCTLonOVrYymPiJ0BfNAFAZM8PtQCluYnxNmXjnOm5el5b0hgBWm/I5E2PzVCSVMfNpklsBp8RUsOzNx2lTyYYNG1rr5LQcTipjhisItxNCUdVNzBBB02ISz5ITBFNgWkes5ZTncRBuX9wFGKuYPDdp0gSqBMfFymXNWALSM1+9Klo7We0VppNYweAcm1kovAnbhpXyPMx5Hkwwft2gHeBzT2qpzBExZglUrdmMm0K1qeN5FOKMJwLhNEMTNfC54spuiWgGledheGaA2yG646id3hn2L+vFOJ/L9sX7pP1j1fuY7zlCusSSBQHjZcx3eS0QGAFgxwE91WBsaoP3xcoDUhnzPeGOtqNnz56+C2uBkBAQr0RcwOSJ0uakMuZ7dsTsHLsPjfXqG7vwChBIQExvOLeHV2skNamM+YMVhwLy4UTnYafrHn/jSW1uwJfL8PPPPw/tw+ZxqIz5mx0u2aLtsDOqmL/BpDy348RyyZIlNg9FZczf7Dz++OMU4MItHiY0JYgAUyCzgD8lmynCKmM+FgmRRCSYSJcuXXwU06yRISAkGyaFE2NkjQStWHkeBxGsyhJAZS9BinErIEYWTkodoyJd/jzK4YzbH2I7sYlh9jJkyJCqM2jsocSMqaM8D388D6YTt4TcAXCA7jfKiYU8jwqeM7wwV4z5JVWZK36xgk4lgXJwIG1PrwpDyehZ0etJAD/sQgKOM5iG187lOJ9MBzuYtUp8lTGvy1OUVxw2lD/lFbJY8qHgFY/i1vKq0iRjEtmdaIuxzN0hjeBDQqYQG8G0BBaLH6VEWoS4KA7x8SS7e/fuRPpQudE0yZhEdidYcPw48u4svpDE1l2TVQjIpDg+wqzqG51JYL2aQZBs5HLxjcOZBA9kZv3XUtEh4DxX8lAWXSvGNadGxogj0bdvX+NxBim4bds2CVUqZxJNFiLQvXt3ekWsDHHFZ1VKjYz169cvKeAWL14sNAI9KCY1BVXbdRRRQsSxKtkoYxJA0Z60YsUKOoNbgSwdFIkH/fDDD9sDcsCeEFeR6IpUknj8pNKB1LDH5SoPHaXBdnnLc0IYSobC35SOh60m3BHhVuCOO+5ApUnrZ511VsClYE9xEbDzzz/fni4F7Amfwjlz5lAJAThx9RGwtlCKs2Z27dp1IL5tuRSRh4OqL/0VusTIK/xVQrAZj8h1vOVcRxS1khRWxsyGVPvzcJ1ivoZnn302nI8JEyYYeOyIaAYt9edxQPStSWItximxcePG1nRKO+KCAF4uxfUi2kWrgk7YeB+zZwVh/Cf2f127drWnV9qTcggQr50/4eFD9MCWJJWxShMhDp9hEih/ypL1Wrkb2ByJvyrXgLdJDSFlMsY5O86TpGgU8duh/qeSWqC+2j3qqKPEPh0ZsydueMpkzBfiATOvX79eiPa4ZwlYlRaPDQGh4fOeaY/VpspY2dkXJ4qcPeSUrykVCKD2YDejq/Z4w1cZK7tyRKPIJqZhWVIhXdJJ/FXJuQM7CZyI2dBzlTH3WYDgLwfFrLruSF08aO/ScuaZZ8px0RLtovrzODh3hd4gpkyZsnDhQg6Kd911l7juCOIrwswbhPQsSLup8zLCeINjhXRB9WDs6D+GDh3qTHAQJM16pf48yvrz+OCDD/APAWNg7NixhY4ZjBkkfn1UWB6LpCpTx5h9EpaXESaO6cPP7M6dO5OdQUt5Ht5PBRHl5KAoml/VKEaEcNTV9urVS46LNjgg0PuYy3Q7EyPcHE2pQwAOfv369em2DREnVMaK1w8fP/FwxCYmzlg0pREBifjx4osv4osl2f6rjBXjz6zIQVEtMpNdmgFbx7sRNUAOTtwBgcpY8VQKPwCNoh4UA67yZIuzj8kxZPXq1cn2RGXsEPz57BGakV+1b98+2z7eMmYH7SpF8pXko5ksd1Fl7JDZwRmwzAfWfsl+/LT14AiIjyO+m+GaxvvtmMrYIYiJGoqDojiH0JRqBNBa2aBdVJ7HwVWEAuqnP/3p1q1bEbCbb765aHnFzxKQDgRpt0LZbMRtqTpH0HSwc4HESKgdHqM1bstHL/JBWAKAbszGwKM95ADSrFmz/EZmicgbRHSMiuz583DFatmyZTKnTG6QdWXM1FGexyHfQbT28rPGoU31EbGw8x07dpS9y5nc+Iem97GDmIvWnoMizvrinwltMQoEsCU75ZRTqBmT9qTi2aqMfTSzcBRfeeUVflCLzCjWeoJ1inUSlkpMcSLdUBn7CHbHNF2fnhNZiNE16pz8165dG10rFWpWGfsIHLHnw4+iHhQTWYjRNYr6nsAu1A+pKpHjosrYgclFay8HifwYs2TYDrpUXHv27MkvuQts2LAhOmEuV7PK2AFkOCjKF06IpJoyhgCfTvG7mIipi8rYgeUkBmPNmzc/4YQTMra8dDgggNcjuQIkEpddeR6H7dix48orr2QfYxO79NJLyy3KIHwLM28Q0pMg7ebTn4frDD7wwAOzZ89mNxs3blyzZs1K80SBlfrz+IjLMW/ePIcKYMwRSR3PIyzPGfZESKnMiVm3bh0OCJho4icZ9Fl5HoEORCtXrqQ8p0TsWQJVpIUtRqB169YNGzZ07gVx9jTv9zGOiC+99BKIQ7qJE3dtK34EZIqZbvGcGVvKu4zxLCYGY506dYoNdG0oEQQ6dOgg7cbs2zTvMiZBdKCN5m0fy4MddJEkt2vXTjT4MYebyLuMySfNYWcn8n3VRuNBoHbt2g4/OE7vA7mWsddff12O5s4pIp7J1laSQkAiJ+F94IUXXoitD7mWscWLFwvQnTt3jg1xbShBBJwbQZxXslzLGEayzDcGY0rvSHDdx9k0Ey1z7bDnYmg9vzwPXo2HDBmC7r5///7nnHMOWOeKUZETfx6FIiTzO3PmTAgf/H7EiBFt27Z1MijP4+DTfGVGBZB55GpwUBR6B2ZFUiSIv4fU8Txy4s+jNAIO0y3z/uCDD3qPj6M8D5MNX+ihsEVbtWplUl7LpBMBTATFf3BsHj7Sdx+rVatW8MlFsyQQ4+ZS3kw05QcBcZ4J4SMeDX46ZGzv3r2DBw+uU6cOTxyXX375nj17Ai4I/AEjZlSiHMWASKaxuGjwHRpd1ENIh4zddNNNCAPWykgX/+HHgLjIJoZrS4mgk8OUKzvoovlFg8/U80uhg0ed0iFjM2bMGDhw4OEfJmy9pk2bFhCXZ555RjYxwVpTrhDAIRy3MoaM3isGDx/pkDGi+iJdsg64PhGvOcia2LRp07Zt26hBI4wFgTHVZeX8wn0sBg8f6ZCxwulctWpVQNlwFEp6GUu1nATpvIR0IbGcgtTjpayNMoaFdoWuExxg9OjRXsZWLo/waE488UQU90Hq0bLpRQD3Hi1atKD/MWjwayQbmqlwktD21KhRo2jaeCVctGiR/PK4446DxbtgwYKrrrqqnD9KtrjKI9q9e/dtt922f//+bt26aZCx9ApJ8J7PnTt3+fLlXMiJ0VOzZs3gFZbWwJLetWuXV1ZEKXnC+OW7KqOiHFGDS9QFF1zAZawCk4NxVuZ5OMFZ/vGPfxTlzBXPI2/+PEpXnRPShf9UXZPGq93SuC0HRL8krVmzBo3i5MmTA74bytnA0SxF8fXSOlOBAE4XhfARtQbfxvtY6QwRo/niiy+eNGkSoAguxkkuY7z051xrn0M76KI140RLjdqWLB0yNmDAANyMNmjQgAubJDMZgz7z2muvUVaDs5gBmLFS4sSFS7685USU0iFjmzdvLro7mcHBgVMKahQ/MwAzVorjjLBVHWvdKAaYDhkrHLnrbc0jNBJhDFd7AQ+cHpvTbJYjwPuNhHRZvXp1dF1Nn4wZYwEJWBwSaYQxYwyzV1AIH0TtEY54FClHMoZGUXDUy1gUKymldQpxkYXx8ssvRzSEHMmYaBQ5f6tRZkSLKY3V4g1OrmTRHRdz5M8DixjYIbiguuGGG1xXg/rzKIQlOjSi8JwhPTfr8+23305cMoK5ENKl3GfCLPJOvuK2vPHGG7179yZyx/z588sRQXLF88itP4/S2X/sscdw7wGxbvv27eXWRtZ4HlEcOfhQiaWQ6JE0KQIOAmJ+wfIQx+yhp7zcxyRIKaxiDakuayjPdtBFUgQBP1IvOrmQMcdDTpcuXdRDTujf6QxUKBaJkKqi0ODnQsZQywp2n/rUpzKwIHQIoSMgr2TvvvtuFBr8XMiYc84mOk7o06MVZgABR4O/YsWK0IeTCxkTexaO3XXr1g0dQa0wAwjgo1vMoqPg4Gdfxt566y3h2iuFKgPCEN0QunbtSuW40MHFYLitZF/GoKKJ1l4pVOEunYzVJuH/WCo4IAh3aNnneUyYMAHUMHyeMmXKvn37OBWUQ9CMJSC12cZd0F6VznLlOWL7GjZsGHnY0LC4LyquPI+Dr/NAU/RU369fP17xoTVU9dmgPA/vcUwyidXIkSNZKljcl/qMUZ5H2b2dm5gcr9WVYrjnn0zWJrcJbKLlAh9Wyvh9DOcCgpSctjUpAhUQcCLZhut0MeMyJi9j3MGUpqjSVRUBJ5Kt82muWsRLhizLGNwOYiCBAlr7nHuh8rIUNA8I4BCOf1k2IcaayLKMORQqPSiq/HhEQB5R33zzzRC3sizLGC9jgqweFD2uMM3mON5UGfO0GIR7htmCOhfwhJdm+tCBNLcyOS6GhUdm9zEeE2UfI3aE2rOEtVzyUI/jqSqsK1lmeR4YZeKngTVxxRVXdO/eXRZHdEyO1PE8br31Vl4O+bec2OQWKxwEjh07FliuueYaUYGQlOfhwvO49957ebMn4cnD+XN07ITKNRuzBCLlpmivXHkt77zzTp8+fVg5U6dOdTIYY2Vp3JZQDiRyZ3VePEKpUyvJAwJcyYQVFJbaI5v3MQxa5TKmfu3zIBWhj1FkLCw7l2zKmOOFSmmKoa+/PFQor2ToPEIx2cymjDnB6vX1OQ8iEfoYsYkWYlAoxMVsypjEjnB8eoU+B1phthHgsUfcK8lCCpgyKGMQYTZt2gQu6lwg4OLIc3FZPIT/YzkFxCGDMsa3R14P8aYYEB0tnlsEIFXJ2IMfFzMoY8KC4TytNMUKEqLxoCt/Ppo3by5XMgn3EyRlkOdx4YUXEhwAV4osoyJocstdKF0iyvOoujbGjBkDvaNhw4Z33nmn8jwO4XkIvWPmzJmlMTiU5+FgonFbipZH6dqYM2eOrKWdO3cqz8NlJ3eYZkF2eS2bZwSEHEwKSPhI332sVq1aVSce3au4fdWkCBgjQIgfieeyZMkS40oomBoZI/glA65Tp861114LVarymB335UGg0bI5R4AvtZyGHGNfM0DSIWPjx49neJyYMcfg63Lddde5jlaexUgdOnQwg0NLKQKFCAgXjycyPLobI5MOGbv77ruvv/76wz9MWPVMmzbNdcCOmlUvY8YLQgsWIuA8/7z66qvGyKRDxtatW1e/fn0ZJOogJM11wPJc6MTgMAZFCyoCgoBzJVuzZo0xJumQMWd4OElG6cye5jpg0f/w7VHnAsYLQgsWIXDaaafxm7Vr1xq7HrBRxo499ljXmcZzfYMGDTBwPvfcc0szOG63ld7hRU40HrQXlMgjphuwF/DR7bFIUbYaPK6ZlQy9VI8ePWrUqFFULSfDRYsWyS+hQh9//PHDhw9/9NFHUaeuWrWqMDPZ5s+fv3Tp0unTp7ds2TL07mmF+UQAbce4ceMY+3nnneeXZc6S3rVrV3GUE++RO4xfvqv6qCjlZxT+hvhGNWvWLM0jQTfAojTohvrzcIU0uhkMwqexsFcXXXQRAZMmTZpUbmVWGK+l/jwOiP6hqVGjRlAQ5Xf79+93PUw6jxh6GcvnhhPdqEVN/eyzz5pdyWy8j5WCNWDAAL4iSBdpxIgRl112WVEe5zIWHdBac24RECMp3mYxJzMAIR0yNmrUqB07dtSuXRuqB2I2evTooqGG4nfBAD4tkgcETjrpJBmmGeEjHTJ2xBFHTJw4EQrVnj17brnlltJ5ddxu52HKdYwxI4CmrW7dujT673//26DpdMhY4cBcyYqEaCGPau0NVoAW8YKAUMxRZRtcydInY6WIOJcx8XOiyQsCagftBSUnjzBgeSJzOLHei2dBxjQGkvf51pxmCDRr1kwKyonJV8qCjMllDO8LJ598sq/Ba2ZFwCMCPBdxKyOzQcykLPjzQJWPXpU3eGxe6tWrx6tfOeDUn4eDjPrzKFokVSPv8Di+fPnyJk2aSDygwlSuLJJpKc/DF0sAowNxujBr1iye4Rl5BZqIr5qr+nuwgRNjPCL15+FrfhGwxx57TFbaxo0bvZe1lOfhcfuWbHoZ8wWXZjZGwDFK9PtKlvr7mHM+1suY8erRgl4QIM6WGDFizeglv5Mn9TLGEZnBYIBA2ChfI9fMioBfBMTOxa+bqnTLmPMypm63/S4XzW+AwCc/+UlKsepQcngvnm4Zc2Ig6UHR+5RrTmME5EoG1YMAd94rSbeMSegaXsZatWrlfcyaEwTUDtpgGcCokiuZL7VHumWMXZsB4/5ffE1qUgSiRkCuZL5eolMsY5CD5azohLGJGl+tXxEQj4vr16+H9uARjRTzPFDv4F+Acd54442Oa3LleRROfFXuQseOHcstFOXEFCLjxG3BQZXEAypcdZnleeCgikf3Pn36vPfee867O4NXnodH/yUWes6g5/b3qm/fviy8Bx980AvO6eZ5yGUMmzGJxaZJEYgHAbmbeFd7pPg+JoNUu8x4Fpa24iDQpk0b/o9T6vfff98LLGmVMazlxM0/SkUv49Q8ikBYCMg+hoB51C6mVcYcJzmi59HkFwG1g/aLmJO/devWcj3x6AQ/rTIm3kswmxPLOU2KQGwIwIwVzoNHFzpplTFUqAzSccoVG77akCIAAnJc5DDlxYVOKmWMy5i8Pnfq1EmnXBGIHwEhB8OCEOV25ZRKGXMC1VR4Qq02cP27ImCOgMNB9+JCJ5U8j9mzZxO6hVh+U6ZMKfJurzyPwoVTgauh/jyKJMwvJ4Z4rps3bxYvMhnkeRDjj4d2giSVUjoATnkeXvgH6s/Du08OV/bJPffcwyIkJl7lOESp5Hlwy4SRiSypzZj5WUdLBkZAVIswg4nInrX7GIHVxR23uG7VpAgkgoBDMKpKqkqfzkNumbxRiCWPJkUgEQSw1xQXMlVfydInY3i3Y2C8tWssvyBrS+2gg6AnZUWtXdXvQPpkTC5j6lwg+BLRGgIiIFaLPJHt3r27QlUpkzECGYqrbaXbB1wfWjw4As4irBzMJWUyJk5ySH4jzAcHVGtQBIoQwOZDLiyVvZqmTMZEh9O0aVN1kqMrPnEEHIdolVWLKeN5DB06lMf1008/feDAga4QK8+jEBa/3AXvZaPz9uF4znCd3+jaNcMKptHChQvZzWbMmFGqhEtf3BaCQffu3btXr15E0ChH5mBilOfhheeRCs8ZpVNpHKemMhuj6l/LeRmZN28ebA/WJBxa14WXMp6HY0qgJi2JH5O0A4KA80gr6m7XlKb7GAwPxkD4DJWx4Etc7aCDY0gNvESzIPlPhZfoNMkYDI8tW7a4HnxDwUsrUQQMEBANfgV7zdTIGFRgnJYKyUOTImAPAnKq4uUW0+F0nxV5TYe04vgDtgdi7UnOEYDWJwiUs9dMzT6GvVOjRo2wy8z5jOrwbUOAfUy09umWMXawZcuWwVFUbYdtK0z7w3e/YcOG4FBOtWjjPsbLXeHM8Sw2aNCgzp0780ulKeqathABOS7C9nCNr/n/AbgNFL9sPn+BAAAAAElFTkSuQmCC","options":["</strong> <strong>$3$</strong>.","</strong> <strong>$4$</strong>.","</strong> <strong>$5$</strong>.","$6$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":1,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hàm số <strong>$f(x) = {x^2} - 2x + 3$</strong>. Tính <strong>$f(2)$</strong>.<br><img src=\"data:image/png;base64,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\" class=\"question-image\" style=\"max-width: 100%; height: auto; display: block; margin: 8px auto;\">","rendered_options":["</strong> <strong>$3$</strong>.","</strong> <strong>$4$</strong>.","</strong> <strong>$5$</strong>.","$6$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Tìm tọa độ đỉnh của đồ thị hàm số <strong>$f(x) = 2{x^2} - 4x + 1$</strong>.","main_question":null,"questionImage":null,"options":["</strong> <strong>$(1; - 1)$</strong>.","</strong> <strong>$(2; - 1)$</strong>.","</strong> <strong>$(1;1)$</strong>.","$(2;1)$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":3,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":2,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Tìm tọa độ đỉnh của đồ thị hàm số <strong>$f(x) = 2{x^2} - 4x + 1$</strong>.","rendered_options":["</strong> <strong>$(1; - 1)$</strong>.","</strong> <strong>$(2; - 1)$</strong>.","</strong> <strong>$(1;1)$</strong>.","$(2;1)$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Đồ thị bên là của hàm số nào.","main_question":null,"questionImage":null,"options":["$y = - {x^2} + 4x - 3$</strong>.","$y = - {x^2} - 4x - 3$</strong>.","$y = - 2{x^2} - x + 3$</strong>.","$y = {x^2} - 4x - 3$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":3,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Đồ thị bên là của hàm số nào.","rendered_options":["$y = - {x^2} + 4x - 3$</strong>.","$y = - {x^2} - 4x - 3$</strong>.","$y = - 2{x^2} - x + 3$</strong>.","$y = {x^2} - 4x - 3$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Gọi <strong>${x_1},{x_2}({x_1} &lt; {x_2})$</strong> là nghiệm của phương trình $<strong>\\sqrt {2{x^2} + 3x - 5}$ =$ 1 – x$</strong>. Khí đó <strong>${x_2}^2 - 3{x_1}$</strong> bằng","main_question":null,"questionImage":null,"options":["$2$</strong>.","$1$</strong>.","$19$</strong>.","$0$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":4,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Gọi <strong>${x_1},{x_2}({x_1} &lt; {x_2})$</strong> là nghiệm của phương trình $<strong>\\sqrt {2{x^2} + 3x - 5}$ =$ 1 – x$</strong>. Khí đó <strong>${x_2}^2 - 3{x_1}$</strong> bằng","rendered_options":["$2$</strong>.","$1$</strong>.","$19$</strong>.","$0$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Tập nghiệm của phương trình <strong>$\\sqrt {3{x^2} - 4x - 1}$ = $\\sqrt {2{x^2} - 4x + 3} $</strong> là","main_question":null,"questionImage":null,"options":["</strong> <strong>$\\left\\{ { - 2} \\right\\}$</strong>.","$\\left\\{ { - 2;2} \\right\\}$</strong>.","$\\left\\{ 2 \\right\\}$</strong>.","$\\left\\{ {2;1} \\right\\}$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":5,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Tập nghiệm của phương trình <strong>$\\sqrt {3{x^2} - 4x - 1}$ = $\\sqrt {2{x^2} - 4x + 3} $</strong> là","rendered_options":["</strong> <strong>$\\left\\{ { - 2} \\right\\}$</strong>.","$\\left\\{ { - 2;2} \\right\\}$</strong>.","$\\left\\{ 2 \\right\\}$</strong>.","$\\left\\{ {2;1} \\right\\}$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Phương trình nào sau đây là phương trình của một hyperbol?","main_question":null,"questionImage":null,"options":["</strong> <strong>$\\frac{{{x^2}}}{9} + \\frac{{{y^2}}}{{16}} = 1$</strong>.","</strong> <strong>$\\frac{{{x^2}}}{9} - \\frac{{{y^2}}}{{16}} = 1$</strong>.","</strong> <strong>$y = {x^2} + 2$</strong>.","${x^2} + {y^2} = 9$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":6,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Phương trình nào sau đây là phương trình của một hyperbol?","rendered_options":["</strong> <strong>$\\frac{{{x^2}}}{9} + \\frac{{{y^2}}}{{16}} = 1$</strong>.","</strong> <strong>$\\frac{{{x^2}}}{9} - \\frac{{{y^2}}}{{16}} = 1$</strong>.","</strong> <strong>$y = {x^2} + 2$</strong>.","${x^2} + {y^2} = 9$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Xác định phương trình đường tròn có tâm <strong>$A(2; - 1)$</strong> và đi qua điểm <strong>$B(5;3)$</strong>.","main_question":null,"questionImage":null,"options":["</strong> <strong>${(x - 2)^2} + {(y + 1)^2} = 5$</strong>.","${(x - 2)^2} + {(y + 1)^2} = 25$</strong>.","</strong> <strong>${(x + 2)^2} + {(y - 1)^2} = 25$</strong>.","${(x - 2)^2} + {(y + 1)^2} = 10$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":7,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Xác định phương trình đường tròn có tâm <strong>$A(2; - 1)$</strong> và đi qua điểm <strong>$B(5;3)$</strong>.","rendered_options":["</strong> <strong>${(x - 2)^2} + {(y + 1)^2} = 5$</strong>.","${(x - 2)^2} + {(y + 1)^2} = 25$</strong>.","</strong> <strong>${(x + 2)^2} + {(y - 1)^2} = 25$</strong>.","${(x - 2)^2} + {(y + 1)^2} = 10$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Cho parabol có phương trình <strong>${y^2} = 6x$</strong>. Tìm tọa độ tiêu điểm của parabol.","main_question":null,"questionImage":null,"options":["</strong> <strong>$(1.5;0)$</strong>.","</strong> <strong>$(3;0)$</strong>.","</strong> <strong>$(2;0)$</strong>.","$(6;0)$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":8,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho parabol có phương trình <strong>${y^2} = 6x$</strong>. Tìm tọa độ tiêu điểm của parabol.","rendered_options":["</strong> <strong>$(1.5;0)$</strong>.","</strong> <strong>$(3;0)$</strong>.","</strong> <strong>$(2;0)$</strong>.","$(6;0)$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Một người có <strong>$4$</strong> áo và <strong>$3$</strong> quần. Hỏi có bao nhiêu cách chọn một bộ trang phục gồm <strong>$1$</strong> áo và <strong>$1$</strong> quần?","main_question":null,"questionImage":null,"options":["</strong> <strong>$7$</strong>.","</strong> <strong>$12$</strong>.","</strong> <strong>$16$</strong>.","$24$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":9,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một người có <strong>$4$</strong> áo và <strong>$3$</strong> quần. Hỏi có bao nhiêu cách chọn một bộ trang phục gồm <strong>$1$</strong> áo và <strong>$1$</strong> quần?","rendered_options":["</strong> <strong>$7$</strong>.","</strong> <strong>$12$</strong>.","</strong> <strong>$16$</strong>.","$24$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Từ <strong>$6$</strong> học sinh, chọn <strong>$3$</strong> học sinh xếp thành một hàng. Hỏi có bao nhiêu cách xếp?","main_question":null,"questionImage":null,"options":["</strong> <strong>$60$</strong>.","</strong> <strong>$120$</strong>.","</strong> <strong>$180$</strong>.","$720$</strong>."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":10,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Từ <strong>$6$</strong> học sinh, chọn <strong>$3$</strong> học sinh xếp thành một hàng. Hỏi có bao nhiêu cách xếp?","rendered_options":["</strong> <strong>$60$</strong>.","</strong> <strong>$120$</strong>.","</strong> <strong>$180$</strong>.","$720$</strong>."]},{"type":"multiple-choice","question":"<strong></strong> Khai triển <strong>${(a + b)^6}$</strong> có bao nhiêu số hạng?","main_question":null,"questionImage":null,"options":["</strong> <strong>$5$</strong>","</strong> <strong>$6$</strong>","</strong> <strong>$7$</strong>","$8$</strong>"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":11,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Khai triển <strong>${(a + b)^6}$</strong> có bao nhiêu số hạng?","rendered_options":["</strong> <strong>$5$</strong>","</strong> <strong>$6$</strong>","</strong> <strong>$7$</strong>","$8$</strong>"]},{"type":"multiple-choice","question":"<strong></strong> Trong khai triển của <strong>${(2x + 1)^4} = 16{x^4} + 32{x^3} + 24{x^2} + 8x + 1$</strong>, tìm hệ số của số hạng chứa <strong>${x^2}$</strong>.","main_question":null,"questionImage":null,"options":["</strong> <strong>$24$</strong>","</strong> <strong>$32$</strong>","</strong> <strong>$16$</strong>","$81$</strong>"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":12,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong khai triển của <strong>${(2x + 1)^4} = 16{x^4} + 32{x^3} + 24{x^2} + 8x + 1$</strong>, tìm hệ số của số hạng chứa <strong>${x^2}$</strong>.","rendered_options":["</strong> <strong>$24$</strong>","</strong> <strong>$32$</strong>","</strong> <strong>$16$</strong>","$81$</strong>"]},{"type":"true-false","question":null,"main_question":"<strong></strong>Trong mặt phẳng <strong>$Oxy$</strong>, cho điểm <strong>$A(2;3)$</strong>, đường thẳng <strong>$d$</strong> có phương trình <strong>$3x - y + 2 = 0$</strong> và đường tròn <strong>$(C)$</strong> có phương trình <strong>${(x - 1)^2} + {(y - 2)^2} = 9$</strong>.","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Tâm và bán kính đường tròn <strong>$(C)$</strong> là <strong>$I(1;2)$</strong>, <strong>$R = 3$</strong>.","is_correct":true,"rendered_statement":"Tâm và bán kính đường tròn <strong>$(C)$</strong> là <strong>$I(1;2)$</strong>, <strong>$R = 3$</strong>."},{"statement":"Một vector pháp tuyến của đường thẳng <strong>$d$</strong> là <strong>$\\overrightarrow n = (1;3)$</strong>.","is_correct":false,"rendered_statement":"Một vector pháp tuyến của đường thẳng <strong>$d$</strong> là <strong>$\\overrightarrow n = (1;3)$</strong>."},{"statement":"Phương trình đường thẳng đi qua <strong>$A$</strong> và song song với <strong>$d$</strong> là <strong>$3x - y - 3 = 0$</strong>.","is_correct":true,"rendered_statement":"Phương trình đường thẳng đi qua <strong>$A$</strong> và song song với <strong>$d$</strong> là <strong>$3x - y - 3 = 0$</strong>."},{"statement":"Đường thẳng <strong>$d$</strong> cắt đường tròn <strong>$(C)$</strong> tại hai điểm.","is_correct":true,"rendered_statement":"Đường thẳng <strong>$d$</strong> cắt đường tròn <strong>$(C)$</strong> tại hai điểm."}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":13,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong>Trong mặt phẳng <strong>$Oxy$</strong>, cho điểm <strong>$A(2;3)$</strong>, đường thẳng <strong>$d$</strong> có phương trình <strong>$3x - y + 2 = 0$</strong> và đường tròn <strong>$(C)$</strong> có phương trình <strong>${(x - 1)^2} + {(y - 2)^2} = 9$</strong>."},{"type":"true-false","question":null,"main_question":"<strong></strong>Trong một hộp có <strong>$4$</strong> bi xanh, <strong>$3$</strong> bi đỏ.","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Số cách chọn <strong>$1$</strong> bi từ hộp là <strong>$12$</strong>.","is_correct":true,"rendered_statement":"Số cách chọn <strong>$1$</strong> bi từ hộp là <strong>$12$</strong>."},{"statement":"Số phần tử của không gian mẫu khi lấy đồng thời <strong>$3$</strong> bi là <strong>$210$</strong>.","is_correct":false,"rendered_statement":"Số phần tử của không gian mẫu khi lấy đồng thời <strong>$3$</strong> bi là <strong>$210$</strong>."},{"statement":"Số phần tử của biến cố <strong>$A$</strong>: \"Lấy được <strong>$3$</strong> bi trong đó có đúng <strong>$2$</strong> bi xanh\" là <strong>$18$</strong>.","is_correct":true,"rendered_statement":"Số phần tử của biến cố <strong>$A$</strong>: \"Lấy được <strong>$3$</strong> bi trong đó có đúng <strong>$2$</strong> bi xanh\" là <strong>$18$</strong>."},{"statement":"Xác suất của biến cố <strong>$A$</strong> là <strong>$\\frac{{18}}{{35}}$</strong>.","is_correct":false,"rendered_statement":"Xác suất của biến cố <strong>$A$</strong> là <strong>$\\frac{{18}}{{35}}$</strong>."}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":14,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong>Trong một hộp có <strong>$4$</strong> bi xanh, <strong>$3$</strong> bi đỏ."},{"type":"short-answer","question":"<strong></strong>Cho hàm số <strong>$f\\left(x \\right) = {x^2} - 2mx + m + 2$</strong>. Có bao nhiêu giá trị nguyên của <strong>$m$</strong> để <strong>$f\\left(x \\right) \\geqslant 0$</strong> với mọi <strong>$x \\in \\mathbb{R}$</strong>?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> <strong>81,9</strong>","isDirty":true,"explanation":null,"questionNumber":15,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong>Cho hàm số <strong>$f\\left(x \\right) = {x^2} - 2mx + m + 2$</strong>. Có bao nhiêu giá trị nguyên của <strong>$m$</strong> để <strong>$f\\left(x \\right) \\geqslant 0$</strong> với mọi <strong>$x \\in \\mathbb{R}$</strong>?","rendered_answer":"</strong> <strong>81,9</strong>"},{"type":"short-answer","question":"<strong></strong>Tính số đo của góc giữa hai đường thẳng <strong>${d_1}:2x - y + 3 = 0$</strong> và <strong>${d_2}:x + 3y - 1 = 0$</strong> (<em>kềt quả làm tròn đơn vị độ đến hàng phần chục)</em>","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> <strong>81,9</strong>","isDirty":true,"explanation":null,"questionNumber":16,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong>Tính số đo của góc giữa hai đường thẳng <strong>${d_1}:2x - y + 3 = 0$</strong> và <strong>${d_2}:x + 3y - 1 = 0$</strong> (<em>kềt quả làm tròn đơn vị độ đến hàng phần chục)</em>","rendered_answer":"</strong> <strong>81,9</strong>"},{"type":"short-answer","question":"<strong></strong>Từ <strong>$5$</strong> chữ cái <strong>$A,B,C,D,E$</strong>, lập được bao nhiêu mật khảu có <strong>$3$</strong> chữ cái khác nhau và phải chứa chữ <strong>$A$</strong>?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> <strong>36</strong>","isDirty":true,"explanation":null,"questionNumber":17,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong>Từ <strong>$5$</strong> chữ cái <strong>$A,B,C,D,E$</strong>, lập được bao nhiêu mật khảu có <strong>$3$</strong> chữ cái khác nhau và phải chứa chữ <strong>$A$</strong>?","rendered_answer":"</strong> <strong>36</strong>"},{"type":"short-answer","question":"<strong></strong>Một hộp có <strong>$6$</strong> bi trắng và <strong>$4$</strong> bi đen. Lấy ngẫu nhiên <strong>$2$</strong> bi. Tính xác suất để <strong>$2$</strong> bi lấy được cùng màu <em>(kết quả làm tròn đến hàng phần trăm).</em>","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> <strong>0.47</strong>","isDirty":true,"explanation":null,"questionNumber":18,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong>Một hộp có <strong>$6$</strong> bi trắng và <strong>$4$</strong> bi đen. Lấy ngẫu nhiên <strong>$2$</strong> bi. Tính xác suất để <strong>$2$</strong> bi lấy được cùng màu <em>(kết quả làm tròn đến hàng phần trăm).</em>","rendered_answer":"</strong> <strong>0.47</strong>"},{"type":"essay","question":"<strong> (1 điểm)</strong> Cho tam thức bậc hai <strong>$f(x) = {x^2} + x - 6$</strong>.<br>Lập bảng xét dấu của <strong>$f(x)$</strong>.<br>Tìm tập nghiệm của bất phương trình <strong>$f(x)&lt; 0$</strong>.","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":19,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong> (1 điểm)</strong> Cho tam thức bậc hai <strong>$f(x) = {x^2} + x - 6$</strong>.<br>Lập bảng xét dấu của <strong>$f(x)$</strong>.<br>Tìm tập nghiệm của bất phương trình <strong>$f(x)&lt; 0$</strong>."},{"type":"essay","question":"<strong> (1 điểm)</strong> Viết phương trình tham số của đường thẳng đi qua hai điểm <strong>$A(1; - 2)$</strong> và <strong>$B(3;4)$</strong>.<br>Vectơ chỉ phương<br>$\\overrightarrow u = \\overrightarrow {AB} = (1;6)$","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":20,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong> (1 điểm)</strong> Viết phương trình tham số của đường thẳng đi qua hai điểm <strong>$A(1; - 2)$</strong> và <strong>$B(3;4)$</strong>.<br>Vectơ chỉ phương<br>$\\overrightarrow u = \\overrightarrow {AB} = (1;6)$"},{"type":"essay","question":"<strong> (1 điểm)</strong> Một vật được ném lên từ độ cao <strong>$1\\;{\\text{m}}$</strong> với vận tốc ban đầu <strong>$12\\;{\\text{m/s}}$</strong>. Chiều cao của vật theo thời gian <strong>$t$</strong> (giây) được cho bởi <strong>$h(t) = - 5{t^2} + 12t + 1$</strong>. Tìm thời điểm vật chạm đất (kết quả làm tròn đến một chữ số thập phân).","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":21,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong> (1 điểm)</strong> Một vật được ném lên từ độ cao <strong>$1\\;{\\text{m}}$</strong> với vận tốc ban đầu <strong>$12\\;{\\text{m/s}}$</strong>. Chiều cao của vật theo thời gian <strong>$t$</strong> (giây) được cho bởi <strong>$h(t) = - 5{t^2} + 12t + 1$</strong>. Tìm thời điểm vật chạm đất (kết quả làm tròn đến một chữ số thập phân)."}];
+        const options = {"title":"Bài kiểm tra - 16/11/2025","timeLimit":45,"retries":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"examCode":"NLGKIL","teacherName":"aaaaaaaa","scoring":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbz9Bpse6IOIEj-du2hjBAIvk2pGfbBqbmsfWo8sVB1lKpgYiVccTy095K4eulC8jnGMhQ/exec";
+        const examCode = "NLGKIL";
+
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.getAIExplanation = getAIExplanation;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' },
+            };
+            
+            let questionCounter = 0;
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `<div class="group-header mb-6 pb-3 border-b-2 border-gray-300"><h2 class="text-2xl font-bold text-gray-800">${info.title}</h2></div>`;
+                
+                questions.forEach((item) => {
+                    const index = quizData.indexOf(item);
+                    questionCounter++;
+                    
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow prose max-w-none">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswer || ''}" onchange="saveTextAnswer(this, ${index})">`;
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>'; // close question-card
+                    allHTML += contentHTML;
+                });
+            });
+            container.innerHTML = allHTML;
+            safeTypeset([container]);
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment && API_KEY) {
+                assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+                assessmentDisplay.classList.remove('hidden');
+                try {
+                    aiAssessment = await getAIAssessment(finalScore, answerDetails);
+                } catch (e) {
+                    console.error("Error getting AI assessment:", e);
+                    aiAssessment = "Đã xảy ra lỗi khi AI tạo nhận xét.";
+                }
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                assessmentDisplay.classList.remove('hidden');
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else {
+                    isCorrect = null;
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation && API_KEY) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="getAIExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        function stripHtml(html) {
+            if (!html) return "";
+            let doc = new DOMParser().parseFromString(html, 'text/html');
+            return doc.body.textContent || "";
+        }
+
+        async function getAIExplanation(index, button) {
+            if (!API_KEY) return;
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+            
+            const isHidden = explanationContainer.classList.contains('hidden');
+
+            if (!isHidden && quizData[index].explanation) {
+                explanationContainer.classList.add('hidden');
+                button.textContent = 'Xem giải thích từ AI';
+                return;
+            }
+            
+            explanationContainer.classList.remove('hidden');
+
+            if (quizData[index].explanation) {
+                explanationContainer.innerHTML = quizData[index].rendered_explanation;
+                safeTypeset([explanationContainer]);
+                button.textContent = 'Ẩn giải thích';
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'AI đang giải thích...';
+            explanationContainer.innerHTML = '<div class="animate-pulse">Đang tải...</div>';
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const item = quizData[index];
+                const questionText = (mapType(item.type) === 'true-false') ? item.main_question : item.question;
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây. Lời giải phải chính xác, dễ hiểu và phù hợp với phương pháp giảng dạy của chương trình GDPT 2018.\n---**CÂU HỎI:**\n${stripHtml(item.rendered_question)}\n---`;
+
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**CÁC LỰA CHỌN:**\n`;
+                    item.options.forEach((opt, i) => { prompt += `${String.fromCharCode(65 + i)}. ${stripHtml(item.rendered_options[i])}\n`; });
+                    prompt += `---\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${stripHtml(item.rendered_options[item.correctAnswerIndex])}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n`;
+                    item.statements.forEach((s, i) => { prompt += `${String.fromCharCode(97 + i)}) ${stripHtml(s.rendered_statement)} -> ${s.is_correct ? 'Đúng' : 'Sai'}\n`; });
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${stripHtml(item.rendered_answer)}`;
+                }
+                
+                prompt += `\n---\n**YÊU CẦU:** Hãy giải thích chi tiết từng bước để đi đến đáp án đúng. Định dạng tất cả các công thức toán học bằng LaTeX. Dùng **...** để in đậm các thuật ngữ quan trọng.`;
+                
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                quizData[index].explanation = explanationText;
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                quizData[index].rendered_explanation = htmlContent;
+                
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+
+            } catch (error) {
+                console.error("Error getting AI explanation:", error);
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi khi tạo giải thích.</p>';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Ẩn giải thích';
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) return "Không thể tạo nhận xét do thiếu API key.";
+            
+            try {
+                const ai = new GoogleGenAI({apiKey: API_KEY});
+                
+                const wrongAnswers = answerDetails.filter(d => d.isCorrect === false || (d.type === 'true-false' && d.details && d.details.some(sub => !sub.isCorrect)));
+
+                if (wrongAnswers.length === 0) {
+                    return "Chúc mừng em đã hoàn thành bài làm rất tốt và không sai câu nào! Em đã nắm vững kiến thức. Hãy tiếp tục phát huy nhé!";
+                }
+
+                const wrongQuestionsSummary = wrongAnswers.map(d => {
+                    const q = quizData[d.questionNumber - 1];
+                    const questionContent = stripHtml(q.rendered_question || q.question || q.main_question);
+                    return `- Câu ${d.questionNumber}: ${questionContent}`;
+                }).join('\n');
+                
+                const prompt = `Bạn là một giáo viên AI tận tâm và giàu kinh nghiệm, chuyên đưa ra những nhận xét mang tính xây dựng. Dựa vào kết quả bài làm của một học sinh, hãy đưa ra một nhận xét chi tiết (khoảng 4-5 câu) về năng lực của học sinh.
+                
+                **Kết quả bài làm:**
+                - **Điểm số:** ${score} / 10
+                - **Các câu học sinh đã trả lời sai:**
+                ${wrongQuestionsSummary}
+                
+                **YÊU CẦU NHẬN XÉT (RẤT QUAN TRỌNG):**
+                1.  Bắt đầu bằng một lời động viên, ghi nhận sự cố gắng của học sinh.
+                2.  **Phân tích nội dung các câu sai:** Đọc và hiểu nội dung của từng câu học sinh làm sai. Từ đó, **xác định cụ thể các mảng kiến thức hoặc kỹ năng mà học sinh còn yếu.**
+                    *   **VÍ DỤ TỐT (Nên làm):** "Qua các câu sai, cô/thầy nhận thấy em có vẻ chưa vững kiến thức về 'tính đơn điệu của hàm số bậc ba' (câu 5) và còn nhầm lẫn khi áp dụng 'định lý Viète' (câu 12)."
+                    *   **VÍ DỤ KÉM (Không làm):** "Em đã làm sai một số câu. Em cần cẩn thận hơn." (Quá chung chung).
+                3.  **Đưa ra gợi ý cụ thể:** Dựa trên phân tích ở bước 2, hãy đưa ra lời khuyên cụ thể, mang tính hành động. Ví dụ: "Em nên xem lại bài giảng về..., làm thêm các bài tập dạng..., hoặc chú ý hơn đến các trường hợp đặc biệt của...".
+                4.  Kết thúc bằng một lời khích lệ, tạo động lực cho học sinh cố gắng hơn trong lần sau.
+                5.  Giọng văn phải thật sự thân thiện, tích cực, như một giáo viên đang trực tiếp nhận xét cho học trò của mình.
+                `;
+
+                const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+                return response.text || "Không thể tạo nhận xét.";
+
+            } catch (error) {
+                console.error("Error generating AI assessment:", error);
+                return "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+            }
+        }
+    </script>
+</body>
+</html>
+    
