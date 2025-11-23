@@ -1,0 +1,889 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài kiểm tra - 23/11/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #2563eb; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 260px;
+            background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s ease-in-out;
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 16px; }
+        .nav-btn {
+            width: 36px; height: 36px; border-radius: 6px; border: 1px solid #d1d5db;
+            background: white; color: #374151; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+        .nav-btn.answered { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s ease-in-out; }
+        body.nav-open #app { margin-right: 260px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 20px; bottom: 20px; width: 50px; height: 50px;
+            background: #3b82f6; color: white; border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.1); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai@^1.13.0" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-2 border-b bg-gray-50">
+            <h3 class="font-bold text-gray-700">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <div class="flex items-center gap-1"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-blue-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid"></div>
+    </div>
+
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">Bài kiểm tra - 23/11/2025</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">9J4YV2</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6 shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-800 truncate max-w-[60%]">Bài kiểm tra - 23/11/2025</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg whitespace-nowrap"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "gen-lang-client-0860996934";
+        const quizData = [{"type":"multiple-choice","question":"<strong></strong> Định luật Boyle-Mariotte mô tả mối quan hệ giữa các thông số nào của một lượng khí nhất định trong quá trình đẳng nhiệt?","main_question":null,"questionImage":null,"options":["Áp suất và nhiệt độ","Thể tích và nhiệt độ","Áp suất và thể tích","Nhiệt độ và khối lượng"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":1,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Định luật Boyle-Mariotte mô tả mối quan hệ giữa các thông số nào của một lượng khí nhất định trong quá trình đẳng nhiệt?","rendered_options":["Áp suất và nhiệt độ","Thể tích và nhiệt độ","Áp suất và thể tích","Nhiệt độ và khối lượng"]},{"type":"multiple-choice","question":"<strong></strong> Trong quá trình đẳng nhiệt, đại lượng nào sau đây của một lượng khí không đổi?","main_question":null,"questionImage":null,"options":["Áp suất","Thể tích","Nhiệt độ","Cả áp suất và thể tích"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":2,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong quá trình đẳng nhiệt, đại lượng nào sau đây của một lượng khí không đổi?","rendered_options":["Áp suất","Thể tích","Nhiệt độ","Cả áp suất và thể tích"]},{"type":"multiple-choice","question":"<strong></strong> Phát biểu nào sau đây là đúng về định luật Boyle?","main_question":null,"questionImage":null,"options":["Áp suất tỉ lệ thuận với thể tích ở nhiệt độ không đổi.","Áp suất tỉ lệ nghịch với thể tích ở nhiệt độ không đổi.","Áp suất tỉ lệ thuận với nhiệt độ ở thể tích không đổi.","Thể tích tỉ lệ nghịch với nhiệt độ ở áp suất không đổi."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":3,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Phát biểu nào sau đây là đúng về định luật Boyle?","rendered_options":["Áp suất tỉ lệ thuận với thể tích ở nhiệt độ không đổi.","Áp suất tỉ lệ nghịch với thể tích ở nhiệt độ không đổi.","Áp suất tỉ lệ thuận với nhiệt độ ở thể tích không đổi.","Thể tích tỉ lệ nghịch với nhiệt độ ở áp suất không đổi."]},{"type":"multiple-choice","question":"<strong></strong> Định luật Charles mô tả mối quan hệ giữa các thông số nào của một lượng khí nhất định trong quá trình đẳng áp?","main_question":null,"questionImage":null,"options":["Áp suất và nhiệt độ","Thể tích và nhiệt độ","Áp suất và thể tích","Nhiệt độ và khối lượng"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":4,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Định luật Charles mô tả mối quan hệ giữa các thông số nào của một lượng khí nhất định trong quá trình đẳng áp?","rendered_options":["Áp suất và nhiệt độ","Thể tích và nhiệt độ","Áp suất và thể tích","Nhiệt độ và khối lượng"]},{"type":"multiple-choice","question":"<strong></strong> Trong quá trình đẳng áp, đại lượng nào sau đây của một lượng khí không đổi?","main_question":null,"questionImage":null,"options":["Áp suất","Thể tích","Nhiệt độ","Cả thể tích và nhiệt độ"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":5,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong quá trình đẳng áp, đại lượng nào sau đây của một lượng khí không đổi?","rendered_options":["Áp suất","Thể tích","Nhiệt độ","Cả thể tích và nhiệt độ"]},{"type":"multiple-choice","question":"<strong></strong> Phát biểu nào sau đây là đúng về định luật Charles?","main_question":null,"questionImage":null,"options":["Thể tích tỉ lệ thuận với nhiệt độ ở áp suất không đổi.","Thể tích tỉ lệ nghịch với nhiệt độ ở áp suất không đổi.","Áp suất tỉ lệ thuận với nhiệt độ ở thể tích không đổi.","Áp suất tỉ lệ nghịch với thể tích ở nhiệt độ không đổi."],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":6,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Phát biểu nào sau đây là đúng về định luật Charles?","rendered_options":["Thể tích tỉ lệ thuận với nhiệt độ ở áp suất không đổi.","Thể tích tỉ lệ nghịch với nhiệt độ ở áp suất không đổi.","Áp suất tỉ lệ thuận với nhiệt độ ở thể tích không đổi.","Áp suất tỉ lệ nghịch với thể tích ở nhiệt độ không đổi."]},{"type":"multiple-choice","question":"<strong></strong> Trong quá trình đẳng nhiệt của một lượng khí xác định, khi áp suất tăng 2 lần thì thể tích:","main_question":null,"questionImage":null,"options":["Tăng 2 lần.","Giảm 2 lần.","Không đổi.","Tăng 4 lần."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":7,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong quá trình đẳng nhiệt của một lượng khí xác định, khi áp suất tăng 2 lần thì thể tích:","rendered_options":["Tăng 2 lần.","Giảm 2 lần.","Không đổi.","Tăng 4 lần."]},{"type":"multiple-choice","question":"<strong></strong> Định luật Boyle - Mariotte mô tả mối quan hệ giữa các thông số nào của một lượng khí xác định trong quá trình đẳng nhiệt?","main_question":null,"questionImage":null,"options":["Áp suất và nhiệt độ.","Thể tích và nhiệt độ.","Áp suất và thể tích.","Thể tích và khối lượng."],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":8,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Định luật Boyle - Mariotte mô tả mối quan hệ giữa các thông số nào của một lượng khí xác định trong quá trình đẳng nhiệt?","rendered_options":["Áp suất và nhiệt độ.","Thể tích và nhiệt độ.","Áp suất và thể tích.","Thể tích và khối lượng."]},{"type":"multiple-choice","question":"<strong></strong> Một khối khí có thể tích $V_{1}$ ở áp suất $p_{1}$. Nếu nhiệt độ không đổi, áp suất tăng lên $2p_{1}$ thì thể tích của khối khí là:","main_question":null,"questionImage":null,"options":["V1/2","$2V_{1}$","$4V_{1}$","V1/4"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":9,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một khối khí có thể tích $V_{1}$ ở áp suất $p_{1}$. Nếu nhiệt độ không đổi, áp suất tăng lên $2p_{1}$ thì thể tích của khối khí là:","rendered_options":["V1/2","$2V_{1}$","$4V_{1}$","V1/4"]},{"type":"multiple-choice","question":"<strong></strong> Trong quá trình đẳng áp, thể tích của một lượng khí xác định thay đổi như thế nào khi nhiệt độ tuyệt đối tăng gấp 3?","main_question":null,"questionImage":null,"options":["Giảm 3 lần.","Không đổi.","Tăng 3 lần.","Giảm 9 lần."],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":10,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong quá trình đẳng áp, thể tích của một lượng khí xác định thay đổi như thế nào khi nhiệt độ tuyệt đối tăng gấp 3?","rendered_options":["Giảm 3 lần.","Không đổi.","Tăng 3 lần.","Giảm 9 lần."]},{"type":"multiple-choice","question":"<strong></strong> Định luật Charles phát biểu rằng trong quá trình đẳng áp, thể tích của một lượng khí tỉ lệ như thế nào với nhiệt độ tuyệt đối?","main_question":null,"questionImage":null,"options":["Tỉ lệ nghịch.","Tỉ lệ bình phương.","Không có mối liên hệ.","Tỉ lệ thuận."],"optionsImage":[null,null,null,null],"correctAnswerIndex":3,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":11,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Định luật Charles phát biểu rằng trong quá trình đẳng áp, thể tích của một lượng khí tỉ lệ như thế nào với nhiệt độ tuyệt đối?","rendered_options":["Tỉ lệ nghịch.","Tỉ lệ bình phương.","Không có mối liên hệ.","Tỉ lệ thuận."]},{"type":"multiple-choice","question":"<strong></strong> Một lượng khí có thể tích 10 lít ở $27^{\\circ}C$. Nếu áp suất không đổi và nhiệt độ tăng lên $54^{\\circ}C$, thể tích của khí là bao nhiêu?","main_question":null,"questionImage":null,"options":["5 lít","20 lít","11 lít","10 lít"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":12,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí có thể tích 10 lít ở $27^{\\circ}C$. Nếu áp suất không đổi và nhiệt độ tăng lên $54^{\\circ}C$, thể tích của khí là bao nhiêu?","rendered_options":["5 lít","20 lít","11 lít","10 lít"]},{"type":"multiple-choice","question":"<strong></strong> Một lượng khí có thể tích $10\\text{\\ lít}$ ở nhiệt độ $27^{\\circ}C$ và áp suất $3\\text{\\ atm}$. Nếu áp suất tăng lên $6\\text{\\ atm}$ và nhiệt độ không đổi thì thể tích của lượng khí đó là bao nhiêu?","main_question":null,"questionImage":null,"options":["20 lít","5 lít","15 lít","30 lít"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":13,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí có thể tích $10\\text{\\ lít}$ ở nhiệt độ $27^{\\circ}C$ và áp suất $3\\text{\\ atm}$. Nếu áp suất tăng lên $6\\text{\\ atm}$ và nhiệt độ không đổi thì thể tích của lượng khí đó là bao nhiêu?","rendered_options":["20 lít","5 lít","15 lít","30 lít"]},{"type":"multiple-choice","question":"<strong></strong> Một bình chứa khí có thể tích không đổi. Ở $20^{\\circ}C$, áp suất khí trong bình là $2\\text{\\ atm}$. Nếu nhiệt độ tăng lên $40^{\\circ}C$, áp suất khí trong bình là bao nhiêu?","main_question":null,"questionImage":null,"options":["4 atm","2.14 atm","1 atm","1.87 atm"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":14,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một bình chứa khí có thể tích không đổi. Ở $20^{\\circ}C$, áp suất khí trong bình là $2\\text{\\ atm}$. Nếu nhiệt độ tăng lên $40^{\\circ}C$, áp suất khí trong bình là bao nhiêu?","rendered_options":["4 atm","2.14 atm","1 atm","1.87 atm"]},{"type":"multiple-choice","question":"<strong></strong> Một lượng khí có thể tích $5\\text{\\ lít}$ ở áp suất $2\\text{\\ atm}$. Nếu giữ nhiệt độ không đổi và giảm thể tích xuống $2\\text{\\ lít}$ thì áp suất của khí là bao nhiêu?","main_question":null,"questionImage":null,"options":["2 atm","5 atm","3 atm","4 atm"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":15,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí có thể tích $5\\text{\\ lít}$ ở áp suất $2\\text{\\ atm}$. Nếu giữ nhiệt độ không đổi và giảm thể tích xuống $2\\text{\\ lít}$ thì áp suất của khí là bao nhiêu?","rendered_options":["2 atm","5 atm","3 atm","4 atm"]},{"type":"multiple-choice","question":"<strong></strong> Trong quá trình đẳng nhiệt, nếu thể tích của một lượng khí giảm đi 3 lần thì áp suất của nó sẽ:","main_question":null,"questionImage":null,"options":["Giảm đi 3 lần","Tăng lên 3 lần","Không đổi","Giảm đi 9 lần"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":16,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong quá trình đẳng nhiệt, nếu thể tích của một lượng khí giảm đi 3 lần thì áp suất của nó sẽ:","rendered_options":["Giảm đi 3 lần","Tăng lên 3 lần","Không đổi","Giảm đi 9 lần"]},{"type":"multiple-choice","question":"<strong></strong> Một lượng khí ở $0^{\\circ}C$ có thể tích $V_{1}$. Nếu nhiệt độ tăng lên $273^{\\circ}C$ và áp suất không đổi thì thể tích của khí là:","main_question":null,"questionImage":null,"options":["0.5 $V_{1}$","$V_{1}$","2 $V_{1}$","4 $V_{1}$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":17,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí ở $0^{\\circ}C$ có thể tích $V_{1}$. Nếu nhiệt độ tăng lên $273^{\\circ}C$ và áp suất không đổi thì thể tích của khí là:","rendered_options":["0.5 $V_{1}$","$V_{1}$","2 $V_{1}$","4 $V_{1}$"]},{"type":"multiple-choice","question":"<strong></strong> Một lượng khí có thể tích $V$ ở nhiệt độ $T_{1}$. Hỏi nhiệt độ $T_{2}$ bằng bao nhiêu để thể tích tăng gấp đôi (áp suất không đổi)?","main_question":null,"questionImage":null,"options":["$T_{2} = 0.5T_{1}$","$T_{2} = T_{1}$","$T_{2} = 2T_{1}$","$T_{2} = 4T_{1}$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":18,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí có thể tích $V$ ở nhiệt độ $T_{1}$. Hỏi nhiệt độ $T_{2}$ bằng bao nhiêu để thể tích tăng gấp đôi (áp suất không đổi)?","rendered_options":["$T_{2} = 0.5T_{1}$","$T_{2} = T_{1}$","$T_{2} = 2T_{1}$","$T_{2} = 4T_{1}$"]},{"type":"true-false","question":null,"main_question":"<strong></strong> Xét các phát biểu sau về định luật Boyle và Charles cho khí lí tưởng. Chọn Đúng hoặc Sai:","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Định luật Boyle mô tả mối quan hệ giữa áp suất và thể tích của một lượng khí nhất định ở nhiệt độ không đổi.<br><li>Trong quá trình đẳng nhiệt, áp suất của một lượng khí tỉ lệ thuận với thể tích của nó.</li>","is_correct":true,"rendered_statement":"Định luật Boyle mô tả mối quan hệ giữa áp suất và thể tích của một lượng khí nhất định ở nhiệt độ không đổi.<br><li>Trong quá trình đẳng nhiệt, áp suất của một lượng khí tỉ lệ thuận với thể tích của nó.</li>"},{"statement":"Nếu thể tích của một lượng khí giảm đi một nửa trong quá trình đẳng nhiệt, thì áp suất của nó sẽ tăng gấp đôi.<br><li>Trong quá trình đẳng áp, nếu nhiệt độ tuyệt đối của một lượng khí tăng gấp đôi thì thể tích của nó giảm đi một nửa.</li>","is_correct":true,"rendered_statement":"Nếu thể tích của một lượng khí giảm đi một nửa trong quá trình đẳng nhiệt, thì áp suất của nó sẽ tăng gấp đôi.<br><li>Trong quá trình đẳng áp, nếu nhiệt độ tuyệt đối của một lượng khí tăng gấp đôi thì thể tích của nó giảm đi một nửa.</li>"}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":19,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Xét các phát biểu sau về định luật Boyle và Charles cho khí lí tưởng. Chọn Đúng hoặc Sai:"},{"type":"true-false","question":null,"main_question":"<strong></strong> Xét các phát biểu sau về quá trình đẳng nhiệt và đẳng áp của khí lí tưởng. Chọn Đúng hoặc Sai:","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Quá trình đẳng áp là quá trình biến đổi trạng thái trong đó áp suất không đổi.<br><li>Trong quá trình đẳng áp, thể tích của khí tỉ lệ nghịch với nhiệt độ tuyệt đối.</li>","is_correct":true,"rendered_statement":"Quá trình đẳng áp là quá trình biến đổi trạng thái trong đó áp suất không đổi.<br><li>Trong quá trình đẳng áp, thể tích của khí tỉ lệ nghịch với nhiệt độ tuyệt đối.</li>"},{"statement":"Nếu một lượng khí có thể tích $V_{1} = 2$ lít ở nhiệt độ $T_{1} = 300$ K, và sau đó được nén đẳng nhiệt đến thể tích $V_{2} = 1$ lít, thì áp suất sẽ tăng gấp đôi.<br><li>Một bình chứa khí ở  được làm nóng đẳng áp đến , thể tích khí trong bình sẽ tăng thêm đúng 50%.</li>","is_correct":true,"rendered_statement":"Nếu một lượng khí có thể tích $V_{1} = 2$ lít ở nhiệt độ $T_{1} = 300$ K, và sau đó được nén đẳng nhiệt đến thể tích $V_{2} = 1$ lít, thì áp suất sẽ tăng gấp đôi.<br><li>Một bình chứa khí ở  được làm nóng đẳng áp đến , thể tích khí trong bình sẽ tăng thêm đúng 50%.</li>"}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":20,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Xét các phát biểu sau về quá trình đẳng nhiệt và đẳng áp của khí lí tưởng. Chọn Đúng hoặc Sai:"},{"type":"true-false","question":null,"main_question":"<strong></strong> Chọn đáp án đúng hoặc sai cho các phát biểu sau về định luật Boyle và Charles:","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Định luật Boyle mô tả mối quan hệ giữa áp suất và thể tích của một lượng khí nhất định khi nhiệt độ không đổi.<br><li>Theo định luật Charles, thể tích của một lượng khí nhất định tỉ lệ nghịch với nhiệt độ tuyệt đối khi áp suất không đổi.</li>","is_correct":true,"rendered_statement":"Định luật Boyle mô tả mối quan hệ giữa áp suất và thể tích của một lượng khí nhất định khi nhiệt độ không đổi.<br><li>Theo định luật Charles, thể tích của một lượng khí nhất định tỉ lệ nghịch với nhiệt độ tuyệt đối khi áp suất không đổi.</li>"},{"statement":"Nếu áp suất của một lượng khí giảm đi một nửa trong quá trình đẳng nhiệt, thể tích của nó sẽ tăng lên gấp đôi.<br><li>Trong quá trình đẳng áp, nếu nhiệt độ tuyệt đối của một lượng khí tăng lên gấp đôi, thể tích của nó sẽ tăng lên gấp đôi, nhưng mật độ của khí cũng tăng lên gấp đôi.</li>","is_correct":true,"rendered_statement":"Nếu áp suất của một lượng khí giảm đi một nửa trong quá trình đẳng nhiệt, thể tích của nó sẽ tăng lên gấp đôi.<br><li>Trong quá trình đẳng áp, nếu nhiệt độ tuyệt đối của một lượng khí tăng lên gấp đôi, thể tích của nó sẽ tăng lên gấp đôi, nhưng mật độ của khí cũng tăng lên gấp đôi.</li>"}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":21,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Chọn đáp án đúng hoặc sai cho các phát biểu sau về định luật Boyle và Charles:"},{"type":"true-false","question":null,"main_question":"<strong></strong> Xét các phát biểu sau về quá trình đẳng nhiệt và đẳng áp của khí lí tưởng. Phát biểu nào sau đây là đúng?","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Trong quá trình đẳng nhiệt, nhiệt độ của khối khí không đổi.<br><li>Trong quá trình đẳng áp, nếu thể tích của khối khí tăng thì áp suất cũng tăng.</li>","is_correct":true,"rendered_statement":"Trong quá trình đẳng nhiệt, nhiệt độ của khối khí không đổi.<br><li>Trong quá trình đẳng áp, nếu thể tích của khối khí tăng thì áp suất cũng tăng.</li>"},{"statement":"Khi nén khí đẳng nhiệt từ thể tích $V_{1}$ về thể tích $V_2 = \\\\\\dfrac{V_1}{3}$, áp suất của khí tăng lên 3 lần.<br><li>Nếu một lượng khí lí tưởng ở điều kiện tiêu chuẩn (áp suất  và nhiệt độ ) được làm nóng đẳng áp đến nhiệt độ , thể tích của khối khí sẽ tăng lên gấp đôi và mật độ của khối khí cũng tăng lên gấp đôi.</li>","is_correct":true,"rendered_statement":"Khi nén khí đẳng nhiệt từ thể tích $V_{1}$ về thể tích $V_2 = \\\\\\dfrac{V_1}{3}$, áp suất của khí tăng lên 3 lần.<br><li>Nếu một lượng khí lí tưởng ở điều kiện tiêu chuẩn (áp suất  và nhiệt độ ) được làm nóng đẳng áp đến nhiệt độ , thể tích của khối khí sẽ tăng lên gấp đôi và mật độ của khối khí cũng tăng lên gấp đôi.</li>"}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":22,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Xét các phát biểu sau về quá trình đẳng nhiệt và đẳng áp của khí lí tưởng. Phát biểu nào sau đây là đúng?"},{"type":"short-answer","question":"<strong></strong> Một lượng khí có thể tích $V_{1} = 6$ lít ở áp suất $p_{1} = 2$ atm. Nếu nhiệt độ không đổi, áp suất tăng lên $p_{2} = 4$ atm thì thể tích của lượng khí đó là bao nhiêu lít?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> 3","isDirty":true,"explanation":null,"questionNumber":23,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí có thể tích $V_{1} = 6$ lít ở áp suất $p_{1} = 2$ atm. Nếu nhiệt độ không đổi, áp suất tăng lên $p_{2} = 4$ atm thì thể tích của lượng khí đó là bao nhiêu lít?","rendered_answer":"</strong> 3"},{"type":"short-answer","question":"<strong></strong> Một bình chứa khí ở $27^{\\circ}C$ có áp suất 3 atm. Nếu giữ nguyên thể tích, tăng nhiệt độ lên $87^{\\circ}C$ thì áp suất trong bình là bao nhiêu atm?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> 3.6","isDirty":true,"explanation":null,"questionNumber":24,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một bình chứa khí ở $27^{\\circ}C$ có áp suất 3 atm. Nếu giữ nguyên thể tích, tăng nhiệt độ lên $87^{\\circ}C$ thì áp suất trong bình là bao nhiêu atm?","rendered_answer":"</strong> 3.6"},{"type":"short-answer","question":"<strong></strong> Một xilanh chứa 100 $cm^{3}$ khí ở áp suất $2 \\times 10^{5}$ Pa. Nếu pittông nén khí xuống còn 50 $cm^{3}$ và nhiệt độ không đổi thì áp suất của khí là bao nhiêu Pa?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> 400000","isDirty":true,"explanation":null,"questionNumber":25,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một xilanh chứa 100 $cm^{3}$ khí ở áp suất $2 \\times 10^{5}$ Pa. Nếu pittông nén khí xuống còn 50 $cm^{3}$ và nhiệt độ không đổi thì áp suất của khí là bao nhiêu Pa?","rendered_answer":"</strong> 400000"},{"type":"short-answer","question":"<strong></strong> Trong quá trình đẳng nhiệt, thể tích của một lượng khí giảm từ 12 lít xuống còn 4 lít. Hỏi áp suất của khí tăng lên bao nhiêu lần?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> 3","isDirty":true,"explanation":null,"questionNumber":26,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Trong quá trình đẳng nhiệt, thể tích của một lượng khí giảm từ 12 lít xuống còn 4 lít. Hỏi áp suất của khí tăng lên bao nhiêu lần?","rendered_answer":"</strong> 3"},{"type":"short-answer","question":"<strong></strong> Một lượng khí ở $20^{\\circ}C$ có thể tích 20 lít. Nếu giữ nguyên áp suất, tăng nhiệt độ lên $60^{\\circ}C$ thì thể tích của lượng khí đó là bao nhiêu lít?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> 22.73","isDirty":true,"explanation":null,"questionNumber":27,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một lượng khí ở $20^{\\circ}C$ có thể tích 20 lít. Nếu giữ nguyên áp suất, tăng nhiệt độ lên $60^{\\circ}C$ thì thể tích của lượng khí đó là bao nhiêu lít?","rendered_answer":"</strong> 22.73"},{"type":"short-answer","question":"<strong></strong> Một bình chứa khí nén có thể tích 10 lít ở áp suất $10^{7}$ Pa. Nếu người ta dùng khí trong bình để bơm một quả bóng, biết rằng thể tích quả bóng sau khi bơm là 5 lít và áp suất khí trong bóng là $10^{6}$ Pa. Hỏi áp suất còn lại trong bình là bao nhiêu Pa (coi nhiệt độ không đổi)?","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"</strong> 9.5e+06","isDirty":true,"explanation":null,"questionNumber":28,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một bình chứa khí nén có thể tích 10 lít ở áp suất $10^{7}$ Pa. Nếu người ta dùng khí trong bình để bơm một quả bóng, biết rằng thể tích quả bóng sau khi bơm là 5 lít và áp suất khí trong bóng là $10^{6}$ Pa. Hỏi áp suất còn lại trong bình là bao nhiêu Pa (coi nhiệt độ không đổi)?","rendered_answer":"</strong> 9.5e+06"}];
+        const options = {"title":"Bài kiểm tra - 23/11/2025","timeLimit":50,"retriesAllowed":1,"showAnswers":false,"showExplanation":true,"aiAssessment":true,"shortAnswerFormat":"freeform","examCode":"9J4YV2","teacherName":"NGUYỄN QUỐC NAM","scoring":{"mc":4.5,"tf":4,"sa":1.5,"essay":0,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbzR4AJPwi_2KShT8K3ekiVSYN9XjnfhLdIpoWIR1hocDgkIGNZLzK0jJd05aTZ3K4xd/exec";
+        const examCode = "9J4YV2";
+        
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        let lastScore, lastAnswerDetails; // For retrying AI assessment
+        
+        // --- FALLBACK MODELS CONFIGURATION ---
+        const GEMINI_MODELS_FALLBACK = [
+          "gemini-2.0-flash",          // Nhanh, mới nhất
+          "gemini-2.0-flash-lite-preview-02-05", // Bản nhẹ tối ưu
+          "gemini-2.0-pro-exp-02-05",  // Bản Pro mạnh mẽ
+          "gemini-1.5-flash",          // Bản ổn định cũ
+          "gemini-1.5-flash-8b",       // Bản siêu nhẹ
+          "gemini-1.5-pro",            // Bản mạnh mẽ cũ
+          // Các mô hình mới/dự phòng theo yêu cầu
+          "gemini-3.0-pro-preview",
+          "gemini-3.0-preview"
+        ];
+
+        // --- FALLBACK API FUNCTION ---
+        async function generateContentWithFallback(ai, contents, preferredModel = "gemini-2.0-flash") {
+            if (!ai) throw new Error("AI instance not provided.");
+            
+            const uniqueModels = [...new Set([preferredModel, ...GEMINI_MODELS_FALLBACK])];
+            let lastError;
+            
+            for (const model of uniqueModels) {
+                try {
+                    // console.log('Trying model:', model);
+                    const response = await ai.models.generateContent({
+                        model: model,
+                        contents: contents
+                    });
+                    return response;
+                } catch (error) {
+                    console.warn('Model failed:', model, error);
+                    lastError = error;
+                    const errStr = error.toString().toLowerCase();
+                    // Check for quota or server errors to trigger fallback
+                    if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("exhausted") || 
+                        errStr.includes("503") || errStr.includes("overloaded") || errStr.includes("500") || 
+                        errStr.includes("internal") || errStr.includes("resource") || errStr.includes("not found")) {
+                        continue;
+                    }
+                    // For other errors, also try next model just in case
+                    continue;
+                }
+            }
+            throw lastError || new Error("All AI models are busy or quota exhausted.");
+        }
+
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const toggleNavBtn = document.getElementById('toggle-nav-btn');
+        const navPanel = document.getElementById('nav-panel');
+        const navGrid = document.getElementById('nav-grid');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.toggleExplanation = toggleExplanation;
+        window.fetchAndRenderExplanation = fetchAndRenderExplanation;
+        window.retryAIAssessment = retryAIAssessment;
+        window.setupFormInputs = setupFormInputs;
+        window.saveFormAnswer = saveFormAnswer;
+        window.scrollToQuestion = scrollToQuestion;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        // Toggle Navigation
+        toggleNavBtn.addEventListener('click', () => {
+            navPanel.classList.toggle('open');
+            document.body.classList.toggle('nav-open');
+        });
+
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            toggleNavBtn.classList.remove('hidden');
+            
+            // Open nav panel by default on desktop
+            if (window.innerWidth > 1024) {
+                navPanel.classList.add('open');
+                document.body.classList.add('nav-open');
+            }
+
+            userAnswers.fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            renderNavPanel();
+            updateProgress();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+
+        function renderNavPanel() {
+            navGrid.innerHTML = '';
+            quizData.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.id = `nav-btn-${index}`;
+                btn.textContent = index + 1;
+                btn.onclick = () => scrollToQuestion(index);
+                navGrid.appendChild(btn);
+            });
+        }
+
+        function scrollToQuestion(index) {
+            const el = document.getElementById(`q-${index}`);
+            if (el) {
+                const offset = 80; // header height
+                const elementPosition = el.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                
+                // Highlight current
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('current'));
+                document.getElementById(`nav-btn-${index}`)?.classList.add('current');
+            }
+            // On mobile, close nav after selecting
+            if (window.innerWidth <= 1024) {
+                navPanel.classList.remove('open');
+                document.body.classList.remove('nav-open');
+            }
+        }
+
+        function updateProgress() {
+            let answeredCount = 0;
+            quizData.forEach((item, index) => {
+                const answer = userAnswers[index];
+                const type = mapType(item.type);
+                let isAnswered = false;
+
+                if (type === 'multiple-choice') {
+                    isAnswered = answer !== null;
+                } else if (type === 'true-false') {
+                    // Mark as answered only if ALL statements are answered
+                    isAnswered = Array.isArray(answer) && answer.filter(x => x !== null).length === item.statements.length;
+                } else { // short-answer, essay
+                    isAnswered = answer && String(answer).trim().length > 0;
+                }
+
+                const btn = document.getElementById(`nav-btn-${index}`);
+                if (isAnswered) {
+                    answeredCount++;
+                    btn?.classList.add('answered');
+                } else {
+                    btn?.classList.remove('answered');
+                }
+            });
+
+            const percent = Math.round((answeredCount / quizData.length) * 100);
+            progressBar.style.width = `${percent}%`;
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' },
+            };
+            
+            let questionCounter = 0;
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `<div class="group-header mb-6 pb-3 border-b-2 border-gray-300"><h2 class="text-2xl font-bold text-gray-800">${info.title}</h2></div>`;
+                
+                questions.forEach((item) => {
+                    const index = quizData.indexOf(item);
+                    questionCounter++;
+                    
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm scroll-mt-24" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow prose max-w-none">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        const savedAnswerStr = userAnswers[index] || '';
+                        if (options.shortAnswerFormat === 'form') {
+                             answerHTML = `<div id="sa-form-${index}" class="flex items-center gap-2">`;
+                            for (let i = 0; i < 4; i++) {
+                                answerHTML += `<input type="text" maxlength="1" data-q-index="${index}" class="w-12 h-12 text-center text-2xl font-bold border-2 border-gray-400 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="">`;
+                            }
+                            answerHTML += `</div>`;
+                        } else {
+                            answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswerStr}" onchange="saveTextAnswer(this, ${index})">`;
+                        }
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>'; // close question-card
+                    allHTML += contentHTML;
+                });
+            });
+            container.innerHTML = allHTML;
+
+            // Add event listeners for the 4-box forms after rendering
+            document.querySelectorAll('[id^="sa-form-"]').forEach(formContainer => {
+                const inputs = formContainer.querySelectorAll('input');
+                if (inputs.length > 0) {
+                    setupFormInputs(inputs);
+                }
+            });
+
+            safeTypeset([container]);
+        }
+
+        function setupFormInputs(inputs) {
+            const qIndex = inputs[0].dataset.qIndex;
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    saveFormAnswer(qIndex, inputs);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                     saveFormAnswer(qIndex, inputs);
+                });
+                 input.addEventListener('change', () => saveFormAnswer(qIndex, inputs));
+            });
+        }
+
+        function saveFormAnswer(qIndex, inputs) {
+            let combinedValue = '';
+            inputs.forEach(inp => { combinedValue += inp.value; });
+            userAnswers[qIndex] = combinedValue;
+            updateProgress();
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            updateProgress();
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+            updateProgress();
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+            updateProgress();
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+            
+            // Hide nav elements
+            progressContainer.classList.add('hidden');
+            toggleNavBtn.classList.add('hidden');
+            navPanel.classList.remove('open');
+            document.body.classList.remove('nav-open');
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            lastScore = score;
+            lastAnswerDetails = answerDetails;
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment) {
+                aiAssessment = await getAIAssessment(finalScore, answerDetails);
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                // The getAIAssessment function now handles rendering directly.
+                // This call ensures the initial result is displayed.
+                if (assessment.startsWith("Lỗi")) {
+                    // If there was an error, getAIAssessment already rendered the error message.
+                } else {
+                     assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                     assessmentDisplay.classList.remove('hidden');
+                }
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else if (type === 'short-answer') {
+                    // Normalize answers for comparison: trim whitespace and convert to lowercase
+                    const correctAnswer = (item.answer || '').toString().trim().toLowerCase();
+                    const studentAnswer = (userAnswer || '').toString().trim().toLowerCase();
+                    isCorrect = studentAnswer === correctAnswer;
+                    if (isCorrect) {
+                        score += pointsPerSa;
+                    }
+                } else {
+                    isCorrect = null; // For 'essay' type
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="toggleExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        async function toggleExplanation(index, button) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+
+            const isHidden = explanationContainer.classList.toggle('hidden');
+            button.textContent = isHidden ? 'Xem giải thích từ AI' : 'Ẩn giải thích';
+
+            const hasLoaded = explanationContainer.hasAttribute('data-loaded');
+            const hadError = explanationContainer.getAttribute('data-loaded') === 'error';
+
+            if (!isHidden && (!hasLoaded || hadError)) {
+                await fetchAndRenderExplanation(index);
+            }
+        }
+
+        async function fetchAndRenderExplanation(index) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            explanationContainer.innerHTML = '<div class="animate-pulse">AI đang suy nghĩ...</div>';
+            explanationContainer.setAttribute('data-loaded', 'loading');
+
+            if (!API_KEY) {
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi: API Key của giáo viên chưa được cấu hình.</p>';
+                explanationContainer.setAttribute('data-loaded', 'error');
+                return;
+            }
+            
+            try {
+                const ai = new GoogleGenAI({ apiKey: API_KEY });
+                const item = quizData[index];
+                const questionText = (mapType(item.type) === 'true-false') ? (item.main_question || '') : (item.question || '');
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây.\n---**CÂU HỎI:**\n${questionText}\n---`;
+                
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${item.options[item.correctAnswerIndex] || ''}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n${item.statements.map((s, i) => `${String.fromCharCode(97 + i)}) ${s.statement || ''} -> ${s.is_correct ? 'Đúng' : 'Sai'}`).join('\n')}`;
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${item.answer || ''}`;
+                }
+                prompt += `\n---\n**YÊU CẦU:** Giải thích chi tiết, từng bước. Định dạng công thức toán bằng LaTeX. Dùng **...** để in đậm.`;
+                
+                // Use fallback function here
+                const response = await generateContentWithFallback(ai, prompt);
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+                explanationContainer.setAttribute('data-loaded', 'true');
+
+            } catch (error) {
+                console.error("AI Explanation Error:", error);
+                let errorMessage = "Lỗi khi tạo giải thích.";
+                if (error && error.message) {
+                    const sanitizedMessage = error.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    errorMessage += `<br><small class="text-gray-500">Chi tiết: ${sanitizedMessage}</small>`;
+                }
+                explanationContainer.innerHTML = `<div class="text-red-600">${errorMessage}</div>
+                                                  <a href="#" onclick="event.preventDefault(); fetchAndRenderExplanation(${index})" class="text-sm text-blue-600 hover:underline mt-2">Thử lại giải thích</a>`;
+                explanationContainer.setAttribute('data-loaded', 'error');
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) {
+                const errorMsg = "Không thể tạo nhận xét do API Key của giáo viên chưa được cấu hình.";
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> <p class="text-red-600">${errorMsg}</p>`;
+                assessmentDisplay.classList.remove('hidden');
+                return errorMsg;
+            }
+            
+            assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+            assessmentDisplay.classList.remove('hidden');
+
+            try {
+                const ai = new GoogleGenAI({ apiKey: API_KEY });
+                const wrongAnswers = answerDetails.filter(d => d.isCorrect === false || (d.type === 'true-false' && d.details && d.details.some(sub => !sub.isCorrect)));
+                if (wrongAnswers.length === 0) {
+                    const congrats = "Chúc mừng em đã hoàn thành bài làm rất tốt và không sai câu nào! Em đã nắm vững kiến thức. Hãy tiếp tục phát huy nhé!";
+                    assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${congrats}`;
+                    return congrats;
+                }
+                const wrongQuestionsSummary = wrongAnswers.map(d => {
+                    const item = quizData[d.questionNumber - 1];
+                    const questionText = item.question || item.main_question || '';
+                    return `- Câu ${d.questionNumber}: ${questionText}`;
+                }).join('\n');
+                
+                const prompt = `Bạn là một giáo viên AI tận tâm. Dựa vào kết quả bài làm sau, hãy đưa ra một nhận xét chi tiết (4-5 câu) về năng lực của học sinh.\n**Kết quả:**\n- Điểm số: ${score} / 10\n- Các câu sai:\n${wrongQuestionsSummary}\n**YÊU CẦU:**\n1. Bắt đầu bằng lời động viên.\n2. Phân tích nội dung các câu sai để **xác định cụ thể các mảng kiến thức học sinh còn yếu.**\n3. Đưa ra gợi ý cụ thể để khắc phục.\n4. Kết thúc bằng lời khích lệ.\n5. Giọng văn thân thiện, tích cực.`;
+
+                // Use fallback function here
+                const response = await generateContentWithFallback(ai, prompt);
+                const assessmentText = response.text || "Không thể tạo nhận xét.";
+                
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessmentText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                return assessmentText;
+
+            } catch (error) {
+                console.error("AI Assessment Error:", error);
+                let errorMessage = "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+                if (error && error.message) {
+                    const sanitizedMessage = error.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    errorMessage += `<br><small class="text-gray-500">Chi tiết: ${sanitizedMessage}</small>`;
+                }
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> <div class="text-red-600">${errorMessage}</div>
+                                               <button onclick="retryAIAssessment()" class="text-sm text-blue-600 hover:underline mt-2">Thử lại</button>`;
+                return "Lỗi khi tạo nhận xét AI.";
+            }
+        }
+        
+        async function retryAIAssessment() {
+            if (lastAnswerDetails) {
+                const finalScore = (lastScore / (quizData.length > 0 ? 10 : 1) * 10).toFixed(2);
+                await getAIAssessment(finalScore, lastAnswerDetails);
+            }
+        }
+    </script>
+</body>
+</html>
+    
