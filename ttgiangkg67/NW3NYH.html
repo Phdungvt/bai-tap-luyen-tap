@@ -1,0 +1,986 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUYỆN TẬP, CHƯƠNG IV-BÀI 10-TỌA ĐỘ VÉC TƠ-TOÁN 10-KNTT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; }
+        .option.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; display: none; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #2563eb; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 260px;
+            background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s ease-in-out;
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 16px; }
+        .nav-btn {
+            width: 36px; height: 36px; border-radius: 6px; border: 1px solid #d1d5db;
+            background: white; color: #374151; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+        .nav-btn.answered { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s ease-in-out; }
+        body.nav-open #app { margin-right: 260px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 20px; bottom: 20px; width: 50px; height: 50px;
+            background: #3b82f6; color: white; border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.1); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { "@google/genai": "https://esm.sh/@google/genai@^1.13.0" } }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-2 border-b bg-gray-50">
+            <h3 class="font-bold text-gray-700">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <div class="flex items-center gap-1"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-blue-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid"></div>
+    </div>
+
+    <div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+        
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800">LUYỆN TẬP, CHƯƠNG IV-BÀI 10-TỌA ĐỘ VÉC TƠ-TOÁN 10-KNTT</h1>
+            <p class="mt-2 text-gray-600">Mã đề: <span class="font-bold text-indigo-600">NW3NYH</span></p>
+            <hr class="my-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Họ và tên</label>
+                    <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="class" class="block text-sm font-medium text-gray-700">Lớp</label>
+                    <input type="text" id="class" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+             <p class="mt-4 text-sm text-red-600"><strong>Lưu ý:</strong> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.</p>
+            <button id="start-btn" class="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="flex justify-between items-center mb-4 sticky top-0 bg-white py-4 z-10 border-b -mx-6 px-6 shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-800 truncate max-w-[60%]">LUYỆN TẬP, CHƯƠNG IV-BÀI 10-TỌA ĐỘ VÉC TƠ-TOÁN 10-KNTT</h2>
+                <div id="timer" class="text-xl font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg whitespace-nowrap"></div>
+            </div>
+            <div id="all-questions-container" class="mt-6"></div>
+            <div class="mt-8 flex justify-end">
+                <button id="submit-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 text-lg">Nộp bài</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-center text-gray-800">Kết quả bài làm</h2>
+            <div id="score-display" class="hidden text-center text-5xl font-bold text-blue-600 my-6"></div>
+            <div id="assessment-display" class="hidden mt-4 p-4 bg-gray-100 rounded-lg text-gray-700"></div>
+            <div id="review-container" class="mt-8"></div>
+            <div class="mt-8 text-center space-x-4">
+                <button id="retry-btn" class="hidden bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700">Làm lại bài</button>
+                <button id="restart-btn" class="bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600">Về trang chủ</button>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+
+        const API_KEY = "AIzaSyCLb8ZgxMRZl0lgY1ecvfmrYkAgIjTibGQ";
+        let quizData = [{"type":"multiple-choice","question":"Trong mặt phẳng tọa độ $Oxy$, cho vectơ $\\vec{u} = 2\\vec{i} - 3\\vec{j}$. Tọa độ của vectơ $\\vec{u}$ là:","main_question":null,"questionImage":null,"options":["$(2; 3)$","$(-2; 3)$","$(2; -3)$","$(-3; 2)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":1,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong mặt phẳng tọa độ $Oxy$, cho vectơ $\\vec{u} = 2\\vec{i} - 3\\vec{j}$. Tọa độ của vectơ $\\vec{u}$ là:","rendered_options":["$(2; 3)$","$(-2; 3)$","$(2; -3)$","$(-3; 2)$"]},{"type":"multiple-choice","question":"Trong mặt phẳng tọa độ $Oxy$, cho điểm $M(4; -1)$. Tọa độ của vectơ $\\vec{OM}$ là:","main_question":null,"questionImage":null,"options":["$(-4; 1)$","$(4; -1)$","$(1; -4)$","$(-1; 4)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":2,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong mặt phẳng tọa độ $Oxy$, cho điểm $M(4; -1)$. Tọa độ của vectơ $\\vec{OM}$ là:","rendered_options":["$(-4; 1)$","$(4; -1)$","$(1; -4)$","$(-1; 4)$"]},{"type":"multiple-choice","question":"Cho hai vectơ $\\vec{a} = (x_1; y_1)$ và $\\vec{b} = (x_2; y_2)$. Tọa độ của vectơ $\\vec{a} + \\vec{b}$ là:","main_question":null,"questionImage":null,"options":["$(x_1 - x_2; y_1 - y_2)$","$(x_1 + x_2; y_1 + y_2)$","$(x_1 + y_1; x_2 + y_2)$","$(x_1 \\cdot x_2; y_1 \\cdot y_2)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":3,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho hai vectơ $\\vec{a} = (x_1; y_1)$ và $\\vec{b} = (x_2; y_2)$. Tọa độ của vectơ $\\vec{a} + \\vec{b}$ là:","rendered_options":["$(x_1 - x_2; y_1 - y_2)$","$(x_1 + x_2; y_1 + y_2)$","$(x_1 + y_1; x_2 + y_2)$","$(x_1 \\cdot x_2; y_1 \\cdot y_2)$"]},{"type":"multiple-choice","question":"Cho vectơ $\\vec{a} = (2; -4)$. Tọa độ của vectơ $3\\vec{a}$ là:","main_question":null,"questionImage":null,"options":["$(6; -12)$","$(5; -1)$","$(2/3; -4/3)$","$(-6; 12)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":4,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho vectơ $\\vec{a} = (2; -4)$. Tọa độ của vectơ $3\\vec{a}$ là:","rendered_options":["$(6; -12)$","$(5; -1)$","$(2/3; -4/3)$","$(-6; 12)$"]},{"type":"multiple-choice","question":"Trong hệ tọa độ $Oxy$, cho hai điểm $A(1; 2)$ và $B(3; -4)$. Tọa độ của vectơ $\\vec{AB}$ là:","main_question":null,"questionImage":null,"options":["$(4; -2)$","$(2; -6)$","$(-2; 6)$","$(2; -2)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":5,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong hệ tọa độ $Oxy$, cho hai điểm $A(1; 2)$ và $B(3; -4)$. Tọa độ của vectơ $\\vec{AB}$ là:","rendered_options":["$(4; -2)$","$(2; -6)$","$(-2; 6)$","$(2; -2)$"]},{"type":"multiple-choice","question":"Cho hai điểm $M(2; 3)$ và $N(-2; 5)$. Tọa độ trung điểm $I$ của đoạn thẳng $MN$ là:","main_question":null,"questionImage":null,"options":["$(0; 4)$","$(4; -2)$","$(0; 8)$","$(-2; 1)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":6,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho hai điểm $M(2; 3)$ và $N(-2; 5)$. Tọa độ trung điểm $I$ của đoạn thẳng $MN$ là:","rendered_options":["$(0; 4)$","$(4; -2)$","$(0; 8)$","$(-2; 1)$"]},{"type":"multiple-choice","question":"Trong mặt phẳng $Oxy$, cho tam giác $ABC$ có $A(1; 3)$, $B(4; 0)$, $C(4; -6)$. Tọa độ trọng tâm $G$ của tam giác $ABC$ là:","main_question":null,"questionImage":null,"options":["$(3; -1)$","$(9; -3)$","$(3; 1)$","$(1; -3)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":7,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong mặt phẳng $Oxy$, cho tam giác $ABC$ có $A(1; 3)$, $B(4; 0)$, $C(4; -6)$. Tọa độ trọng tâm $G$ của tam giác $ABC$ là:","rendered_options":["$(3; -1)$","$(9; -3)$","$(3; 1)$","$(1; -3)$"]},{"type":"multiple-choice","question":"Cho $\\vec{u} = (2x - 1; 3)$ và $\\vec{v} = (1; 2x + 1)$. Tìm $x$ để $\\vec{u} = \\vec{v}$.","main_question":null,"questionImage":null,"options":["$x = 2$","$x = 0$","$x = 1$","Không tồn tại $x$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":2,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":8,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho $\\vec{u} = (2x - 1; 3)$ và $\\vec{v} = (1; 2x + 1)$. Tìm $x$ để $\\vec{u} = \\vec{v}$.","rendered_options":["$x = 2$","$x = 0$","$x = 1$","Không tồn tại $x$"]},{"type":"multiple-choice","question":"Khẳng định nào sau đây là sai khi nói về các vectơ đơn vị trong hệ trục tọa độ $Oxy$?","main_question":null,"questionImage":null,"options":["$\\vec{i} = (1; 0)$","$\\vec{j} = (0; 1)$","$|\\vec{i}| = |\\vec{j}| = 1$","$\\vec{i} = \\vec{j}$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":3,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":9,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khẳng định nào sau đây là sai khi nói về các vectơ đơn vị trong hệ trục tọa độ $Oxy$?","rendered_options":["$\\vec{i} = (1; 0)$","$\\vec{j} = (0; 1)$","$|\\vec{i}| = |\\vec{j}| = 1$","$\\vec{i} = \\vec{j}$"]},{"type":"multiple-choice","question":"Cho $\\vec{a} = (-1; 2)$, $\\vec{b} = (5; -7)$. Tọa độ của vectơ $\\vec{c} = 2\\vec{a} - \\vec{b}$ là:","main_question":null,"questionImage":null,"options":["$(-7; 11)$","$(3; -3)$","$(7; -11)$","$(-6; 9)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":10,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho $\\vec{a} = (-1; 2)$, $\\vec{b} = (5; -7)$. Tọa độ của vectơ $\\vec{c} = 2\\vec{a} - \\vec{b}$ là:","rendered_options":["$(-7; 11)$","$(3; -3)$","$(7; -11)$","$(-6; 9)$"]},{"type":"multiple-choice","question":"Điều kiện cần và đủ để hai vectơ $\\vec{u}=(x; y)$ và $\\vec{v}=(x'; y')$ ($\\vec{v} \\neq \\vec{0}$) cùng phương là có một số thực $k$ sao cho:","main_question":null,"questionImage":null,"options":["$x = ky'$ và $y = kx'$","$x = kx'$ và $y = ky'$","$x + y = k(x' + y')$","$x - y = k(x' - y')$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":11,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Điều kiện cần và đủ để hai vectơ $\\vec{u}=(x; y)$ và $\\vec{v}=(x'; y')$ ($\\vec{v} \\neq \\vec{0}$) cùng phương là có một số thực $k$ sao cho:","rendered_options":["$x = ky'$ và $y = kx'$","$x = kx'$ và $y = ky'$","$x + y = k(x' + y')$","$x - y = k(x' - y')$"]},{"type":"multiple-choice","question":"Cho điểm $A(-2; 0)$ và $B(0; 4)$. Điểm $M$ nằm trên trục $Ox$ sao cho $A$ là trung điểm của $OM$ có tọa độ là:","main_question":null,"questionImage":null,"options":["$(2; 0)$","$(-4; 0)$","$(-1; 2)$","$(-2; 4)$"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":12,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho điểm $A(-2; 0)$ và $B(0; 4)$. Điểm $M$ nằm trên trục $Ox$ sao cho $A$ là trung điểm của $OM$ có tọa độ là:","rendered_options":["$(2; 0)$","$(-4; 0)$","$(-1; 2)$","$(-2; 4)$"]},{"type":"true-false","question":null,"main_question":"(Tư duy toán học): Trong mặt phẳng tọa độ $Oxy$, cho ba điểm $A(1; 2)$, $B(-3; 4)$ và $C(-1; -2)$.","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Tọa độ vectơ $\\vec{AC} = (-2; -4)$.","is_correct":true,"rendered_statement":"Tọa độ vectơ $\\vec{AC} = (-2; -4)$."},{"statement":"Điểm $D$ để tứ giác $ABCD$ là hình bình hành có tọa độ là $D(3; -4)$.","is_correct":true,"rendered_statement":"Điểm $D$ để tứ giác $ABCD$ là hình bình hành có tọa độ là $D(3; -4)$."},{"statement":"Vectơ $\\vec{u} = \\vec{AB} + 2\\vec{BC}$ có tọa độ là $(0; -10)$.","is_correct":true,"rendered_statement":"Vectơ $\\vec{u} = \\vec{AB} + 2\\vec{BC}$ có tọa độ là $(0; -10)$."},{"statement":"Điểm $M$ thỏa mãn $\\vec{MA} + \\vec{MB} + 2\\vec{MC} = \\vec{0}$ có tọa độ là $M(-\\frac{1}{2}; \\frac{1}{2})$.","is_correct":false,"rendered_statement":"Điểm $M$ thỏa mãn $\\vec{MA} + \\vec{MB} + 2\\vec{MC} = \\vec{0}$ có tọa độ là $M(-\\frac{1}{2}; \\frac{1}{2})$."}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":13,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Tư duy toán học): Trong mặt phẳng tọa độ $Oxy$, cho ba điểm $A(1; 2)$, $B(-3; 4)$ và $C(-1; -2)$."},{"type":"true-false","question":null,"main_question":"(Tư duy toán học): Cho hai vectơ $\\vec{a} = (2; 1)$ và $\\vec{b} = (3; -6)$.","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Vectơ đối của vectơ $\\vec{a}$ là $-\\vec{a} = (-2; 1)$.","is_correct":false,"rendered_statement":"Vectơ đối của vectơ $\\vec{a}$ là $-\\vec{a} = (-2; 1)$."},{"statement":"Hai vectơ $\\vec{a}$ và $\\vec{b}$ cùng phương.","is_correct":false,"rendered_statement":"Hai vectơ $\\vec{a}$ và $\\vec{b}$ cùng phương."},{"statement":"Tọa độ của vectơ $\\vec{x} = 3\\vec{a} + \\frac{1}{3}\\vec{b}$ là $(7; 1)$.","is_correct":true,"rendered_statement":"Tọa độ của vectơ $\\vec{x} = 3\\vec{a} + \\frac{1}{3}\\vec{b}$ là $(7; 1)$."},{"statement":"Nếu $\\vec{c} = (m; 2)$ cùng phương với $\\vec{a}$ thì $m = 4$.","is_correct":true,"rendered_statement":"Nếu $\\vec{c} = (m; 2)$ cùng phương với $\\vec{a}$ thì $m = 4$."}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":14,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Tư duy toán học): Cho hai vectơ $\\vec{a} = (2; 1)$ và $\\vec{b} = (3; -6)$."},{"type":"true-false","question":null,"main_question":"(Mô hình hóa - Vật lý):<br>Một vật thể chịu tác dụng của hai lực $\\vec{F_1}$ và $\\vec{F_2}$. Biết rằng trên hệ trục tọa độ, $\\vec{F_1} = (10; 0)$ N và $\\vec{F_2} = (5; 5)$ N.","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Lực $\\vec{F_1}$ có phương nằm ngang, chiều từ trái sang phải.","is_correct":true,"rendered_statement":"Lực $\\vec{F_1}$ có phương nằm ngang, chiều từ trái sang phải."},{"statement":"Hợp lực tác dụng lên vật là vectơ $\\vec{F} = \\vec{F_1} + \\vec{F_2}$ có tọa độ là $(15; 5)$.","is_correct":true,"rendered_statement":"Hợp lực tác dụng lên vật là vectơ $\\vec{F} = \\vec{F_1} + \\vec{F_2}$ có tọa độ là $(15; 5)$."},{"statement":"Nếu có thêm lực $\\vec{F_3}$ tác dụng lên vật để vật đứng yên (cân bằng lực) thì $\\vec{F_3} = (-15; -5)$.","is_correct":true,"rendered_statement":"Nếu có thêm lực $\\vec{F_3}$ tác dụng lên vật để vật đứng yên (cân bằng lực) thì $\\vec{F_3} = (-15; -5)$."},{"statement":"Độ lớn của lực $\\vec{F_1}$ nhỏ hơn độ lớn của lực $\\vec{F_2}$.","is_correct":false,"rendered_statement":"Độ lớn của lực $\\vec{F_1}$ nhỏ hơn độ lớn của lực $\\vec{F_2}$."}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":15,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Mô hình hóa - Vật lý):<br>Một vật thể chịu tác dụng của hai lực $\\vec{F_1}$ và $\\vec{F_2}$. Biết rằng trên hệ trục tọa độ, $\\vec{F_1} = (10; 0)$ N và $\\vec{F_2} = (5; 5)$ N."},{"type":"true-false","question":null,"main_question":"(Toán thực tiễn - Vận tốc):<br>Một chiếc máy bay đang bay trong mặt phẳng tọa độ $Oxy$. Vận tốc của gió được biểu diễn bởi vectơ $\\vec{v_g} = (40; 30)$ km/h. Máy bay cần bay với vận tốc thực tế là $\\vec{v} = (500; 0)$ km/h để đến đúng điểm hạ cánh. Biết $\\vec{v} = \\vec{v_a} + \\vec{v_g}$ ($\\vec{v_a}$ là vận tốc riêng của máy bay).","questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"Vectơ vận tốc thực tế $\\vec{v}$ cho thấy máy bay đang bay theo hướng Đông.","is_correct":true,"rendered_statement":"Vectơ vận tốc thực tế $\\vec{v}$ cho thấy máy bay đang bay theo hướng Đông."},{"statement":"Tọa độ vectơ vận tốc riêng của máy bay là $\\vec{v_a} = (460; -30)$.","is_correct":true,"rendered_statement":"Tọa độ vectơ vận tốc riêng của máy bay là $\\vec{v_a} = (460; -30)$."},{"statement":"Tốc độ của gió (độ dài vectơ gió) là $70$ km/h.","is_correct":false,"rendered_statement":"Tốc độ của gió (độ dài vectơ gió) là $70$ km/h."},{"statement":"Để giữ đúng lộ trình, phi công phải lái chếch mũi máy bay xuống phía Đông Nam.","is_correct":true,"rendered_statement":"Để giữ đúng lộ trình, phi công phải lái chếch mũi máy bay xuống phía Đông Nam."}],"answer":null,"isDirty":true,"explanation":null,"questionNumber":16,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Toán thực tiễn - Vận tốc):<br>Một chiếc máy bay đang bay trong mặt phẳng tọa độ $Oxy$. Vận tốc của gió được biểu diễn bởi vectơ $\\vec{v_g} = (40; 30)$ km/h. Máy bay cần bay với vận tốc thực tế là $\\vec{v} = (500; 0)$ km/h để đến đúng điểm hạ cánh. Biết $\\vec{v} = \\vec{v_a} + \\vec{v_g}$ ($\\vec{v_a}$ là vận tốc riêng của máy bay)."},{"type":"short-answer","question":"Trong mặt phẳng tọa độ $Oxy$, cho $\\vec{a}=(2; -3)$ và $\\vec{b}=(1; 4)$. Tìm hoành độ của vectơ $\\vec{u} = 2\\vec{a} - 3\\vec{b}$.","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"1","isDirty":true,"explanation":null,"questionNumber":17,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong mặt phẳng tọa độ $Oxy$, cho $\\vec{a}=(2; -3)$ và $\\vec{b}=(1; 4)$. Tìm hoành độ của vectơ $\\vec{u} = 2\\vec{a} - 3\\vec{b}$.","rendered_answer":"1"},{"type":"short-answer","question":"Cho tam giác $ABC$ có trọng tâm là gốc tọa độ $O(0;0)$, biết $A(4; 2)$ và $B(-5; 1)$. Tìm tung độ của đỉnh $C$.","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"-3","isDirty":true,"explanation":null,"questionNumber":18,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho tam giác $ABC$ có trọng tâm là gốc tọa độ $O(0;0)$, biết $A(4; 2)$ và $B(-5; 1)$. Tìm tung độ của đỉnh $C$.","rendered_answer":"-3"},{"type":"short-answer","question":"(Bài toán Cân bằng lực):<br>Một chất điểm chịu tác dụng của ba lực $\\vec{F_1}, \\vec{F_2}, \\vec{F_3}$ và ở trạng thái cân bằng (tức là tổng các vectơ lực bằng $\\vec{0}$). Biết lực thứ nhất $\\vec{F_1} = (30; 10)$ N, lực thứ hai $\\vec{F_2} = (-12; 14)$ N. Tìm độ lớn (cường độ) của lực thứ ba $\\vec{F_3}$.","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"30","isDirty":true,"explanation":null,"questionNumber":19,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Bài toán Cân bằng lực):<br>Một chất điểm chịu tác dụng của ba lực $\\vec{F_1}, \\vec{F_2}, \\vec{F_3}$ và ở trạng thái cân bằng (tức là tổng các vectơ lực bằng $\\vec{0}$). Biết lực thứ nhất $\\vec{F_1} = (30; 10)$ N, lực thứ hai $\\vec{F_2} = (-12; 14)$ N. Tìm độ lớn (cường độ) của lực thứ ba $\\vec{F_3}$.","rendered_answer":"30"},{"type":"short-answer","question":"(Bài toán Robot):<br>Một robot di chuyển trên mặt phẳng tọa độ. Ban đầu robot ở vị trí $A(1; 1)$. Sau 2 giờ di chuyển với vận tốc không đổi $\\vec{v} = (3; 2)$ km/h, robot đến vị trí $B$. Tính tổng hoành độ và tung độ của vị trí $B$ ($x_B + y_B$).","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"12","isDirty":true,"explanation":null,"questionNumber":20,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Bài toán Robot):<br>Một robot di chuyển trên mặt phẳng tọa độ. Ban đầu robot ở vị trí $A(1; 1)$. Sau 2 giờ di chuyển với vận tốc không đổi $\\vec{v} = (3; 2)$ km/h, robot đến vị trí $B$. Tính tổng hoành độ và tung độ của vị trí $B$ ($x_B + y_B$).","rendered_answer":"12"},{"type":"short-answer","question":"(Bài toán Bản đồ):<br>Trên bản đồ quy hoạch một khu đô thị mới với hệ trục tọa độ $Oxy$. Nhà văn hóa nằm tại vị trí $H(2; 3)$, Trạm y tế nằm tại $T(6; 5)$. Người ta muốn xây một Siêu thị $S$ sao cho Trạm y tế là trung điểm của đoạn thẳng nối Nhà văn hóa và Siêu thị. Tìm hoành độ của vị trí Siêu thị $S$.","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"10","isDirty":true,"explanation":null,"questionNumber":21,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Bài toán Bản đồ):<br>Trên bản đồ quy hoạch một khu đô thị mới với hệ trục tọa độ $Oxy$. Nhà văn hóa nằm tại vị trí $H(2; 3)$, Trạm y tế nằm tại $T(6; 5)$. Người ta muốn xây một Siêu thị $S$ sao cho Trạm y tế là trung điểm của đoạn thẳng nối Nhà văn hóa và Siêu thị. Tìm hoành độ của vị trí Siêu thị $S$.","rendered_answer":"10"},{"type":"short-answer","question":"(Bài toán Chuyển động):<br>Một con tàu khởi hành từ cảng $O(0;0)$ và chuyển động thẳng đều. Sau 1 giờ, tàu đến vị trí $M(10; 8)$ (đơn vị km). Giả sử tàu giữ nguyên vận tốc đó, tìm tung độ của tàu sau 2.5 giờ kể từ lúc khởi hành.","main_question":null,"questionImage":null,"options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[],"answer":"20","isDirty":true,"explanation":null,"questionNumber":22,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"(Bài toán Chuyển động):<br>Một con tàu khởi hành từ cảng $O(0;0)$ và chuyển động thẳng đều. Sau 1 giờ, tàu đến vị trí $M(10; 8)$ (đơn vị km). Giả sử tàu giữ nguyên vận tốc đó, tìm tung độ của tàu sau 2.5 giờ kể từ lúc khởi hành.","rendered_answer":"20"}];
+        const options = {"title":"LUYỆN TẬP, CHƯƠNG IV-BÀI 10-TỌA ĐỘ VÉC TƠ-TOÁN 10-KNTT","timeLimit":60,"retriesAllowed":0,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"shortAnswerFormat":"form","examCode":"NW3NYH","teacherName":"Giang Trần Thanh","scoring":{"mc":3,"tf":4,"sa":3,"essay":0,"tfMethod":"even"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbzyC4e-TXtesj6pFGT3z6Hc0fLy7AhK2yru29Vcj7hU6ug04VPVatM5p5luW7fao0PzuQ/exec";
+        const examCode = "NW3NYH";
+        
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        let lastScore, lastAnswerDetails; // For retrying AI assessment
+
+        // --- UTILS FOR SHUFFLING ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+
+        // --- SHUFFLE LOGIC FOR ONLINE QUIZ ---
+        function applyShuffling() {
+            // 1. Shuffle Options/Statements within each question
+            quizData.forEach(item => {
+                const shuffleOpts = item.shuffleOptions || { answers: true };
+                const type = mapType(item.type);
+                
+                if (shuffleOpts.answers) {
+                    if (type === 'multiple-choice' && item.rendered_options && item.rendered_options.length > 0) {
+                        // Create indices array to shuffle
+                        const indices = item.rendered_options.map((_, i) => i);
+                        shuffleArray(indices);
+                        
+                        // Reorder rendered_options based on shuffled indices
+                        item.rendered_options = indices.map(i => item.rendered_options[i]);
+                        
+                        // Reorder raw options (needed for review/explanation context, though mostly rendered is used)
+                        if (item.options) {
+                            item.options = indices.map(i => item.options[i]);
+                        }
+                        
+                        // Update correctAnswerIndex
+                        // Old index was item.correctAnswerIndex. We need to find where it went.
+                        // New index is the position of the old correct index in the shuffled 'indices' array.
+                        item.correctAnswerIndex = indices.indexOf(item.correctAnswerIndex);
+
+                    } else if (type === 'true-false' && item.statements && item.statements.length > 0) {
+                        // Shuffle statements array directly
+                        shuffleArray(item.statements);
+                    }
+                }
+            });
+
+            // 2. Shuffle Question Order within Parts (respecting "Câu dẫn" aka Stem shuffle option)
+            // We group questions by type first to ensure we don't mix sections
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let newQuizData = [];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (questions) {
+                    const finalPartQuestions = new Array(questions.length).fill(null);
+                    const shufflableQuestions = [];
+                    
+                    // Separate fixed and shufflable questions
+                    questions.forEach((q, i) => {
+                        const shuffleOpts = q.shuffleOptions || { stem: true };
+                        if (shuffleOpts.stem) {
+                            shufflableQuestions.push(q);
+                        } else {
+                            finalPartQuestions[i] = q;
+                        }
+                    });
+
+                    // Shuffle the shufflable ones
+                    shuffleArray(shufflableQuestions);
+
+                    // Merge back
+                    let shufflableIndex = 0;
+                    for (let i = 0; i < finalPartQuestions.length; i++) {
+                        if (finalPartQuestions[i] === null) {
+                            finalPartQuestions[i] = shufflableQuestions[shufflableIndex];
+                            shufflableIndex++;
+                        }
+                    }
+                    newQuizData = newQuizData.concat(finalPartQuestions);
+                }
+            });
+            
+            // Update the global quizData with the shuffled version
+            if (newQuizData.length === quizData.length) {
+                quizData = newQuizData;
+            }
+            
+            // Reset user answers array to match new length (though length is same) and clear it
+            userAnswers = new Array(quizData.length).fill(null);
+        }
+        
+        // --- FALLBACK MODELS CONFIGURATION ---
+        // Danh sách các mô hình để thử lần lượt
+        const GEMINI_MODELS_FALLBACK = [
+          "gemini-2.5-flash",
+          "gemini-2.5-flash-lite",
+          "gemini-2.0-flash",
+          "gemini-2.0-flash-lite",
+          "gemini-2.5-pro",
+          "gemini-1.5-pro",
+          "gemini-1.5-flash"
+        ];
+
+        // --- FALLBACK API FUNCTION FOR CLIENT (STUDENT VIEW) ---
+        async function generateContentWithFallback(ai, contents, preferredModel = "gemini-2.5-flash") {
+            if (!ai) throw new Error("AI instance not provided.");
+            
+            // Tạo danh sách mô hình để thử: bắt đầu bằng preferredModel, sau đó là danh sách fallback
+            const uniqueModels = [...new Set([preferredModel, ...GEMINI_MODELS_FALLBACK])];
+            
+            let lastError;
+            for (const model of uniqueModels) {
+                try {
+                    // console.log('Trying model:', model);
+                    const response = await ai.models.generateContent({
+                        model: model,
+                        contents: contents
+                    });
+                    return response;
+                } catch (error) {
+                    console.warn('Model failed:', model, error);
+                    lastError = error;
+                    const errStr = error.toString().toLowerCase();
+                    // Kiểm tra lỗi quota (429) hoặc server error (5xx) hoặc model not found (404)
+                    if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("exhausted") || 
+                        errStr.includes("503") || errStr.includes("overloaded") || errStr.includes("500") || 
+                        errStr.includes("internal") || errStr.includes("resource") || errStr.includes("not found")) {
+                        continue;
+                    }
+                    // Với client side, ta cũng nên thử tiếp với các lỗi khác để tăng khả năng thành công
+                     continue;
+                }
+            }
+            throw lastError || new Error("Tất cả các mô hình AI đều bận hoặc gặp sự cố. Vui lòng thử lại sau.");
+        }
+
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const toggleNavBtn = document.getElementById('toggle-nav-btn');
+        const navPanel = document.getElementById('nav-panel');
+        const navGrid = document.getElementById('nav-grid');
+
+        // Make functions globally accessible for inline onclick handlers
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.toggleExplanation = toggleExplanation;
+        window.fetchAndRenderExplanation = fetchAndRenderExplanation;
+        window.retryAIAssessment = retryAIAssessment;
+        window.setupFormInputs = setupFormInputs;
+        window.saveFormAnswer = saveFormAnswer;
+        window.scrollToQuestion = scrollToQuestion;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        // Toggle Navigation
+        toggleNavBtn.addEventListener('click', () => {
+            navPanel.classList.toggle('open');
+            document.body.classList.toggle('nav-open');
+        });
+
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            // Apply shuffling before rendering
+            applyShuffling();
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            toggleNavBtn.classList.remove('hidden');
+            
+            // Open nav panel by default on desktop
+            if (window.innerWidth > 1024) {
+                navPanel.classList.add('open');
+                document.body.classList.add('nav-open');
+            }
+
+            // Reset answers since data might be reordered
+            userAnswers = new Array(quizData.length).fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            renderNavPanel();
+            updateProgress();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = 'Không giới hạn';
+            }
+            startMonitoring();
+        }
+
+        function renderNavPanel() {
+            navGrid.innerHTML = '';
+            quizData.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.id = `nav-btn-${index}`;
+                btn.textContent = index + 1;
+                btn.onclick = () => scrollToQuestion(index);
+                navGrid.appendChild(btn);
+            });
+        }
+
+        function scrollToQuestion(index) {
+            const el = document.getElementById(`q-${index}`);
+            if (el) {
+                const offset = 80; // header height
+                const elementPosition = el.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                
+                // Highlight current
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('current'));
+                document.getElementById(`nav-btn-${index}`)?.classList.add('current');
+            }
+            // On mobile, close nav after selecting
+            if (window.innerWidth <= 1024) {
+                navPanel.classList.remove('open');
+                document.body.classList.remove('nav-open');
+            }
+        }
+
+        function updateProgress() {
+            let answeredCount = 0;
+            quizData.forEach((item, index) => {
+                const answer = userAnswers[index];
+                const type = mapType(item.type);
+                let isAnswered = false;
+
+                if (type === 'multiple-choice') {
+                    isAnswered = answer !== null;
+                } else if (type === 'true-false') {
+                    // Mark as answered only if ALL statements are answered
+                    isAnswered = Array.isArray(answer) && answer.filter(x => x !== null).length === item.statements.length;
+                } else { // short-answer, essay
+                    isAnswered = answer && String(answer).trim().length > 0;
+                }
+
+                const btn = document.getElementById(`nav-btn-${index}`);
+                if (isAnswered) {
+                    answeredCount++;
+                    btn?.classList.add('answered');
+                } else {
+                    btn?.classList.remove('answered');
+                }
+            });
+
+            const percent = Math.round((answeredCount / quizData.length) * 100);
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM KHÁCH QUAN' },
+                'true-false': { title: 'PHẦN II. CÂU HỎI ĐÚNG - SAI' },
+                'short-answer': { title: 'PHẦN III. CÂU HỎI TRẢ LỜI NGẮN' },
+                'essay': { title: 'PHẦN IV. CÂU HỎI TỰ LUẬN' },
+            };
+            
+            let questionCounter = 0;
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `<div class="group-header mb-6 pb-3 border-b-2 border-gray-300"><h2 class="text-2xl font-bold text-gray-800">${info.title}</h2></div>`;
+                
+                questions.forEach((item) => {
+                    const index = quizData.indexOf(item);
+                    questionCounter++;
+                    
+                    let contentHTML = `<div class="question-card mb-8 p-6 border rounded-xl shadow-sm scroll-mt-24" id="q-${index}">`;
+                    contentHTML += `<p class="font-semibold text-lg text-gray-800 mb-4">Câu ${questionCounter}:</p>`;
+                    contentHTML += `<div class="prose max-w-none text-gray-700 mb-4">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="space-y-3">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `<div class="option ${isSelected ? 'selected' : ''} p-3 border-2 rounded-lg cursor-pointer transition flex items-start" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                                <span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                <div class="flex-grow">${opt}</div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-3 border-2 rounded-lg flex items-center justify-between gap-4">
+                                                <div class="flex-grow prose max-w-none">${stmt.rendered_statement}</div>
+                                                <div class="flex-shrink-0 flex gap-2">
+                                                    <button class="${isTrueSelected ? 'bg-blue-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white' : 'bg-gray-200'} px-4 py-2 rounded-md font-semibold" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        const savedAnswerStr = userAnswers[index] || '';
+                        if (options.shortAnswerFormat === 'form') {
+                             answerHTML = `<div id="sa-form-${index}" class="flex items-center gap-2">`;
+                            for (let i = 0; i < 4; i++) {
+                                answerHTML += `<input type="text" maxlength="1" data-q-index="${index}" class="w-12 h-12 text-center text-2xl font-bold border-2 border-gray-400 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" value="">`;
+                            }
+                            answerHTML += `</div>`;
+                        } else {
+                            answerHTML = `<input type="text" class="w-full border border-gray-300 rounded-md p-2" value="${savedAnswerStr}" onchange="saveTextAnswer(this, ${index})">`;
+                        }
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border border-gray-300 rounded-md p-2" rows="5" onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>'; // close question-card
+                    allHTML += contentHTML;
+                });
+            });
+            container.innerHTML = allHTML;
+
+            // Add event listeners for the 4-box forms after rendering
+            document.querySelectorAll('[id^="sa-form-"]').forEach(formContainer => {
+                const inputs = formContainer.querySelectorAll('input');
+                if (inputs.length > 0) {
+                    setupFormInputs(inputs);
+                }
+            });
+
+            safeTypeset([container]);
+        }
+
+        function setupFormInputs(inputs) {
+            const qIndex = inputs[0].dataset.qIndex;
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    saveFormAnswer(qIndex, inputs);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                     saveFormAnswer(qIndex, inputs);
+                });
+                 input.addEventListener('change', () => saveFormAnswer(qIndex, inputs));
+            });
+        }
+
+        function saveFormAnswer(qIndex, inputs) {
+            let combinedValue = '';
+            inputs.forEach(inp => { combinedValue += inp.value; });
+            userAnswers[qIndex] = combinedValue;
+            updateProgress();
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            updateProgress();
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            Array.from(parent.children).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'bg-red-500'));
+            button.classList.add(answer ? 'bg-blue-500' : 'bg-red-500', 'text-white');
+            updateProgress();
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+            updateProgress();
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-pulse">Đang nộp bài...</span>';
+            
+            // Hide nav elements
+            progressContainer.classList.add('hidden');
+            toggleNavBtn.classList.add('hidden');
+            navPanel.classList.remove('open');
+            document.body.classList.remove('nav-open');
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            lastScore = score;
+            lastAnswerDetails = answerDetails;
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment) {
+                aiAssessment = await getAIAssessment(finalScore, answerDetails);
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            if (options.showAnswers) {
+                scoreDisplay.textContent = `${score} / 10`;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600">Nộp bài thành công!</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                // The getAIAssessment function now handles rendering directly.
+                // This call ensures the initial result is displayed.
+                if (assessment.startsWith("Lỗi")) {
+                    // If there was an error, getAIAssessment already rendered the error message.
+                } else {
+                     assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                     assessmentDisplay.classList.remove('hidden');
+                }
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<p class="text-center text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else if (type === 'short-answer') {
+                    // Normalize answers for comparison: trim whitespace and convert to lowercase
+                    const correctAnswer = (item.answer || '').toString().trim().toLowerCase();
+                    const studentAnswer = (userAnswer || '').toString().trim().toLowerCase();
+                    isCorrect = studentAnswer === correctAnswer;
+                    if (isCorrect) {
+                        score += pointsPerSa;
+                    }
+                } else {
+                    isCorrect = null; // For 'essay' type
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6">Xem lại bài làm</h3>';
+            quizData.forEach((item, index) => {
+                reviewHTML += `<div class="mb-6 p-4 border rounded-lg">`;
+                reviewHTML += `<p class="font-semibold mb-2">Câu ${index + 1}:</p><div class="prose max-w-none">${item.rendered_question}</div>`;
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'option p-3 border-2 rounded-lg flex items-start';
+                        if (i === item.correctAnswerIndex) classes += ' correct';
+                        if (userAnswers[index] === i && i !== item.correctAnswerIndex) classes += ' incorrect';
+                        reviewHTML += `<div class="${classes}"><span class="font-bold mr-2">${String.fromCharCode(65 + i)}.</span> <div>${opt}</div></div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="mt-4 space-y-2">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         let classes = 'p-3 border-2 rounded-lg flex items-center justify-between gap-4';
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isCorrect = userChoice === stmt.is_correct;
+                         if (isCorrect) classes += ' bg-green-50 border-green-300';
+                         else if (userChoice !== null) classes += ' bg-red-50 border-red-300';
+                         else classes += ' bg-gray-50 border-gray-200';
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 font-bold text-sm text-right">
+                                             <span>Đáp án: ${stmt.is_correct ? 'Đ' : 'S'}</span><br>
+                                             <span>Bạn chọn: ${userChoice === true ? 'Đ' : userChoice === false ? 'S' : '...'}</span>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-3 bg-gray-100 rounded-lg"><strong>Câu trả lời của bạn:</strong><br>${userAnswers[index] || '<em>Chưa trả lời</em>'}</div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-2 p-3 bg-blue-50 rounded-lg"><strong>Đáp án gợi ý:</strong><br><div class="prose max-w-none">${item.rendered_answer}</div></div>`;
+                    }
+                }
+                
+                if (options.showExplanation) {
+                     reviewHTML += `<div class="mt-4">
+                                      <button class="text-sm text-blue-600 hover:underline" onclick="toggleExplanation(${index}, this)">Xem giải thích từ AI</button>
+                                      <div id="explanation-${index}" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        async function toggleExplanation(index, button) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+
+            const isHidden = explanationContainer.classList.toggle('hidden');
+            button.textContent = isHidden ? 'Xem giải thích từ AI' : 'Ẩn giải thích';
+
+            const hasLoaded = explanationContainer.hasAttribute('data-loaded');
+            const hadError = explanationContainer.getAttribute('data-loaded') === 'error';
+
+            if (!isHidden && (!hasLoaded || hadError)) {
+                await fetchAndRenderExplanation(index);
+            }
+        }
+
+        async function fetchAndRenderExplanation(index) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            explanationContainer.innerHTML = '<div class="animate-pulse">AI đang suy nghĩ...</div>';
+            explanationContainer.setAttribute('data-loaded', 'loading');
+
+            if (!API_KEY) {
+                explanationContainer.innerHTML = '<p class="text-red-600">Lỗi: API Key của giáo viên chưa được cấu hình.</p>';
+                explanationContainer.setAttribute('data-loaded', 'error');
+                return;
+            }
+            
+            try {
+                const ai = new GoogleGenAI({ apiKey: API_KEY });
+                const item = quizData[index];
+                const questionText = (mapType(item.type) === 'true-false') ? (item.main_question || '') : (item.question || '');
+                let prompt = `Bạn là một trợ lý giáo viên AI, am hiểu sâu sắc Chương trình GDPT 2018 của Việt Nam. Hãy cung cấp một lời giải chi tiết, từng bước một cho câu hỏi sau đây.\n---**CÂU HỎI:**\n${questionText}\n---`;
+                
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${item.options[item.correctAnswerIndex] || ''}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n${item.statements.map((s, i) => `${String.fromCharCode(97 + i)}) ${s.statement || ''} -> ${s.is_correct ? 'Đúng' : 'Sai'}`).join('\n')}`;
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${item.answer || ''}`;
+                }
+                prompt += `\n---\n**YÊU CẦU:** Giải thích chi tiết, từng bước. Định dạng công thức toán bằng LaTeX. Dùng **...** để in đậm.`;
+                
+                // Use fallback function here
+                const response = await generateContentWithFallback(ai, prompt);
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+                explanationContainer.setAttribute('data-loaded', 'true');
+
+            } catch (error) {
+                console.error("AI Explanation Error:", error);
+                let errorMessage = "Lỗi khi tạo giải thích.";
+                if (error && error.message) {
+                    const sanitizedMessage = error.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    errorMessage += `<br><small class="text-gray-500">Chi tiết: ${sanitizedMessage}</small>`;
+                }
+                explanationContainer.innerHTML = `<div class="text-red-600">${errorMessage}</div>
+                                                  <a href="#" onclick="event.preventDefault(); fetchAndRenderExplanation(${index})" class="text-sm text-blue-600 hover:underline mt-2">Thử lại giải thích</a>`;
+                explanationContainer.setAttribute('data-loaded', 'error');
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) {
+                const errorMsg = "Không thể tạo nhận xét do API Key của giáo viên chưa được cấu hình.";
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> <p class="text-red-600">${errorMsg}</p>`;
+                assessmentDisplay.classList.remove('hidden');
+                return errorMsg;
+            }
+            
+            assessmentDisplay.innerHTML = '<strong>Nhận xét từ AI:</strong> <span class="animate-pulse">AI đang phân tích bài làm...</span>';
+            assessmentDisplay.classList.remove('hidden');
+
+            try {
+                const ai = new GoogleGenAI({ apiKey: API_KEY });
+                const wrongAnswers = answerDetails.filter(d => d.isCorrect === false || (d.type === 'true-false' && d.details && d.details.some(sub => !sub.isCorrect)));
+                if (wrongAnswers.length === 0) {
+                    const congrats = "Chúc mừng em đã hoàn thành bài làm rất tốt và không sai câu nào! Em đã nắm vững kiến thức. Hãy tiếp tục phát huy nhé!";
+                    assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${congrats}`;
+                    return congrats;
+                }
+                const wrongQuestionsSummary = wrongAnswers.map(d => {
+                    const item = quizData[d.questionNumber - 1];
+                    const questionText = item.question || item.main_question || '';
+                    return `- Câu ${d.questionNumber}: ${questionText}`;
+                }).join('\n');
+                
+                const prompt = `Bạn là một giáo viên AI tận tâm. Dựa vào kết quả bài làm sau, hãy đưa ra một nhận xét chi tiết (4-5 câu) về năng lực của học sinh.\n**Kết quả:**\n- Điểm số: ${score} / 10\n- Các câu sai:\n${wrongQuestionsSummary}\n**YÊU CẦU:**\n1. Bắt đầu bằng lời động viên.\n2. Phân tích nội dung các câu sai để **xác định cụ thể các mảng kiến thức học sinh còn yếu.**\n3. Đưa ra gợi ý cụ thể để khắc phục.\n4. Kết thúc bằng lời khích lệ.\n5. Giọng văn thân thiện, tích cực.`;
+
+                // Use fallback function here
+                const response = await generateContentWithFallback(ai, prompt);
+                const assessmentText = response.text || "Không thể tạo nhận xét.";
+                
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> ${assessmentText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}`;
+                return assessmentText;
+
+            } catch (error) {
+                console.error("AI Assessment Error:", error);
+                let errorMessage = "Đã có lỗi xảy ra trong quá trình AI tạo nhận xét.";
+                if (error && error.message) {
+                    const sanitizedMessage = error.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    errorMessage += `<br><small class="text-gray-500">Chi tiết: ${sanitizedMessage}</small>`;
+                }
+                assessmentDisplay.innerHTML = `<strong>Nhận xét từ AI:</strong> <br> <div class="text-red-600">${errorMessage}</div>
+                                               <button onclick="retryAIAssessment()" class="text-sm text-blue-600 hover:underline mt-2">Thử lại</button>`;
+                return "Lỗi khi tạo nhận xét AI.";
+            }
+        }
+        
+        async function retryAIAssessment() {
+            if (lastAnswerDetails) {
+                const finalScore = (lastScore / (quizData.length > 0 ? 10 : 1) * 10).toFixed(2);
+                await getAIAssessment(finalScore, lastAnswerDetails);
+            }
+        }
+    </script>
+</body>
+</html>
+    
