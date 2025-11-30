@@ -1,0 +1,1123 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài kiểm tra - 30/11/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); min-height: 100vh; }
+        .option { transition: all 0.2s ease; }
+        .option:hover { background-color: #f3f4f6; }
+        .option.selected { border-color: #4f46e5; background-color: #eef2ff; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; display: none; font-weight: bold; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #4f46e5; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 280px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 16px; }
+        .nav-btn {
+            width: 40px; height: 40px; border-radius: 8px; border: 1px solid #e5e7eb;
+            background: white; color: #4b5563; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-btn.answered { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; background-color: #fffbeb; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.nav-open #app { margin-right: 280px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .question-card { transition: box-shadow 0.3s; }
+        .question-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { 
+        "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+        "canvas-confetti": "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm"
+    } }
+    </script>
+</head>
+<body class="p-4 md:p-6">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden" title="Danh sách câu hỏi">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+            <h3 class="font-bold text-gray-800 text-lg">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-indigo-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid pb-20"></div>
+    </div>
+
+    <div id="app" class="max-w-5xl mx-auto transition-all duration-300">
+        
+        <div id="welcome-screen" class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto mt-10">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-center text-white relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 relative z-10">Bài kiểm tra - 30/11/2025</h1>
+                <p class="text-indigo-100 text-sm md:text-base relative z-10">Mã đề: <span class="font-mono font-bold bg-white/20 px-2 py-1 rounded text-white">EYOOUI</span></p>
+                 <div class="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Giáo viên: <span class="font-bold text-yellow-300">phạm anh dũng</span></span>
+                </div>
+            </div>
+            <div class="p-8">
+                <div class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên học sinh</label>
+                        <input type="text" id="name" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Nhập họ tên của bạn...">
+                    </div>
+                    <div>
+                        <label for="class" class="block text-sm font-semibold text-gray-700 mb-1">Lớp</label>
+                        <input type="text" id="class" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Ví dụ: 12A1">
+                    </div>
+                </div>
+                 <div class="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-amber-700">
+                                <span class="font-bold">Lưu ý:</span> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <button id="start-btn" class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 px-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2">
+                    <span>Bắt đầu làm bài</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="sticky top-0 z-30 -mx-4 md:-mx-6 mb-6">
+                 <div class="bg-white/90 backdrop-blur-md shadow-md border-b border-gray-200 py-3 px-4 md:px-8 flex justify-between items-center">
+                    <div>
+                         <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate max-w-[200px] md:max-w-md">Bài kiểm tra - 30/11/2025</h2>
+                         <p class="text-xs text-gray-500 hidden md:block">Thí sinh: <span id="student-name-display" class="font-semibold"></span></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="timer" class="text-lg md:text-xl font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 min-w-[80px] text-center shadow-sm"></div>
+                        <button id="submit-btn-top" class="md:hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">Nộp</button>
+                    </div>
+                 </div>
+            </div>
+            
+            <div id="all-questions-container" class="space-y-6 pb-10"></div>
+            
+            <div class="mt-8 flex justify-end sticky bottom-4 z-20">
+                <div class="bg-white/80 backdrop-blur p-2 rounded-2xl shadow-lg border border-gray-100">
+                    <button id="submit-btn" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-8 rounded-xl font-bold text-lg shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-green-700 transition-all flex items-center gap-2">
+                        <span>Nộp bài</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-8 text-center text-white">
+                <h2 class="text-3xl font-bold mb-2">Kết quả bài làm</h2>
+                <p class="opacity-90">Chúc mừng bạn đã hoàn thành bài thi!</p>
+            </div>
+            <div class="p-8">
+                <div id="score-display" class="hidden flex flex-col items-center justify-center my-4">
+                    <span class="text-gray-500 text-lg uppercase tracking-widest font-semibold mb-2">Tổng điểm</span>
+                    <span class="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-cyan-500 drop-shadow-sm"></span>
+                </div>
+                
+                <div id="assessment-display" class="hidden mt-6 p-6 bg-indigo-50 border border-indigo-100 rounded-xl text-gray-700 shadow-inner relative">
+                     <div class="absolute top-0 left-0 w-1 h-full bg-indigo-400 rounded-l-xl"></div>
+                     <h3 class="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                        </svg>
+                        Nhận xét từ AI Giáo viên
+                     </h3>
+                     <div class="assessment-content prose prose-indigo max-w-none"></div>
+                </div>
+
+                <div id="review-container" class="mt-10 border-t pt-8"></div>
+                
+                <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="retry-btn" class="hidden bg-white text-indigo-600 border-2 border-indigo-600 py-3 px-6 rounded-xl font-bold hover:bg-indigo-50 transition-colors">Làm lại bài</button>
+                    <button id="restart-btn" class="bg-gray-800 text-white py-3 px-6 rounded-xl font-bold hover:bg-gray-900 transition-colors shadow-md">Về trang chủ</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+        import confetti from "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm";
+
+        const API_KEY = "AIzaSyAISO4dHWuNaZFt4wW6RImAPI3A0rtpulg";
+        let quizData = [{"question":"Cho hàm số $y=f(x)$ có bảng biến thiên như sau:BBT[B3][1][0][-3][2]Hàm số đã cho đồng biến trên khoảng nào dưới đây?","options":["$(-1; 1)$","$(- \\infty; -1)$","$(0; 1)$","$(- \\infty; + \\infty)$"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho hàm số $y=f(x)$ có bảng biến thiên như sau:<img src=\"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuMC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzI2OS42OTEyNDFwdCcgaGVpZ2h0PScxMDMuMzk2ODM5cHQnIHZpZXdCb3g9Jy02OS4xNjQwOTEgLTY5LjE2NDA5MSAyNjkuNjkxMjQxIDEwMy4zOTY4MzknPgo8ZGVmcz4KPHBhdGggaWQ9J2cxLTAnIGQ9J003Ljg3ODQ1Ni0yLjc0OTY4OUM4LjA4MTY5NC0yLjc0OTY4OSA4LjI5Njg4Ny0yLjc0OTY4OSA4LjI5Njg4Ny0yLjk4ODc5MlM4LjA4MTY5NC0zLjIyNzg5NSA3Ljg3ODQ1Ni0zLjIyNzg5NUgxLjQxMDcxQzEuMjA3NDcyLTMuMjI3ODk1IC45OTIyNzktMy4yMjc4OTUgLjk5MjI3OS0yLjk4ODc5MlMxLjIwNzQ3Mi0yLjc0OTY4OSAxLjQxMDcxLTIuNzQ5Njg5SDcuODc4NDU2WicvPgo8cGF0aCBpZD0nZzEtNDknIGQ9J002LjA3MzIyNS0zLjIzOTg1MUM1LjQyNzY0Ni00LjA1MjgwMiA1LjI4NDE4NC00LjIzMjEzIDQuOTEzNTc0LTQuNTMxMDA5QzQuMjQ0MDg1LTUuMDY4OTkxIDMuNTc0NTk1LTUuMjg0MTg0IDIuOTY0ODgyLTUuMjg0MTg0QzEuNTY2MTI3LTUuMjg0MTg0IC42NTc1MzQtMy45NjkxMTYgLjY1NzUzNC0yLjU3MDM2MUMuNjU3NTM0LTEuMTk1NTE3IDEuNTQyMjE3IC4xMzE1MDcgMi45MTcwNjEgLjEzMTUwN1M1LjI4NDE4NC0uOTU2NDEzIDUuODY5OTg4LTEuOTEyODI3QzYuNTE1NTY3LTEuMDk5ODc1IDYuNjU5MDI5LS45MjA1NDggNy4wMjk2MzktLjYyMTY2OUM3LjY5OTEyOC0uMDgzNjg2IDguMzY4NjE4IC4xMzE1MDcgOC45NzgzMzEgLjEzMTUwN0MxMC4zNzcwODYgLjEzMTUwNyAxMS4yODU2NzktMS4xODM1NjIgMTEuMjg1Njc5LTIuNTgyMzE2QzExLjI4NTY3OS0zLjk1NzE2MSAxMC40MDA5OTYtNS4yODQxODQgOS4wMjYxNTItNS4yODQxODRTNi42NTkwMjktNC4xOTYyNjQgNi4wNzMyMjUtMy4yMzk4NTFaTTYuMzg0MDYtMi44MzMzNzVDNi44NzQyMjItMy42OTQxNDcgNy43NTg5MDQtNC45MDE2MTkgOS4xMDk4MzgtNC45MDE2MTlDMTAuMzc3MDg2LTQuOTAxNjE5IDExLjAyMjY2NS0zLjY1ODI4MSAxMS4wMjI2NjUtMi41ODIzMTZDMTEuMDIyNjY1LTEuNDEwNzEgMTAuMjIxNjY5LS40NDIzNDEgOS4xNjk2MTQtLjQ0MjM0MUM4LjQ3NjIxNC0uNDQyMzQxIDcuOTM4MjMyLS45NDQ0NTggNy42ODcxNzMtMS4xOTU1MTdDNy4zODgyOTQtMS41MTgzMDYgNy4xMTMzMjUtMS44ODg5MTcgNi4zODQwNi0yLjgzMzM3NVpNNS41NTkxNTMtMi4zMTkzMDNDNS4wNjg5OTEtMS40NTg1MzEgNC4xODQzMDktLjI1MTA1OSAyLjgzMzM3NS0uMjUxMDU5QzEuNTY2MTI3LS4yNTEwNTkgLjkyMDU0OC0xLjQ5NDM5NiAuOTIwNTQ4LTIuNTcwMzYxQy45MjA1NDgtMy43NDE5NjggMS43MjE1NDQtNC43MTAzMzYgMi43NzM1OTktNC43MTAzMzZDMy40NjY5OTktNC43MTAzMzYgNC4wMDQ5ODEtNC4yMDgyMTkgNC4yNTYwNC0zLjk1NzE2MUM0LjU1NDkxOS0zLjYzNDM3MSA0LjgyOTg4OC0zLjI2Mzc2MSA1LjU1OTE1My0yLjMxOTMwM1onLz4KPHBhdGggaWQ9J2czLTQwJyBkPSdNMy44ODU0MyAyLjkwNTEwNkMzLjg4NTQzIDIuODY5MjQgMy44ODU0MyAyLjg0NTMzIDMuNjgyMTkyIDIuNjQyMDkyQzIuNDg2Njc1IDEuNDM0NjIgMS44MTcxODYtLjUzNzk4MyAxLjgxNzE4Ni0yLjk3NjgzN0MxLjgxNzE4Ni01LjI5NjEzOSAyLjM3OTA3OC03LjI5MjY1MyAzLjc2NTg3OC04LjcwMzM2MkMzLjg4NTQzLTguODEwOTU5IDMuODg1NDMtOC44MzQ4NjkgMy44ODU0My04Ljg3MDczNUMzLjg4NTQzLTguOTQyNDY2IDMuODI1NjU0LTguOTY2Mzc2IDMuNzc3ODMzLTguOTY2Mzc2QzMuNjIyNDE2LTguOTY2Mzc2IDIuNjQyMDkyLTguMTA1NjA0IDIuMDU2Mjg5LTYuOTMzOTk4QzEuNDQ2NTc1LTUuNzI2NTI2IDEuMTcxNjA2LTQuNDQ3MzIzIDEuMTcxNjA2LTIuOTc2ODM3QzEuMTcxNjA2LTEuOTEyODI3IDEuMzM4OTc5LS40OTAxNjIgMS45NjA2NDggLjc4OTA0MUMyLjY2NjAwMiAyLjIyMzY2MSAzLjY0NjMyNiAzLjAwMDc0NyAzLjc3NzgzMyAzLjAwMDc0N0MzLjgyNTY1NCAzLjAwMDc0NyAzLjg4NTQzIDIuOTc2ODM3IDMuODg1NDMgMi45MDUxMDZaJy8+CjxwYXRoIGlkPSdnMy00MScgZD0nTTMuMzcxMzU3LTIuOTc2ODM3QzMuMzcxMzU3LTMuODg1NDMgMy4yNTE4MDYtNS4zNjc4NyAyLjU4MjMxNi02Ljc1NDY3QzEuODc2OTYxLTguMTg5MjkgLjg5NjYzOC04Ljk2NjM3NiAuNzY1MTMxLTguOTY2Mzc2Qy43MTczMS04Ljk2NjM3NiAuNjU3NTM0LTguOTQyNDY2IC42NTc1MzQtOC44NzA3MzVDLjY1NzUzNC04LjgzNDg2OSAuNjU3NTM0LTguODEwOTU5IC44NjA3NzItOC42MDc3MjFDMi4wNTYyODktNy40MDAyNDkgMi43MjU3NzgtNS40Mjc2NDYgMi43MjU3NzgtMi45ODg3OTJDMi43MjU3NzgtLjY2OTQ4OSAyLjE2Mzg4NSAxLjMyNzAyNCAuNzc3MDg2IDIuNzM3NzMzQy42NTc1MzQgMi44NDUzMyAuNjU3NTM0IDIuODY5MjQgLjY1NzUzNCAyLjkwNTEwNkMuNjU3NTM0IDIuOTc2ODM3IC43MTczMSAzLjAwMDc0NyAuNzY1MTMxIDMuMDAwNzQ3Qy45MjA1NDggMy4wMDA3NDcgMS45MDA4NzIgMi4xMzk5NzUgMi40ODY2NzUgLjk2ODM2OUMzLjA5NjM4OS0uMjUxMDU5IDMuMzcxMzU3LTEuNTQyMjE3IDMuMzcxMzU3LTIuOTc2ODM3WicvPgo8cGF0aCBpZD0nZzMtNDMnIGQ9J000Ljc3MDExMi0yLjc2MTY0NEg4LjA2OTczOEM4LjIzNzExMS0yLjc2MTY0NCA4LjQ1MjMwNC0yLjc2MTY0NCA4LjQ1MjMwNC0yLjk3NjgzN0M4LjQ1MjMwNC0zLjIwMzk4NSA4LjI0OTA2Ni0zLjIwMzk4NSA4LjA2OTczOC0zLjIwMzk4NUg0Ljc3MDExMlYtNi41MDM2MTFDNC43NzAxMTItNi42NzA5ODQgNC43NzAxMTItNi44ODYxNzcgNC41NTQ5MTktNi44ODYxNzdDNC4zMjc3NzEtNi44ODYxNzcgNC4zMjc3NzEtNi42ODI5MzkgNC4zMjc3NzEtNi41MDM2MTFWLTMuMjAzOTg1SDEuMDI4MTQ0Qy44NjA3NzItMy4yMDM5ODUgLjY0NTU3OS0zLjIwMzk4NSAuNjQ1NTc5LTIuOTg4NzkyQy42NDU1NzktMi43NjE2NDQgLjg0ODgxNy0yLjc2MTY0NCAxLjAyODE0NC0yLjc2MTY0NEg0LjMyNzc3MVYuNTM3OTgzQzQuMzI3NzcxIC43MDUzNTUgNC4zMjc3NzEgLjkyMDU0OCA0LjU0Mjk2NCAuOTIwNTQ4QzQuNzcwMTEyIC45MjA1NDggNC43NzAxMTIgLjcxNzMxIDQuNzcwMTEyIC41Mzc5ODNWLTIuNzYxNjQ0WicvPgo8cGF0aCBpZD0nZzMtNDgnIGQ9J001LjM1NTkxNS0zLjgyNTY1NEM1LjM1NTkxNS00LjgxNzkzMyA1LjI5NjEzOS01Ljc4NjMwMSA0Ljg2NTc1My02LjY5NDg5NEM0LjM3NTU5Mi03LjY4NzE3MyAzLjUxNDgxOS03Ljk1MDE4NyAyLjkyOTAxNi03Ljk1MDE4N0MyLjIzNTYxNi03Ljk1MDE4NyAxLjM4NjgtNy42MDM0ODcgLjk0NDQ1OC02LjYxMTIwOEMuNjA5NzE0LTUuODU4MDMyIC40OTAxNjItNS4xMTY4MTIgLjQ5MDE2Mi0zLjgyNTY1NEMuNDkwMTYyLTIuNjY2MDAyIC41NzM4NDgtMS43OTMyNzUgMS4wMDQyMzQtLjk0NDQ1OEMxLjQ3MDQ4Ni0uMDM1ODY2IDIuMjk1MzkyIC4yNTEwNTkgMi45MTcwNjEgLjI1MTA1OUMzLjk1NzE2MSAuMjUxMDU5IDQuNTU0OTE5LS4zNzA2MSA0LjkwMTYxOS0xLjA2NDAxQzUuMzMyMDA1LTEuOTYwNjQ4IDUuMzU1OTE1LTMuMTMyMjU0IDUuMzU1OTE1LTMuODI1NjU0Wk0yLjkxNzA2MSAuMDExOTU1QzIuNTM0NDk2IC4wMTE5NTUgMS43NTc0MS0uMjAzMjM4IDEuNTMwMjYyLTEuNTA2MzUxQzEuMzk4NzU1LTIuMjIzNjYxIDEuMzk4NzU1LTMuMTMyMjU0IDEuMzk4NzU1LTMuOTY5MTE2QzEuMzk4NzU1LTQuOTQ5NDQgMS4zOTg3NTUtNS44MzQxMjIgMS41OTAwMzctNi41Mzk0NzdDMS43OTMyNzUtNy4zNDA0NzMgMi40MDI5ODktNy43MTEwODMgMi45MTcwNjEtNy43MTEwODNDMy4zNzEzNTctNy43MTEwODMgNC4wNjQ3NTctNy40MzYxMTUgNC4yOTE5MDUtNi40MDc5N0M0LjQ0NzMyMy01LjcyNjUyNiA0LjQ0NzMyMy00Ljc4MjA2NyA0LjQ0NzMyMy0zLjk2OTExNkM0LjQ0NzMyMy0zLjE2ODEyIDQuNDQ3MzIzLTIuMjU5NTI3IDQuMzE1ODE2LTEuNTMwMjYyQzQuMDg4NjY3LS4yMTUxOTMgMy4zMzU0OTIgLjAxMTk1NSAyLjkxNzA2MSAuMDExOTU1WicvPgo8cGF0aCBpZD0nZzMtNDknIGQ9J00zLjQ0MzA4OC03LjY2MzI2M0MzLjQ0MzA4OC03LjkzODIzMiAzLjQ0MzA4OC03Ljk1MDE4NyAzLjIwMzk4NS03Ljk1MDE4N0MyLjkxNzA2MS03LjYyNzM5NyAyLjMxOTMwMy03LjE4NTA1NiAxLjA4NzkyLTcuMTg1MDU2Vi02LjgzODM1NkMxLjM2Mjg4OS02LjgzODM1NiAxLjk2MDY0OC02LjgzODM1NiAyLjYxODE4Mi03LjE0OTE5MVYtLjkyMDU0OEMyLjYxODE4Mi0uNDkwMTYyIDIuNTgyMzE2LS4zNDY3IDEuNTMwMjYyLS4zNDY3SDEuMTU5NjUxVjBDMS40ODI0NDEtLjAyMzkxIDIuNjQyMDkyLS4wMjM5MSAzLjAzNjYxMy0uMDIzOTFTNC41Nzg4MjktLjAyMzkxIDQuOTAxNjE5IDBWLS4zNDY3SDQuNTMxMDA5QzMuNDc4OTU0LS4zNDY3IDMuNDQzMDg4LS40OTAxNjIgMy40NDMwODgtLjkyMDU0OFYtNy42NjMyNjNaJy8+CjxwYXRoIGlkPSdnMy01MicgZD0nTTQuMzE1ODE2LTcuNzgyODE0QzQuMzE1ODE2LTguMDA5OTYzIDQuMzE1ODE2LTguMDY5NzM4IDQuMTQ4NDQzLTguMDY5NzM4QzQuMDUyODAyLTguMDY5NzM4IDQuMDE2OTM2LTguMDY5NzM4IDMuOTIxMjk1LTcuOTI2Mjc2TC4zMjI3OS0yLjM0MzIxM1YtMS45OTY1MTNIMy40NjY5OTlWLS45MDg1OTNDMy40NjY5OTktLjQ2NjI1MiAzLjQ0MzA4OC0uMzQ2NyAyLjU3MDM2MS0uMzQ2N0gyLjMzMTI1OFYwQzIuNjA2MjI3LS4wMjM5MSAzLjU1MDY4NS0uMDIzOTEgMy44ODU0My0uMDIzOTFTNS4xNzY1ODgtLjAyMzkxIDUuNDUxNTU3IDBWLS4zNDY3SDUuMjEyNDUzQzQuMzUxNjgxLS4zNDY3IDQuMzE1ODE2LS40NjYyNTIgNC4zMTU4MTYtLjkwODU5M1YtMS45OTY1MTNINS41MjMyODhWLTIuMzQzMjEzSDQuMzE1ODE2Vi03Ljc4MjgxNFpNMy41MjY3NzUtNi44NTAzMTFWLTIuMzQzMjEzSC42MjE2NjlMMy41MjY3NzUtNi44NTAzMTFaJy8+CjxwYXRoIGlkPSdnMC00OCcgZD0nTTIuMTEyMDgtMy43Nzc4MzNDMi4xNTE5My0zLjg4MTQ0NSAyLjE4MzgxMS0zLjkzNzIzNSAyLjE4MzgxMS00LjAxNjkzNkMyLjE4MzgxMS00LjI3OTk1IDEuOTQ0NzA3LTQuNDU1MjkzIDEuNzIxNTQ0LTQuNDU1MjkzQzEuNDAyNzQtNC40NTUyOTMgMS4zMTUwNjgtNC4xNzYzMzkgMS4yODMxODgtNC4wNjQ3NTdMLjI3MDk4NC0uNjI5NjM5Qy4yMzkxMDMtLjUzMzk5OCAuMjM5MTAzLS41MTAwODcgLjIzOTEwMy0uNTAyMTE3Qy4yMzkxMDMtLjQzMDM4NiAuMjg2OTI0LS40MTQ0NDYgLjM2NjYyNS0uMzkwNTM1Qy41MTAwODctLjMyNjc3NSAuNTI2MDI3LS4zMjY3NzUgLjU0MTk2OC0uMzI2Nzc1Qy41NjU4NzgtLjMyNjc3NSAuNjEzNjk5LS4zMjY3NzUgLjY2OTQ4OS0uNDYyMjY3TDIuMTEyMDgtMy43Nzc4MzNaJy8+CjxwYXRoIGlkPSdnMi0xMDInIGQ9J001LjMzMjAwNS00LjgwNTk3OEM1LjU3MTEwOC00LjgwNTk3OCA1LjY2Njc1LTQuODA1OTc4IDUuNjY2NzUtNS4wMzMxMjZDNS42NjY3NS01LjE1MjY3NyA1LjU3MTEwOC01LjE1MjY3NyA1LjM1NTkxNS01LjE1MjY3N0g0LjM4NzU0N0M0LjYxNDY5NS02LjM4NDA2IDQuNzgyMDY3LTcuMjMyODc3IDQuODc3NzA5LTcuNjE1NDQyQzQuOTQ5NDQtNy45MDIzNjYgNS4yMDA0OTgtOC4xNzczMzUgNS41MTEzMzMtOC4xNzczMzVDNS43NjIzOTEtOC4xNzczMzUgNi4wMTM0NS04LjA2OTczOCA2LjEzMzAwMS03Ljk2MjE0MkM1LjY2Njc1LTcuOTE0MzIxIDUuNTIzMjg4LTcuNTY3NjIxIDUuNTIzMjg4LTcuMzY0Mzg0QzUuNTIzMjg4LTcuMTI1MjggNS43MDI2MTUtNi45ODE4MTggNS45Mjk3NjMtNi45ODE4MThDNi4xNjg4NjctNi45ODE4MTggNi41Mjc1MjItNy4xODUwNTYgNi41Mjc1MjItNy42MzkzNTJDNi41Mjc1MjItOC4xNDE0NjkgNi4wMjU0MDUtOC40MTY0MzggNS40OTkzNzctOC40MTY0MzhDNC45ODUzMDUtOC40MTY0MzggNC40ODMxODgtOC4wMzM4NzMgNC4yNDQwODUtNy41Njc2MjFDNC4wMjg4OTItNy4xNDkxOTEgMy45MDkzNC02LjcxODgwNCAzLjYzNDM3MS01LjE1MjY3N0gyLjgzMzM3NUMyLjYwNjIyNy01LjE1MjY3NyAyLjQ4NjY3NS01LjE1MjY3NyAyLjQ4NjY3NS00LjkzNzQ4NEMyLjQ4NjY3NS00LjgwNTk3OCAyLjU1ODQwNi00LjgwNTk3OCAyLjc5NzUwOS00LjgwNTk3OEgzLjU2MjY0QzMuMzQ3NDQ3LTMuNjk0MTQ3IDIuODU3Mjg1LS45OTIyNzkgMi41ODIzMTYgLjI4NjkyNEMyLjM3OTA3OCAxLjMyNzAyNCAyLjE5OTc1MSAyLjE5OTc1MSAxLjYwMTk5MyAyLjE5OTc1MUMxLjU2NjEyNyAyLjE5OTc1MSAxLjIxOTQyNyAyLjE5OTc1MSAxLjAwNDIzNCAxLjk3MjYwM0MxLjYxMzk0OCAxLjkyNDc4MiAxLjYxMzk0OCAxLjM5ODc1NSAxLjYxMzk0OCAxLjM4NjhDMS42MTM5NDggMS4xNDc2OTYgMS40MzQ2MiAxLjAwNDIzNCAxLjIwNzQ3MiAxLjAwNDIzNEMuOTY4MzY5IDEuMDA0MjM0IC42MDk3MTQgMS4yMDc0NzIgLjYwOTcxNCAxLjY2MTc2OEMuNjA5NzE0IDIuMTc1ODQxIDEuMTM1NzQxIDIuNDM4ODU0IDEuNjAxOTkzIDIuNDM4ODU0QzIuODIxNDIgMi40Mzg4NTQgMy4zMjM1MzcgLjI1MTA1OSAzLjQ1NTA0NC0uMzQ2N0MzLjY3MDIzNy0xLjI2NzI0OCA0LjI1NjA0LTQuNDQ3MzIzIDQuMzE1ODE2LTQuODA1OTc4SDUuMzMyMDA1WicvPgo8cGF0aCBpZD0nZzItMTIwJyBkPSdNNS42NjY3NS00Ljg3NzcwOUM1LjI4NDE4NC00LjgwNTk3OCA1LjE0MDcyMi00LjUxOTA1NCA1LjE0MDcyMi00LjI5MTkwNUM1LjE0MDcyMi00LjAwNDk4MSA1LjM2Nzg3LTMuOTA5MzQgNS41MzUyNDMtMy45MDkzNEM1Ljg5Mzg5OC0zLjkwOTM0IDYuMTQ0OTU2LTQuMjIwMTc0IDYuMTQ0OTU2LTQuNTQyOTY0QzYuMTQ0OTU2LTUuMDQ1MDgxIDUuNTcxMTA4LTUuMjcyMjI5IDUuMDY4OTkxLTUuMjcyMjI5QzQuMzM5NzI2LTUuMjcyMjI5IDMuOTMzMjUtNC41NTQ5MTkgMy44MjU2NTQtNC4zMjc3NzFDMy41NTA2ODUtNS4yMjQ0MDggMi44MDk0NjUtNS4yNzIyMjkgMi41OTQyNzEtNS4yNzIyMjlDMS4zNzQ4NDQtNS4yNzIyMjkgLjcyOTI2NS0zLjcwNjEwMiAuNzI5MjY1LTMuNDQzMDg4Qy43MjkyNjUtMy4zOTUyNjggLjc3NzA4Ni0zLjMzNTQ5MiAuODYwNzcyLTMuMzM1NDkyQy45NTY0MTMtMy4zMzU0OTIgLjk4MDMyNC0zLjQwNzIyMyAxLjAwNDIzNC0zLjQ1NTA0NEMxLjQxMDcxLTQuNzgyMDY3IDIuMjExNzA2LTUuMDMzMTI2IDIuNTU4NDA2LTUuMDMzMTI2QzMuMDk2Mzg5LTUuMDMzMTI2IDMuMjAzOTg1LTQuNTMxMDA5IDMuMjAzOTg1LTQuMjQ0MDg1QzMuMjAzOTg1LTMuOTgxMDcxIDMuMTMyMjU0LTMuNzA2MTAyIDIuOTg4NzkyLTMuMTMyMjU0TDIuNTgyMzE2LTEuNDk0Mzk2QzIuNDAyOTg5LS43NzcwODYgMi4wNTYyODktLjExOTU1MiAxLjQyMjY2NS0uMTE5NTUyQzEuMzYyODg5LS4xMTk1NTIgMS4wNjQwMS0uMTE5NTUyIC44MTI5NTEtLjI3NDk2OUMxLjI0MzMzNy0uMzU4NjU1IDEuMzM4OTc5LS43MTczMSAxLjMzODk3OS0uODYwNzcyQzEuMzM4OTc5LTEuMDk5ODc1IDEuMTU5NjUxLTEuMjQzMzM3IC45MzI1MDMtMS4yNDMzMzdDLjY0NTU3OS0xLjI0MzMzNyAuMzM0NzQ1LS45OTIyNzkgLjMzNDc0NS0uNjA5NzE0Qy4zMzQ3NDUtLjEwNzU5NyAuODk2NjM4IC4xMTk1NTIgMS40MTA3MSAuMTE5NTUyQzEuOTg0NTU4IC4xMTk1NTIgMi4zOTEwMzQtLjMzNDc0NSAyLjY0MjA5Mi0uODI0OTA3QzIuODMzMzc1LS4xMTk1NTIgMy40MzExMzMgLjExOTU1MiAzLjg3MzQ3NCAuMTE5NTUyQzUuMDkyOTAyIC4xMTk1NTIgNS43Mzg0ODEtMS40NDY1NzUgNS43Mzg0ODEtMS43MDk1ODlDNS43Mzg0ODEtMS43NjkzNjUgNS42OTA2Ni0xLjgxNzE4NiA1LjYxODkyOS0xLjgxNzE4NkM1LjUxMTMzMy0xLjgxNzE4NiA1LjQ5OTM3Ny0xLjc1NzQxIDUuNDYzNTEyLTEuNjYxNzY4QzUuMTQwNzIyLS42MDk3MTQgNC40NDczMjMtLjExOTU1MiAzLjkwOTM0LS4xMTk1NTJDMy40OTA5MDktLjExOTU1MiAzLjI2Mzc2MS0uNDMwMzg2IDMuMjYzNzYxLS45MjA1NDhDMy4yNjM3NjEtMS4xODM1NjIgMy4zMTE1ODItMS4zNzQ4NDQgMy41MDI4NjQtMi4xNjM4ODVMMy45MjEyOTUtMy43ODk3ODhDNC4xMDA2MjMtNC41MDcwOTggNC41MDcwOTgtNS4wMzMxMjYgNS4wNTcwMzYtNS4wMzMxMjZDNS4wODA5NDYtNS4wMzMxMjYgNS40MTU2OTEtNS4wMzMxMjYgNS42NjY3NS00Ljg3NzcwOVonLz4KPC9kZWZzPgo8ZyBpZD0ncGFnZTEnPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDUuNjY5IDEzLjIwMzcpJz4KPHVzZSB4PSctNjAuOTUzNTM4JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzItMTIwJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSA1LjY2OSAzNC44NzkpJz4KPHVzZSB4PSctNjguOTY2MTI0JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzItMTAyJy8+Cjx1c2UgeD0nLTYxLjkxOTY4NycgeT0nLTczLjMwNDU2JyB4bGluazpocmVmPScjZzAtNDgnLz4KPHVzZSB4PSctNTkuMTI0NjExJyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzMtNDAnLz4KPHVzZSB4PSctNTQuNTcyMjg2JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzItMTIwJy8+Cjx1c2UgeD0nLTQ3LjkyMDE5OScgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2czLTQxJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSA1LjY2OSA3My44NTU4MiknPgo8dXNlIHg9Jy02OC45NjYxMjQnIHk9Jy02OC45NjYxMjQnIHhsaW5rOmhyZWY9JyNnMi0xMDInLz4KPHVzZSB4PSctNjEuOTE5Njg3JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzMtNDAnLz4KPHVzZSB4PSctNTcuMzY3MzYxJyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzItMTIwJy8+Cjx1c2UgeD0nLTUwLjcxNTI3NCcgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2czLTQxJy8+CjwvZz4KPHBhdGggZD0nTS0zNC45NDkyLTY4Ljk2NDg0MVYzMC4yNDYxJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNLTY4Ljk2NDg0MS00Ny43MDdIMjAwLjMyNzknIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00tNjguOTY0ODQxLTI2LjQ0NTNIMjAwLjMyNzknIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMzQuNzI3MiAxMy42MTg5KSc+Cjx1c2UgeD0nLTY4Ljk2NjEyNCcgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2cxLTAnLz4KPHVzZSB4PSctNTkuNjY3NjI3JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzEtNDknLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEwOC42NDU0IDEzLjk4NDIpJz4KPHVzZSB4PSctNjguOTY2MTI0JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzEtMCcvPgo8dXNlIHg9Jy01OS42Njc2MjcnIHk9Jy02OC45NjYxMjQnIHhsaW5rOmhyZWY9JyNnMy00OScvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMTg0LjE2MjEgMTQuNDgyMyknPgo8dXNlIHg9Jy02OC45NjYxMjQnIHk9Jy02OC45NjYxMjQnIHhsaW5rOmhyZWY9JyNnMy00OScvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMjQ3LjQyNTEgMTMuNjE4OSknPgo8dXNlIHg9Jy02OC45NjYxMjQnIHk9Jy02OC45NjYxMjQnIHhsaW5rOmhyZWY9JyNnMy00MycvPgo8dXNlIHg9Jy01OS44NjE0NzInIHk9Jy02OC45NjYxMjQnIHhsaW5rOmhyZWY9JyNnMS00OScvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgNzYuMjM1NzMgMzQuODc5KSc+Cjx1c2UgeD0nLTY4Ljk2NjEyNCcgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2czLTQzJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAxMTMuMjk1MSAzNS43NDI0KSc+Cjx1c2UgeD0nLTY4Ljk2NjEyNCcgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2czLTQ4Jy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAxNDcuMDA1OSAzNC44NzkpJz4KPHVzZSB4PSctNjguOTY2MTI0JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzEtMCcvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMTg0LjE2MjEgMzUuNzQyNCknPgo8dXNlIHg9Jy02OC45NjYxMjQnIHk9Jy02OC45NjYxMjQnIHhsaW5rOmhyZWY9JyNnMy00OCcvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMjE3Ljk3MDEgMzQuODc5KSc+Cjx1c2UgeD0nLTY4Ljk2NjEyNCcgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2czLTQzJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAzNC43Mjc2IDEwMi4yMDI2KSc+Cjx1c2UgeD0nLTY4Ljk2NjEyNCcgeT0nLTY4Ljk2NjEyNCcgeGxpbms6aHJlZj0nI2cxLTAnLz4KPHVzZSB4PSctNTkuNjY3NjI3JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzEtNDknLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDExMy4yOTUxIDYzLjM4MDcpJz4KPHVzZSB4PSctNjguOTY2MTI0JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzMtNTInLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDE4NC4xNjIxIDk0LjU2MTkpJz4KPHVzZSB4PSctNjguOTY2MTI0JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzMtNDgnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDI0Ny40MjYxIDUxLjE3ODMpJz4KPHVzZSB4PSctNjguOTY2MTI0JyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzMtNDMnLz4KPHVzZSB4PSctNTkuODYxNDcyJyB5PSctNjguOTY2MTI0JyB4bGluazpocmVmPScjZzEtNDknLz4KPC9nPgo8cGF0aCBkPSdNLTkuMTc1OCAyMi4xNjQxTDM4LjQ5MTktNC41MzEyJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNNDAuMjMwNDM1LTUuNTAzOTE1TDM2LjY2NzkyOC01LjMzNTk0OEwzOC40OTIxNDgtNC41MzEyNTRMMzguMjI2NTMtMi41NTQ2OTMnLz4KPHBhdGggZD0nTTU0LjI4MDktNi4zNDc3TDEwOS4yNzM5IDE3Ljg1MTYnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00xMTEuMDk3MjIxIDE4LjY1MjMyNkwxMDguODE5ODgzIDE1LjkxMDE0NEwxMDkuMjczMDA4IDE3Ljg1MTU0OEwxMDcuNTM0NzI3IDE4LjgyODEwNycvPgo8cGF0aCBkPSdNMTI1LjE0ODkgMTcuNTMxM0wxNzMuOTQ4OS0xMS43NScgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPHBhdGggZD0nTTE3NS42NTU5OC0xMi43NzM0MzlMMTcyLjEwNTIxMi0xMi41MDAwMDVMMTczLjk0ODk1OS0xMS43NUwxNzMuNzQ1ODM3LTkuNzY5NTM0Jy8+CjwvZz4KPC9zdmc+\" class=\"latex-image\" style=\"max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto;\">Hàm số đã cho đồng biến trên khoảng nào dưới đây?","rendered_options":["$(-1; 1)$","$(- \\infty; -1)$","$(0; 1)$","$(- \\infty; + \\infty)$"]},{"question":"Quan sát đồ thị hàm số $y = x^4 - 4x^2$ dưới đây:DT[B4][1][-4][0]Hàm số đã cho có bao nhiêu điểm cực trị?","options":["1","2","3","0"],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Quan sát đồ thị hàm số $y = x^4 - 4x^2$ dưới đây:<img src=\"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuMC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzI5NS43MTkxOTVwdCcgaGVpZ2h0PScyNTYuMDQzODk5cHQnIHZpZXdCb3g9Jy02OS4xNjQwNDUgLTY1LjI2Nzc3MSAyOTUuNzE5MTk1IDI1Ni4wNDM4OTknPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSdjbGlwMSc+CjxwYXRoIGQ9J00tNjguOTY0Nzk1IDE4Ni44MDQyNDVIMjI2LjM1NTlWLTYxLjc1NEgtNjguOTY0Nzk1WicvPgo8L2NsaXBQYXRoPgo8cGF0aCBpZD0nZzAtMTIwJyBkPSdNNS42NjY3NS00Ljg3NzcwOUM1LjI4NDE4NC00LjgwNTk3OCA1LjE0MDcyMi00LjUxOTA1NCA1LjE0MDcyMi00LjI5MTkwNUM1LjE0MDcyMi00LjAwNDk4MSA1LjM2Nzg3LTMuOTA5MzQgNS41MzUyNDMtMy45MDkzNEM1Ljg5Mzg5OC0zLjkwOTM0IDYuMTQ0OTU2LTQuMjIwMTc0IDYuMTQ0OTU2LTQuNTQyOTY0QzYuMTQ0OTU2LTUuMDQ1MDgxIDUuNTcxMTA4LTUuMjcyMjI5IDUuMDY4OTkxLTUuMjcyMjI5QzQuMzM5NzI2LTUuMjcyMjI5IDMuOTMzMjUtNC41NTQ5MTkgMy44MjU2NTQtNC4zMjc3NzFDMy41NTA2ODUtNS4yMjQ0MDggMi44MDk0NjUtNS4yNzIyMjkgMi41OTQyNzEtNS4yNzIyMjlDMS4zNzQ4NDQtNS4yNzIyMjkgLjcyOTI2NS0zLjcwNjEwMiAuNzI5MjY1LTMuNDQzMDg4Qy43MjkyNjUtMy4zOTUyNjggLjc3NzA4Ni0zLjMzNTQ5MiAuODYwNzcyLTMuMzM1NDkyQy45NTY0MTMtMy4zMzU0OTIgLjk4MDMyNC0zLjQwNzIyMyAxLjAwNDIzNC0zLjQ1NTA0NEMxLjQxMDcxLTQuNzgyMDY3IDIuMjExNzA2LTUuMDMzMTI2IDIuNTU4NDA2LTUuMDMzMTI2QzMuMDk2Mzg5LTUuMDMzMTI2IDMuMjAzOTg1LTQuNTMxMDA5IDMuMjAzOTg1LTQuMjQ0MDg1QzMuMjAzOTg1LTMuOTgxMDcxIDMuMTMyMjU0LTMuNzA2MTAyIDIuOTg4NzkyLTMuMTMyMjU0TDIuNTgyMzE2LTEuNDk0Mzk2QzIuNDAyOTg5LS43NzcwODYgMi4wNTYyODktLjExOTU1MiAxLjQyMjY2NS0uMTE5NTUyQzEuMzYyODg5LS4xMTk1NTIgMS4wNjQwMS0uMTE5NTUyIC44MTI5NTEtLjI3NDk2OUMxLjI0MzMzNy0uMzU4NjU1IDEuMzM4OTc5LS43MTczMSAxLjMzODk3OS0uODYwNzcyQzEuMzM4OTc5LTEuMDk5ODc1IDEuMTU5NjUxLTEuMjQzMzM3IC45MzI1MDMtMS4yNDMzMzdDLjY0NTU3OS0xLjI0MzMzNyAuMzM0NzQ1LS45OTIyNzkgLjMzNDc0NS0uNjA5NzE0Qy4zMzQ3NDUtLjEwNzU5NyAuODk2NjM4IC4xMTk1NTIgMS40MTA3MSAuMTE5NTUyQzEuOTg0NTU4IC4xMTk1NTIgMi4zOTEwMzQtLjMzNDc0NSAyLjY0MjA5Mi0uODI0OTA3QzIuODMzMzc1LS4xMTk1NTIgMy40MzExMzMgLjExOTU1MiAzLjg3MzQ3NCAuMTE5NTUyQzUuMDkyOTAyIC4xMTk1NTIgNS43Mzg0ODEtMS40NDY1NzUgNS43Mzg0ODEtMS43MDk1ODlDNS43Mzg0ODEtMS43NjkzNjUgNS42OTA2Ni0xLjgxNzE4NiA1LjYxODkyOS0xLjgxNzE4NkM1LjUxMTMzMy0xLjgxNzE4NiA1LjQ5OTM3Ny0xLjc1NzQxIDUuNDYzNTEyLTEuNjYxNzY4QzUuMTQwNzIyLS42MDk3MTQgNC40NDczMjMtLjExOTU1MiAzLjkwOTM0LS4xMTk1NTJDMy40OTA5MDktLjExOTU1MiAzLjI2Mzc2MS0uNDMwMzg2IDMuMjYzNzYxLS45MjA1NDhDMy4yNjM3NjEtMS4xODM1NjIgMy4zMTE1ODItMS4zNzQ4NDQgMy41MDI4NjQtMi4xNjM4ODVMMy45MjEyOTUtMy43ODk3ODhDNC4xMDA2MjMtNC41MDcwOTggNC41MDcwOTgtNS4wMzMxMjYgNS4wNTcwMzYtNS4wMzMxMjZDNS4wODA5NDYtNS4wMzMxMjYgNS40MTU2OTEtNS4wMzMxMjYgNS42NjY3NS00Ljg3NzcwOVonLz4KPHBhdGggaWQ9J2cwLTEyMScgZD0nTTMuMTQ0MjA5IDEuMzM4OTc5QzIuODIxNDIgMS43OTMyNzUgMi4zNTUxNjggMi4xOTk3NTEgMS43NjkzNjUgMi4xOTk3NTFDMS42MjU5MDMgMi4xOTk3NTEgMS4wNTIwNTUgMi4xNzU4NDEgLjg3MjcyNyAxLjYyNTkwM0MuOTA4NTkzIDEuNjM3ODU4IC45NjgzNjkgMS42Mzc4NTggLjk5MjI3OSAxLjYzNzg1OEMxLjM1MDkzNCAxLjYzNzg1OCAxLjU5MDAzNyAxLjMyNzAyNCAxLjU5MDAzNyAxLjA1MjA1NVMxLjM2Mjg4OSAuNjgxNDQ1IDEuMTgzNTYyIC42ODE0NDVDLjk5MjI3OSAuNjgxNDQ1IC41NzM4NDggLjgyNDkwNyAuNTczODQ4IDEuNDEwNzFDLjU3Mzg0OCAyLjAyMDQyMyAxLjA4NzkyIDIuNDM4ODU0IDEuNzY5MzY1IDIuNDM4ODU0QzIuOTY0ODgyIDIuNDM4ODU0IDQuMTcyMzU0IDEuMzM4OTc5IDQuNTA3MDk4IC4wMTE5NTVMNS42Nzg3MDUtNC42NTA1NkM1LjY5MDY2LTQuNzEwMzM2IDUuNzE0NTctNC43ODIwNjcgNS43MTQ1Ny00Ljg1Mzc5OEM1LjcxNDU3LTUuMDMzMTI2IDUuNTcxMTA4LTUuMTUyNjc3IDUuMzkxNzgxLTUuMTUyNjc3QzUuMjg0MTg0LTUuMTUyNjc3IDUuMDMzMTI2LTUuMTA0ODU3IDQuOTM3NDg0LTQuNzQ2MjAyTDQuMDUyODAyLTEuMjMxMzgyQzMuOTkzMDI2LTEuMDE2MTg5IDMuOTkzMDI2LS45OTIyNzkgMy44OTczODUtLjg2MDc3MkMzLjY1ODI4MS0uNTI2MDI3IDMuMjYzNzYxLS4xMTk1NTIgMi42ODk5MTMtLjExOTU1MkMyLjAyMDQyMy0uMTE5NTUyIDEuOTYwNjQ4LS43NzcwODYgMS45NjA2NDgtMS4wOTk4NzVDMS45NjA2NDgtMS43ODEzMiAyLjI4MzQzNy0yLjcwMTg2OCAyLjYwNjIyNy0zLjU2MjY0QzIuNzM3NzMzLTMuOTA5MzQgMi44MDk0NjUtNC4wNzY3MTIgMi44MDk0NjUtNC4zMTU4MTZDMi44MDk0NjUtNC44MTc5MzMgMi40NTA4MDktNS4yNzIyMjkgMS44NjUwMDYtNS4yNzIyMjlDLjc2NTEzMS01LjI3MjIyOSAuMzIyNzktMy41Mzg3MyAuMzIyNzktMy40NDMwODhDLjMyMjc5LTMuMzk1MjY4IC4zNzA2MS0zLjMzNTQ5MiAuNDU0Mjk2LTMuMzM1NDkyQy41NjE4OTMtMy4zMzU0OTIgLjU3Mzg0OC0zLjM4MzMxMyAuNjIxNjY5LTMuNTUwNjg1Qy45MDg1OTMtNC41NTQ5MTkgMS4zNjI4ODktNS4wMzMxMjYgMS44MjkxNDEtNS4wMzMxMjZDMS45MzY3MzctNS4wMzMxMjYgMi4xMzk5NzUtNS4wMzMxMjYgMi4xMzk5NzUtNC42Mzg2MDVDMi4xMzk5NzUtNC4zMjc3NzEgMi4wMDg0NjgtMy45ODEwNzEgMS44MjkxNDEtMy41MjY3NzVDMS4yNDMzMzctMS45NjA2NDggMS4yNDMzMzctMS41NjYxMjcgMS4yNDMzMzctMS4yNzkyMDNDMS4yNDMzMzctLjE0MzQ2MiAyLjA1NjI4OSAuMTE5NTUyIDIuNjU0MDQ3IC4xMTk1NTJDMy4wMDA3NDcgLjExOTU1MiAzLjQzMTEzMyAuMDExOTU1IDMuODQ5NTY0LS40MzAzODZMMy44NjE1MTktLjQxODQzMUMzLjY4MjE5MiAuMjg2OTI0IDMuNTYyNjQgLjc1MzE3NiAzLjE0NDIwOSAxLjMzODk3OVonLz4KPHBhdGggaWQ9J2cxLTAnIGQ9J003LjE4OTA4OS0yLjUwOTA5QzcuMzc0NTQzLTIuNTA5MDkgNy41NzA5MDctMi41MDkwOSA3LjU3MDkwNy0yLjcyNzI3MlM3LjM3NDU0My0yLjk0NTQ1NCA3LjE4OTA4OS0yLjk0NTQ1NEgxLjI4NzI3MkMxLjEwMTgxOC0yLjk0NTQ1NCAuOTA1NDU0LTIuOTQ1NDU0IC45MDU0NTQtMi43MjcyNzJTMS4xMDE4MTgtMi41MDkwOSAxLjI4NzI3Mi0yLjUwOTA5SDcuMTg5MDg5WicvPgo8cGF0aCBpZD0nZzItNTgnIGQ9J00yLjA5NDU0NS0uNTc4MTgyQzIuMDk0NTQ1LS44OTQ1NDUgMS44MzI3MjctMS4xNTYzNjMgMS41MTYzNjMtMS4xNTYzNjNTLjkzODE4Mi0uODk0NTQ1IC45MzgxODItLjU3ODE4MlMxLjIgMCAxLjUxNjM2MyAwUzIuMDk0NTQ1LS4yNjE4MTggMi4wOTQ1NDUtLjU3ODE4MlonLz4KPHBhdGggaWQ9J2cyLTc5JyBkPSdNOC4wNzI3MjUtNC43NTYzNjJDOC4wNzI3MjUtNi41MTI3MjUgNi45MTYzNjItNy42OTA5MDcgNS4yOTA5MDgtNy42OTA5MDdDMi45MzQ1NDUtNy42OTA5MDcgLjUzNDU0NS01LjIxNDU0NCAuNTM0NTQ1LTIuNjcyNzI3Qy41MzQ1NDUtLjg2MTgxOCAxLjc1NjM2MyAuMjQgMy4zMjcyNzIgLjI0QzUuNjM5OTk4IC4yNCA4LjA3MjcyNS0yLjE0OTA5IDguMDcyNzI1LTQuNzU2MzYyWk0zLjM5MjcyNi0uMDQzNjM2QzIuMzEyNzI3LS4wNDM2MzYgMS41NDkwOS0uOTI3MjcyIDEuNTQ5MDktMi4zNjcyNzJDMS41NDkwOS0yLjg0NzI3MiAxLjcwMTgxOC00LjQzOTk5OSAyLjU0MTgxNy01LjcxNjM2MkMzLjI5NDU0NS02Ljg1MDkwNyA0LjM2MzYzNS03LjQxODE4IDUuMjI1NDUzLTcuNDE4MThDNi4xMTk5OTgtNy40MTgxOCA3LjEwMTgxNi02LjgwNzI3MSA3LjEwMTgxNi01LjE4MTgxN0M3LjEwMTgxNi00LjM5NjM2MiA2LjgwNzI3MS0yLjY5NDU0NSA1LjcyNzI3MS0xLjM1MjcyN0M1LjIwMzYzNS0uNjg3MjczIDQuMzA5MDktLjA0MzYzNiAzLjM5MjcyNi0uMDQzNjM2WicvPgo8cGF0aCBpZD0nZzMtNDknIGQ9J00zLjIwNzI3Mi02Ljk4MTgxNkMzLjIwNzI3Mi03LjI0MzYzNCAzLjIwNzI3Mi03LjI2NTQ1MyAyLjk1NjM2My03LjI2NTQ1M0MyLjI3OTk5OS02LjU2NzI3MSAxLjMyLTYuNTY3MjcxIC45NzA5MDktNi41NjcyNzFWLTYuMjI5MDg5QzEuMTg5MDkxLTYuMjI5MDg5IDEuODMyNzI3LTYuMjI5MDg5IDIuMzk5OTk5LTYuNTEyNzI1Vi0uODYxODE4QzIuMzk5OTk5LS40NjkwOTEgMi4zNjcyNzItLjMzODE4MiAxLjM4NTQ1NC0uMzM4MTgySDEuMDM2MzYzVjBDMS40MTgxODEtLjAzMjcyNyAyLjM2NzI3Mi0uMDMyNzI3IDIuODAzNjM2LS4wMzI3MjdTNC4xODkwOS0uMDMyNzI3IDQuNTcwOTA4IDBWLS4zMzgxODJINC4yMjE4MTdDMy4yMzk5OTktLjMzODE4MiAzLjIwNzI3Mi0uNDU4MTgyIDMuMjA3MjcyLS44NjE4MThWLTYuOTgxODE2WicvPgo8cGF0aCBpZD0nZzMtNTAnIGQ9J00xLjM4NTQ1NC0uODRMMi41NDE4MTctMS45NjM2MzZDNC4yNDM2MzUtMy40NjkwOSA0Ljg5ODE4LTQuMDU4MTgxIDQuODk4MTgtNS4xNDkwODlDNC44OTgxOC02LjM5MjcyNSAzLjkxNjM2My03LjI2NTQ1MyAyLjU4NTQ1NC03LjI2NTQ1M0MxLjM1MjcyNy03LjI2NTQ1MyAuNTQ1NDU0LTYuMjYxODE2IC41NDU0NTQtNS4yOTA5MDhDLjU0NTQ1NC00LjY3OTk5OSAxLjA5MDkwOS00LjY3OTk5OSAxLjEyMzYzNi00LjY3OTk5OUMxLjMwOTA5MS00LjY3OTk5OSAxLjY5MDkwOS00LjgxMDkwOCAxLjY5MDkwOS01LjI1ODE4QzEuNjkwOTA5LTUuNTQxODE3IDEuNDk0NTQ1LTUuODI1NDUzIDEuMTEyNzI3LTUuODI1NDUzQzEuMDI1NDU0LTUuODI1NDUzIDEuMDAzNjM2LTUuODI1NDUzIC45NzA5MDktNS44MTQ1NDRDMS4yMjE4MTgtNi41MjM2MzUgMS44MTA5MDktNi45MjcyNzEgMi40NDM2MzYtNi45MjcyNzFDMy40MzYzNjMtNi45MjcyNzEgMy45MDU0NTMtNi4wNDM2MzUgMy45MDU0NTMtNS4xNDkwODlDMy45MDU0NTMtNC4yNzYzNjIgMy4zNTk5OTktMy40MTQ1NDUgMi43NTk5OTktMi43MzgxODFMLjY2NTQ1NC0uNDAzNjM2Qy41NDU0NTQtLjI4MzYzNiAuNTQ1NDU0LS4yNjE4MTggLjU0NTQ1NCAwSDQuNTkyNzI2TDQuODk4MTgtMS44OTgxODFINC42MjU0NTNDNC41NzA5MDgtMS41NzA5MDkgNC40OTQ1NDQtMS4wOTA5MDkgNC4zODU0NTMtLjkyNzI3MkM0LjMwOTA5LS44NCAzLjU4OTA5LS44NCAzLjM0OTA5LS44NEgxLjM4NTQ1NFonLz4KPHBhdGggaWQ9J2czLTUxJyBkPSdNMy4xNjM2MzUtMy44Mzk5OTlDNC4wNTgxODEtNC4xMzQ1NDQgNC42OTA5MDgtNC44OTgxOCA0LjY5MDkwOC01Ljc1OTk5OEM0LjY5MDkwOC02LjY1NDU0NCAzLjczMDkwOC03LjI2NTQ1MyAyLjY4MzYzNi03LjI2NTQ1M0MxLjU4MTgxOC03LjI2NTQ1MyAuNzUyNzI3LTYuNjEwOTA3IC43NTI3MjctNS43ODE4MTdDLjc1MjcyNy01LjQyMTgxNyAuOTkyNzI3LTUuMjE0NTQ0IDEuMzA5MDkxLTUuMjE0NTQ0QzEuNjQ3MjcyLTUuMjE0NTQ0IDEuODY1NDU0LTUuNDU0NTQ0IDEuODY1NDU0LTUuNzcwOTA3QzEuODY1NDU0LTYuMzE2MzYyIDEuMzUyNzI3LTYuMzE2MzYyIDEuMTg5MDkxLTYuMzE2MzYyQzEuNTI3MjcyLTYuODUwOTA3IDIuMjQ3MjcyLTYuOTkyNzI1IDIuNjM5OTk5LTYuOTkyNzI1QzMuMDg3MjcyLTYuOTkyNzI1IDMuNjg3MjcyLTYuNzUyNzI1IDMuNjg3MjcyLTUuNzcwOTA3QzMuNjg3MjcyLTUuNjM5OTk4IDMuNjY1NDU0LTUuMDA3MjcxIDMuMzgxODE3LTQuNTI3MjcxQzMuMDU0NTQ1LTQuMDAzNjM1IDIuNjgzNjM2LTMuOTcwOTA4IDIuNDEwOTA4LTMuOTU5OTk5QzIuMzIzNjM2LTMuOTQ5MDkgMi4wNjE4MTgtMy45MjcyNzIgMS45ODU0NTQtMy45MjcyNzJDMS44OTgxODEtMy45MTYzNjMgMS44MjE4MTgtMy45MDU0NTMgMS44MjE4MTgtMy43OTYzNjNDMS44MjE4MTgtMy42NzYzNjMgMS44OTgxODEtMy42NzYzNjMgMi4wODM2MzYtMy42NzYzNjNIMi41NjM2MzZDMy40NTgxODEtMy42NzYzNjMgMy44NjE4MTctMi45MzQ1NDUgMy44NjE4MTctMS44NjU0NTRDMy44NjE4MTctLjM4MTgxOCAzLjEwOTA5LS4wNjU0NTUgMi42MjkwOS0uMDY1NDU1QzIuMTU5OTk5LS4wNjU0NTUgMS4zNDE4MTgtLjI1MDkwOSAuOTYtLjg5NDU0NUMxLjM0MTgxOC0uODQgMS42OC0xLjA4IDEuNjgtMS40OTQ1NDVDMS42OC0xLjg4NzI3MiAxLjM4NTQ1NC0yLjEwNTQ1NCAxLjA2OTA5MS0yLjEwNTQ1NEMuODA3MjczLTIuMTA1NDU0IC40NTgxODItMS45NTI3MjcgLjQ1ODE4Mi0xLjQ3MjcyN0MuNDU4MTgyLS40OCAxLjQ3MjcyNyAuMjQgMi42NjE4MTcgLjI0QzMuOTkyNzI2IC4yNCA0Ljk4NTQ1My0uNzUyNzI3IDQuOTg1NDUzLTEuODY1NDU0QzQuOTg1NDUzLTIuNzU5OTk5IDQuMjk4MTgxLTMuNjEwOTA4IDMuMTYzNjM1LTMuODM5OTk5WicvPgo8cGF0aCBpZD0nZzMtNTInIGQ9J00zLjIwNzI3Mi0xLjc5OTk5OVYtLjg1MDkwOUMzLjIwNzI3Mi0uNDU4MTgyIDMuMTg1NDU0LS4zMzgxODIgMi4zNzgxODEtLjMzODE4MkgyLjE0OTA5VjBDMi41OTYzNjMtLjAzMjcyNyAzLjE2MzYzNS0uMDMyNzI3IDMuNjIxODE3LS4wMzI3MjdTNC42NTgxODEtLjAzMjcyNyA1LjEwNTQ1MyAwVi0uMzM4MTgySDQuODc2MzYyQzQuMDY5MDktLjMzODE4MiA0LjA0NzI3Mi0uNDU4MTgyIDQuMDQ3MjcyLS44NTA5MDlWLTEuNzk5OTk5SDUuMTM4MThWLTIuMTM4MTgxSDQuMDQ3MjcyVi03LjEwMTgxNkM0LjA0NzI3Mi03LjMxOTk5OCA0LjA0NzI3Mi03LjM4NTQ1MiAzLjg3MjcyNi03LjM4NTQ1MkMzLjc3NDU0NC03LjM4NTQ1MiAzLjc0MTgxNy03LjM4NTQ1MiAzLjY1NDU0NC03LjI1NDU0M0wuMzA1NDU0LTIuMTM4MTgxVi0xLjc5OTk5OUgzLjIwNzI3MlpNMy4yNzI3MjYtMi4xMzgxODFILjYxMDkwOUwzLjI3MjcyNi02LjIwNzI3MVYtMi4xMzgxODFaJy8+CjxwYXRoIGlkPSdnMy01MycgZD0nTTQuODk4MTgtMi4xOTI3MjdDNC44OTgxOC0zLjQ5MDkwOCA0LjAwMzYzNS00LjU4MTgxNyAyLjgyNTQ1NC00LjU4MTgxN0MyLjMwMTgxOC00LjU4MTgxNyAxLjgzMjcyNy00LjQwNzI3MSAxLjQ0LTQuMDI1NDUzVi02LjE1MjcyNkMxLjY1ODE4MS02LjA4NzI3MSAyLjAxODE4MS02LjAxMDkwNyAyLjM2NzI3Mi02LjAxMDkwN0MzLjcwOTA5LTYuMDEwOTA3IDQuNDcyNzI2LTcuMDAzNjM0IDQuNDcyNzI2LTcuMTQ1NDUzQzQuNDcyNzI2LTcuMjEwOTA3IDQuNDM5OTk5LTcuMjY1NDUzIDQuMzYzNjM1LTcuMjY1NDUzQzQuMzUyNzI2LTcuMjY1NDUzIDQuMzMwOTA4LTcuMjY1NDUzIDQuMjc2MzYyLTcuMjMyNzI1QzQuMDU4MTgxLTcuMTM0NTQzIDMuNTIzNjM1LTYuOTE2MzYyIDIuNzkyNzI2LTYuOTE2MzYyQzIuMzU2MzYzLTYuOTE2MzYyIDEuODU0NTQ1LTYuOTkyNzI1IDEuMzQxODE4LTcuMjIxODE2QzEuMjU0NTQ1LTcuMjU0NTQzIDEuMjMyNzI3LTcuMjU0NTQzIDEuMjEwOTA5LTcuMjU0NTQzQzEuMTAxODE4LTcuMjU0NTQzIDEuMTAxODE4LTcuMTY3MjcxIDEuMTAxODE4LTYuOTkyNzI1Vi0zLjc2MzYzNUMxLjEwMTgxOC0zLjU2NzI3MiAxLjEwMTgxOC0zLjQ3OTk5OSAxLjI1NDU0NS0zLjQ3OTk5OUMxLjMzMDkwOS0zLjQ3OTk5OSAxLjM1MjcyNy0zLjUxMjcyNiAxLjM5NjM2My0zLjU3ODE4MUMxLjUxNjM2My0zLjc1MjcyNiAxLjkxOTk5OS00LjM0MTgxNyAyLjgwMzYzNi00LjM0MTgxN0MzLjM3MDkwOC00LjM0MTgxNyAzLjY0MzYzNS0zLjgzOTk5OSAzLjczMDkwOC0zLjY0MzYzNUMzLjkwNTQ1My0zLjIzOTk5OSAzLjkyNzI3Mi0yLjgxNDU0NSAzLjkyNzI3Mi0yLjI2OTA5QzMuOTI3MjcyLTEuODg3MjcyIDMuOTI3MjcyLTEuMjMyNzI3IDMuNjY1NDU0LS43NzQ1NDVDMy40MDM2MzUtLjM0OTA5MSAyLjk5OTk5OS0uMDY1NDU1IDIuNDk4MTgxLS4wNjU0NTVDMS43MDE4MTgtLjA2NTQ1NSAxLjA4LS42NDM2MzYgLjg5NDU0NS0xLjI4NzI3MkMuOTI3MjcyLTEuMjc2MzYzIC45Ni0xLjI2NTQ1NCAxLjA4LTEuMjY1NDU0QzEuNDQtMS4yNjU0NTQgMS42MjU0NTQtMS41MzgxODEgMS42MjU0NTQtMS43OTk5OTlTMS40NC0yLjMzNDU0NSAxLjA4LTIuMzM0NTQ1Qy45MjcyNzItMi4zMzQ1NDUgLjU0NTQ1NC0yLjI1ODE4MSAuNTQ1NDU0LTEuNzU2MzYzQy41NDU0NTQtLjgxODE4MiAxLjI5ODE4MSAuMjQgMi41MTk5OTkgLjI0QzMuNzg1NDUzIC4yNCA0Ljg5ODE4LS44MDcyNzMgNC44OTgxOC0yLjE5MjcyN1onLz4KPHBhdGggaWQ9J2czLTU0JyBkPSdNMS40NC0zLjU3ODE4MVYtMy44Mzk5OTlDMS40NC02LjU5OTk5OCAyLjc5MjcyNi02Ljk5MjcyNSAzLjM0OTA5LTYuOTkyNzI1QzMuNjEwOTA4LTYuOTkyNzI1IDQuMDY5MDktNi45MjcyNzEgNC4zMDkwOS02LjU1NjM2MkM0LjE0NTQ1My02LjU1NjM2MiAzLjcwOTA5LTYuNTU2MzYyIDMuNzA5MDktNi4wNjU0NTNDMy43MDkwOS01LjcyNzI3MSAzLjk3MDkwOC01LjU2MzYzNSA0LjIxMDkwOC01LjU2MzYzNUM0LjM4NTQ1My01LjU2MzYzNSA0LjcxMjcyNi01LjY2MTgxNyA0LjcxMjcyNi02LjA4NzI3MUM0LjcxMjcyNi02Ljc0MTgxNiA0LjIzMjcyNi03LjI2NTQ1MyAzLjMyNzI3Mi03LjI2NTQ1M0MxLjkzMDkwOS03LjI2NTQ1MyAuNDU4MTgyLTUuODU4MTggLjQ1ODE4Mi0zLjQ0NzI3MkMuNDU4MTgyLS41MzQ1NDUgMS43MjM2MzYgLjI0IDIuNzM4MTgxIC4yNEMzLjk0OTA5IC4yNCA0Ljk4NTQ1My0uNzg1NDU0IDQuOTg1NDUzLTIuMjI1NDU0QzQuOTg1NDUzLTMuNjEwOTA4IDQuMDE0NTQ0LTQuNjU4MTgxIDIuODAzNjM2LTQuNjU4MTgxQzIuMDYxODE4LTQuNjU4MTgxIDEuNjU4MTgxLTQuMTAxODE3IDEuNDQtMy41NzgxODFaTTIuNzM4MTgxLS4wNjU0NTVDMi4wNTA5MDktLjA2NTQ1NSAxLjcyMzYzNi0uNzIgMS42NTgxODEtLjg4MzYzNkMxLjQ2MTgxOC0xLjM5NjM2MyAxLjQ2MTgxOC0yLjI2OTA5IDEuNDYxODE4LTIuNDY1NDU0QzEuNDYxODE4LTMuMzE2MzYzIDEuODEwOTA5LTQuNDA3MjcxIDIuNzkyNzI2LTQuNDA3MjcxQzIuOTY3MjcyLTQuNDA3MjcxIDMuNDY5MDktNC40MDcyNzEgMy44MDcyNzItMy43MzA5MDhDNC4wMDM2MzUtMy4zMjcyNzIgNC4wMDM2MzUtMi43NzA5MDggNC4wMDM2MzUtMi4yMzYzNjNDNC4wMDM2MzUtMS43MTI3MjcgNC4wMDM2MzUtMS4xNjcyNzIgMy44MTgxODEtLjc3NDU0NUMzLjQ5MDkwOC0uMTIgMi45ODkwOS0uMDY1NDU1IDIuNzM4MTgxLS4wNjU0NTVaJy8+CjwvZGVmcz4KPGcgaWQ9J3BhZ2UxJz4KPHBhdGggZD0nTTEzMC43NDE5IDE4Ni44MDQyNDVWLTYxLjc1NE0yNi42NDQ2IDE4Ni44MDQyNDVWLTYxLjc1NE0xNTIuNTIzOSAxODYuODA0MjQ1Vi02MS43NTRNNC44NjMzIDE4Ni44MDQyNDVWLTYxLjc1NCcgc3Ryb2tlPScjYmZiZmJmJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1kYXNoYXJyYXk9JzIuOTg4ODMgMi45ODg4MycvPgo8cGF0aCBkPSdNLTY4Ljk2NDc5NSAxODYuODA0MjQ1SDIyNi4zNTU5TS02OC45NjQ3OTUgMTU1LjczNzhIMjI2LjM1NTlNLTY4Ljk2NDc5NSAxMjQuNjY3NUgyMjYuMzU1OU0tNjguOTY0Nzk1IDkzLjU5NzJIMjI2LjM1NTlNLTY4Ljk2NDc5NSA2Mi41MjdIMjI2LjM1NTlNLTY4Ljk2NDc5NSAzMS40NTdIMjI2LjM1NTlNLTY4Ljk2NDc5NS0zMC42ODRIMjI2LjM1NTlNLTY4Ljk2NDc5NS02MS43NTRIMjI2LjM1NTknIHN0cm9rZT0nI2JmYmZiZicgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJyBzdHJva2UtZGFzaGFycmF5PScyLjk4ODgzIDIuOTg4ODMnLz4KPHBhdGggZD0nTTEzMC43NDE5IDIuNTA3Vi0xLjczNU0yNi42NDQ2IDIuNTA3Vi0xLjczNU0xNTIuNTIzOSAyLjUwN1YtMS43MzVNNC44NjMzIDIuNTA3Vi0xLjczNScgc3Ryb2tlPScjODA4MDgwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4xOTkyNScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J003Ni41NjY5IDE4Ni44MDQyNDVIODAuODE5OU03Ni41NjY5IDE1NS43Mzc4SDgwLjgxOTlNNzYuNTY2OSAxMjQuNjY3NUg4MC44MTk5TTc2LjU2NjkgOTMuNTk3Mkg4MC44MTk5TTc2LjU2NjkgNjIuNTI3SDgwLjgxOTlNNzYuNTY2OSAzMS40NTdIODAuODE5OU03Ni41NjY5LTMwLjY4NEg4MC44MTk5TTc2LjU2NjktNjEuNzU0SDgwLjgxOTknIHN0cm9rZT0nIzgwODA4MCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMTk5MjUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNLTY4Ljk2NDc5NSAuMzg2SDIyNC4zNTk5JyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNMjI2LjM1NTQ1IC4zODY3MTlMMjIzLjE2NDA0LTEuMjA3MDM1TDIyNC4zNTkzNTIgLjM4NjcxOUwyMjMuMTY0MDQgMS45ODA0NjUnLz4KPHBhdGggZD0nTTc4LjY5NDkgMTg2LjgwNDI0NVYtNTkuNzYyJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNNzguNjk1MzEtNjEuNzUzOTNMNzcuMTAxNTYtNTguNTY2NDNMNzguNjk1MzEtNTkuNzYxNzQxTDgwLjI4OTA2LTU4LjU2NjQzJy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMTg5LjgxMzkgLTE2NS4yOTc1KSc+Cjx1c2UgeD0nLTY4Ljc2Njg3NCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNDknLz4KPHVzZSB4PSctNjMuMzEyMzA5JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMi01OCcvPgo8dXNlIHg9Jy02MC4yODE5OTgnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2czLTUyJy8+Cjx1c2UgeD0nLTU0LjgyNzQzMycgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNDknLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDgxLjQ3MDkgLTE2NS4yOTc1KSc+Cjx1c2UgeD0nLTY4Ljc2Njg3NCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzEtMCcvPgo8dXNlIHg9Jy02MC4yODE5OTgnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2czLTQ5Jy8+Cjx1c2UgeD0nLTU0LjgyNzQzMycgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzItNTgnLz4KPHVzZSB4PSctNTEuNzk3MTIyJyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMy01MicvPgo8dXNlIHg9Jy00Ni4zNDI1NTcnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2czLTQ5Jy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAyMTguNTYyOSAtMTY1LjI5NzUpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMy01MCcvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgNjYuNjYwODcgLTE2NS4yOTc1KSc+Cjx1c2UgeD0nLTY4Ljc2Njg3NCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzEtMCcvPgo8dXNlIHg9Jy02MC4yODE5OTgnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2czLTUwJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAxMjcuMjk1MiAxMC45MzEpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMS0wJy8+Cjx1c2UgeD0nLTYwLjI4MTk5OCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNTQnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEyNy4yOTUyIC0yMC4xMzkpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMS0wJy8+Cjx1c2UgeD0nLTYwLjI4MTk5OCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNTMnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEyNy4yOTUyIC01MS4yMDkpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMS0wJy8+Cjx1c2UgeD0nLTYwLjI4MTk5OCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNTInLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEyNy4yOTUyIC04Mi4yNzg2KSc+Cjx1c2UgeD0nLTY4Ljc2Njg3NCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzEtMCcvPgo8dXNlIHg9Jy02MC4yODE5OTgnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2czLTUxJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAxMjcuMjk1MiAtMTEzLjM0ODUpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMS0wJy8+Cjx1c2UgeD0nLTYwLjI4MTk5OCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNTAnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEyNy4yOTUyIC0xNDQuNDE4NCknPgo8dXNlIHg9Jy02OC43NjY4NzQnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2cxLTAnLz4KPHVzZSB4PSctNjAuMjgxOTk4JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMy00OScvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMTM1Ljc4MDEgLTIwNi4xMDM2KSc+Cjx1c2UgeD0nLTY4Ljc2Njg3NCcgeT0nMTc4LjkzNjAzJyB4bGluazpocmVmPScjZzMtNDknLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEzNS43ODAxIC0yMzcuMTczNSknPgo8dXNlIHg9Jy02OC43NjY4NzQnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2czLTUwJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAxMzQuNzM2MyAtMTY2Ljk5NDMpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMi03OScvPgo8L2c+CjxwYXRoIGQ9J00tNjguOTY0Nzk1LTU5NjUuMDM0TC02Ny40ODA0Mi01Njg5LjgzNEwtNjUuOTk5OTUtNTQyMy42ODRMLTY0LjUxNTU4LTUxNjYuMzk0TC02My4wMzEyLTQ5MTcuNzU0TC02MS41NDY4My00Njc3LjYwNEwtNjAuMDYyNDUtNDQ0NS43NDRMLTU4LjU3ODEtNDIyMi4wMDRMLTU3LjA5MzctNDAwNi4yMDRMLTU1LjYwOTMtMzc5OC4xNDRMLTU0LjEyNS0zNTk3LjY1NEwtNTIuNjQwNi0zNDA0LjU2NEwtNTEuMTU2Mi0zMjE4LjY5NEwtNDkuNjc1Ny0zMDM5Ljg5NEwtNDguMTkxNC0yODY3Ljk2NEwtNDYuNzA3LTI3MDIuNzU0TC00NS4yMjI2LTI1NDQuMTE0TC00My43MzgyLTIzOTEuODQ0TC00Mi4yNTM5LTIyNDUuNzk0TC00MC43Njk1LTIxMDUuODI0TC0zOS4yODUxLTE5NzEuNzU0TC0zNy44MDA3LTE4NDMuNDQ0TC0zNi4zMTY0LTE3MjAuNzM0TC0zNC44MzItMTYwMy40NzRMLTMzLjM1MTUtMTQ5MS41MDRMLTMxLjg2NzEtMTM4NC42ODRMLTMwLjM4MjgtMTI4Mi44NjRMLTI4Ljg5ODQtMTE4NS45MTRMLTI3LjQxNC0xMDkzLjY3NEwtMjUuOTI5Ni0xMDA2LjAwNEwtMjQuNDQ1My05MjIuNzg0TC0yMi45NjA5LTg0My44NjRMLTIxLjQ3NjUtNzY5LjExTC0xOS45OTIxLTY5OC4zOTFMLTE4LjUwNzgtNjMxLjU3OUwtMTcuMDI3My01NjguNTRMLTE1LjU0MjktNTA5LjE0OUwtMTQuMDU4NS00NTMuMjg2TC0xMi41NzQyLTQwMC44MjlMLTExLjA4OTgtMzUxLjY0OUwtOS42MDU0LTMwNS42MzNMLTguMTIxLTI2Mi42NjFMLTYuNjM2Ny0yMjIuNjIyTC01LjE1MjMtMTg1LjM5OUwtMy42Njc5LTE1MC44ODdMLTIuMTgzNS0xMTguOTY5TC0uNzAzMS04OS41NDdMLjc4MTMtNjIuNTA4TDIuMjY1Ny0zNy43NUwzLjc1LTE1LjE3Mkw1LjIzNDQgNS4zMkw2LjcxODggMjMuODMyTDguMjAzMiA0MC40NDlMOS42ODc1IDU1LjI3M0wxMS4xNzE5IDY4LjM5NEwxMi42NTYzIDc5LjkwMkwxNC4xNDA3IDg5Ljg4MjRMMTUuNjIxMSA5OC40MTc1TDE3LjEwNTUgMTA1LjYwMTFMMTguNTg5OSAxMTEuNTAzNUwyMC4wNzQzIDExNi4yMTQ0TDIxLjU1ODYgMTE5LjgwODJMMjMuMDQzIDEyMi4zNTVMMjQuNTI3NCAxMjMuOTM3MUwyNi4wMTE4IDEyNC42MjQ2TDI3LjQ5NjEgMTI0LjQ4MzlMMjguOTgwNSAxMjMuNTg5NEwzMC40NjQ5IDEyMS45OTk2TDMxLjk0NDkgMTE5Ljc4NDdMMzMuNDI5OSAxMTcuMDAzNUwzNC45MTM5IDExMy43MTgzTDM2LjM5ODkgMTA5Ljk4NzhMMzcuODgyOSAxMDUuODcwN0wzOS4zNjY5IDEwMS40MTM2TDQwLjg1MTkgOTYuNjc5Mkw0Mi4zMzU5IDkxLjcxMDVMNDMuODE5OSA4Ni41NThMNDUuMzA0OSA4MS4yNjlMNDYuNzg4OSA3NS44OUw0OC4yNjk5IDcwLjQ2TDQ5Ljc1MzkgNjUuMDI3TDUxLjIzNzkgNTkuNjIxTDUyLjcyMjkgNTQuMjg1TDU0LjIwNjkgNDkuMDU0TDU1LjY5MTkgNDMuOTU3TDU3LjE3NTkgMzkuMDI3TDU4LjY1OTkgMzQuMjk2TDYwLjE0NDkgMjkuNzg5TDYxLjYyODkgMjUuNTMxTDYzLjExMjkgMjEuNTQzTDY0LjU5MzkgMTcuODUxTDY2LjA3NzkgMTQuNDc2TDY3LjU2MjkgMTEuNDI5TDY5LjA0NjkgOC43MjZMNzAuNTMwOSA2LjM4Nkw3Mi4wMTU5IDQuNDIxTDczLjQ5OTkgMi44MzVMNzQuOTg0OSAxLjY0TDc2LjQ2ODkgLjgzOUw3Ny45NTI5IC40MzdINzkuNDM3OUw4MC45MTc5IC44MzlMODIuNDAxOSAxLjY0TDgzLjg4NjkgMi44MzVMODUuMzcwOSA0LjQyMUw4Ni44NTU5IDYuMzg2TDg4LjMzOTkgOC43MjZMODkuODIzOSAxMS40MjlMOTEuMzA4OSAxNC40NzZMOTIuNzkyOSAxNy44NTFMOTQuMjc2OSAyMS41NDNMOTUuNzYxOSAyNS41MzFMOTcuMjQxOSAyOS43ODlMOTguNzI2OSAzNC4yOTZMMTAwLjIxMDkgMzkuMDI3TDEwMS42OTQ5IDQzLjk1N0wxMDMuMTc5OSA0OS4wNTRMMTA0LjY2MzkgNTQuMjg1TDEwNi4xNDg5IDU5LjYyNUwxMDcuNjMyOSA2NS4wMjdMMTA5LjExNjkgNzAuNDZMMTEwLjYwMTkgNzUuODlMMTEyLjA4NTkgODEuMjY5TDExMy41NjY5IDg2LjU1OEwxMTUuMDUwOSA5MS43MDY2TDExNi41MzQ5IDk2LjY3OTJMMTE4LjAxOTkgMTAxLjQxMzZMMTE5LjUwMzkgMTA1Ljg3MDdMMTIwLjk4NzkgMTA5Ljk4NzhMMTIyLjQ3MjkgMTEzLjcxODNMMTIzLjk1NjkgMTE3LjAwMzVMMTI1LjQ0MTkgMTE5Ljc4NDdMMTI2LjkyNTkgMTIxLjk5OTZMMTI4LjQwOTkgMTIzLjU4OTRMMTI5Ljg5MDkgMTI0LjQ4MzlMMTMxLjM3NDkgMTI0LjYyNDZMMTMyLjg1OTkgMTIzLjkzNzFMMTM0LjM0MzkgMTIyLjM1NUwxMzUuODI3OSAxMTkuODA4MkwxMzcuMzEyOSAxMTYuMjE0NEwxMzguNzk2OSAxMTEuNTAzNUwxNDAuMjgwOSAxMDUuNjAxMUwxNDEuNzY1OSA5OC40MTc1TDE0My4yNDk5IDg5Ljg4MjRMMTQ0LjczNDkgNzkuOTAyTDE0Ni4yMTQ5IDY4LjM5NEwxNDcuNjk4OSA1NS4yNzNMMTQ5LjE4MzkgNDAuNDUzTDE1MC42Njc5IDIzLjgyOEwxNTIuMTUxOSA1LjMyTDE1My42MzY5LTE1LjE3MkwxNTUuMTIwOS0zNy43NUwxNTYuNjA1OS02Mi41MDRMMTU4LjA4OTktODkuNTQ3TDE1OS41NzM5LTExOC45NjlMMTYxLjA1ODktMTUwLjg4N0wxNjIuNTM4OS0xODUuNDAzTDE2NC4wMjM5LTIyMi42MjJMMTY1LjUwNzktMjYyLjY2MUwxNjYuOTkxOS0zMDUuNjI5TDE2OC40NzY5LTM1MS42NDlMMTY5Ljk2MDktNDAwLjgyOUwxNzEuNDQ0OS00NTMuMjg2TDE3Mi45Mjk5LTUwOS4xNTNMMTc0LjQxMzktNTY4LjUzNkwxNzUuODk4OS02MzEuNTc1TDE3Ny4zODI5LTY5OC4zOTVMMTc4Ljg2MjktNzY5LjEwNkwxODAuMzQ3OS04NDMuODY0TDE4MS44MzE5LTkyMi43NzRMMTgzLjMxNjktMTAwNi4wMDRMMTg0LjgwMDktMTA5My42NzRMMTg2LjI4NDktMTE4NS45MTRMMTg3Ljc2OTktMTI4Mi44NjRMMTg5LjI1MzktMTM4NC42NzRMMTkwLjczNzktMTQ5MS41MDRMMTkyLjIyMjktMTYwMy40NzRMMTkzLjcwNjktMTcyMC43MzRMMTk1LjE4NzktMTg0My40NTRMMTk2LjY3MTktMTk3MS43NTRMMTk4LjE1NTktMjEwNS44MTRMMTk5LjY0MDktMjI0NS44MDRMMjAxLjEyNDktMjM5MS44MzRMMjAyLjYwOTktMjU0NC4xMTRMMjA0LjA5MzktMjcwMi43NTRMMjA1LjU3NzktMjg2Ny45NjRMMjA3LjA2MjktMzAzOS45MDRMMjA4LjU0NjktMzIxOC42OTRMMjEwLjAzMDktMzQwNC41NjRMMjExLjUxMTktMzU5Ny42MzRMMjEyLjk5NTktMzc5OC4xNDRMMjE0LjQ4MDktNDAwNi4yMDRMMjE1Ljk2NDktNDIyMi4wMDRMMjE3LjQ0ODktNDQ0NS43NjRMMjE4LjkzMzktNDY3Ny41OTRMMjIwLjQxNzktNDkxNy43NTRMMjIxLjkwMTktNTE2Ni40MDRMMjIzLjM4NjktNTQyMy42NzRMMjI0Ljg3MDktNTY4OS44NDRMMjI2LjM1MTktNTk2NS4wMDQnIHN0cm9rZT0nIzAwZicgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuNzk3MDEnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcgY2xpcC1wYXRoPSd1cmwoI2NsaXAxKScvPgo8cGF0aCBkPSdNMjYuNjQ0NiAxMjQuNjY3NUgxMzAuNzQxOScgc3Ryb2tlPScjMDBmJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1kYXNoYXJyYXk9JzIuOTg4ODMgMi45ODg4MycgY2xpcC1wYXRoPSd1cmwoI2NsaXAxKScvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDEyOS40MjEgLTUxLjIwOSknPgo8dXNlIHg9Jy02OC43NjY4NzQnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2cxLTAnLz4KPHVzZSB4PSctNjAuMjgxOTk4JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMy01MicvPgo8L2c+CjxwYXRoIGQ9J004MC4xODc5IC4zODZDODAuMTg3OS0uNDM4IDc5LjUxOTktMS4xMDYgNzguNjk0OS0xLjEwNkM3Ny44NjY5LTEuMTA2IDc3LjE5ODktLjQzOCA3Ny4xOTg5IC4zODZTNzcuODY2OSAxLjg4MiA3OC42OTQ5IDEuODgyQzc5LjUxOTkgMS44ODIgODAuMTg3OSAxLjIxIDgwLjE4NzkgLjM4NlonLz4KPHBhdGggZD0nTTgwLjE4NzkgLjM4NkM4MC4xODc5LS40MzggNzkuNTE5OS0xLjEwNiA3OC42OTQ5LTEuMTA2Qzc3Ljg2NjktMS4xMDYgNzcuMTk4OS0uNDM4IDc3LjE5ODkgLjM4NlM3Ny44NjY5IDEuODgyIDc4LjY5NDkgMS44ODJDNzkuNTE5OSAxLjg4MiA4MC4xODc5IDEuMjEgODAuMTg3OSAuMzg2Wicgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPHBhdGggZD0nTTEzMi4yMzc5IDEyNC42Njc1QzEzMi4yMzc5IDEyMy44Mzk0IDEzMS41Njk5IDEyMy4xNzE0IDEzMC43NDE5IDEyMy4xNzE0QzEyOS45MTc5IDEyMy4xNzE0IDEyOS4yNDk5IDEyMy44Mzk0IDEyOS4yNDk5IDEyNC42Njc1QzEyOS4yNDk5IDEyNS40OTE3IDEyOS45MTc5IDEyNi4xNTk3IDEzMC43NDE5IDEyNi4xNTk3QzEzMS41Njk5IDEyNi4xNTk3IDEzMi4yMzc5IDEyNS40OTE3IDEzMi4yMzc5IDEyNC42Njc1WicvPgo8cGF0aCBkPSdNMTMyLjIzNzkgMTI0LjY2NzVDMTMyLjIzNzkgMTIzLjgzOTQgMTMxLjU2OTkgMTIzLjE3MTQgMTMwLjc0MTkgMTIzLjE3MTRDMTI5LjkxNzkgMTIzLjE3MTQgMTI5LjI0OTkgMTIzLjgzOTQgMTI5LjI0OTkgMTI0LjY2NzVDMTI5LjI0OTkgMTI1LjQ5MTcgMTI5LjkxNzkgMTI2LjE1OTcgMTMwLjc0MTkgMTI2LjE1OTdDMTMxLjU2OTkgMTI2LjE1OTcgMTMyLjIzNzkgMTI1LjQ5MTcgMTMyLjIzNzkgMTI0LjY2NzVaJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNMjguMTM2OCAxMjQuNjY3NUMyOC4xMzY4IDEyMy44Mzk0IDI3LjQ2ODggMTIzLjE3MTQgMjYuNjQ0NiAxMjMuMTcxNEMyNS44MTY1IDEyMy4xNzE0IDI1LjE0ODUgMTIzLjgzOTQgMjUuMTQ4NSAxMjQuNjY3NUMyNS4xNDg1IDEyNS40OTE3IDI1LjgxNjUgMTI2LjE1OTcgMjYuNjQ0NiAxMjYuMTU5N0MyNy40Njg4IDEyNi4xNTk3IDI4LjEzNjggMTI1LjQ5MTcgMjguMTM2OCAxMjQuNjY3NVonLz4KPHBhdGggZD0nTTI4LjEzNjggMTI0LjY2NzVDMjguMTM2OCAxMjMuODM5NCAyNy40Njg4IDEyMy4xNzE0IDI2LjY0NDYgMTIzLjE3MTRDMjUuODE2NSAxMjMuMTcxNCAyNS4xNDg1IDEyMy44Mzk0IDI1LjE0ODUgMTI0LjY2NzVDMjUuMTQ4NSAxMjUuNDkxNyAyNS44MTY1IDEyNi4xNTk3IDI2LjY0NDYgMTI2LjE1OTdDMjcuNDY4OCAxMjYuMTU5NyAyOC4xMzY4IDEyNS40OTE3IDI4LjEzNjggMTI0LjY2NzVaJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNMTU0LjAxOTkgLjM4NkMxNTQuMDE5OS0uNDM4IDE1My4zNDc5LTEuMTA2IDE1Mi41MjM5LTEuMTA2QzE1MS42OTg5LTEuMTA2IDE1MS4wMjY5LS40MzggMTUxLjAyNjkgLjM4NlMxNTEuNjk4OSAxLjg4MiAxNTIuNTIzOSAxLjg4MkMxNTMuMzQ3OSAxLjg4MiAxNTQuMDE5OSAxLjIxIDE1NC4wMTk5IC4zODZaJy8+CjxwYXRoIGQ9J00xNTQuMDE5OSAuMzg2QzE1NC4wMTk5LS40MzggMTUzLjM0NzktMS4xMDYgMTUyLjUyMzktMS4xMDZDMTUxLjY5ODktMS4xMDYgMTUxLjAyNjktLjQzOCAxNTEuMDI2OSAuMzg2UzE1MS42OTg5IDEuODgyIDE1Mi41MjM5IDEuODgyQzE1My4zNDc5IDEuODgyIDE1NC4wMTk5IDEuMjEgMTU0LjAxOTkgLjM4NlonIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J002LjM1OTQgLjM4NkM2LjM1OTQtLjQzOCA1LjY4NzUtMS4xMDYgNC44NjMzLTEuMTA2UzMuMzcxMS0uNDM4IDMuMzcxMSAuMzg2UzQuMDM5MSAxLjg4MiA0Ljg2MzMgMS44ODJTNi4zNTk0IDEuMjEgNi4zNTk0IC4zODZaJy8+CjxwYXRoIGQ9J002LjM1OTQgLjM4NkM2LjM1OTQtLjQzOCA1LjY4NzUtMS4xMDYgNC44NjMzLTEuMTA2UzMuMzcxMS0uNDM4IDMuMzcxMSAuMzg2UzQuMDM5MSAxLjg4MiA0Ljg2MzMgMS44ODJTNi4zNTk0IDEuMjEgNi4zNTk0IC4zODZaJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDI4NC4zNjc5IC0xODIuNjQ4ODgpJz4KPHVzZSB4PSctNjguNzY2ODc0JyB5PScxNzguOTM2MDMnIHhsaW5rOmhyZWY9JyNnMC0xMjAnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDE1MS41NjA2IC0yMzEuNDQxMyknPgo8dXNlIHg9Jy02OC43NjY4NzQnIHk9JzE3OC45MzYwMycgeGxpbms6aHJlZj0nI2cwLTEyMScvPgo8L2c+CjwvZz4KPC9zdmc+\" class=\"latex-image\" style=\"max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto;\">Hàm số đã cho có bao nhiêu điểm cực trị?","rendered_options":["1","2","3","0"]},{"question":"Cho hàm số $y=f(x)$ liên tục trên $\\mathbb{R}$ và có đồ thị hàm số $y=f'(x)$ như hình vẽ dưới đây:DT[B2][1][-2][0]Hàm số $y=f(x)$ nghịch biến trên khoảng nào dưới đây?","options":["$(- \\infty; 0)$","$(0; 2)$","$(2; + \\infty)$","$(- \\infty; 2)$"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho hàm số $y=f(x)$ liên tục trên $\\mathbb{R}$ và có đồ thị hàm số $y=f'(x)$ như hình vẽ dưới đây:<img src=\"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuMC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzM0My4yMDg3MjVwdCcgaGVpZ2h0PScxNDUuMDQ2Nzk3cHQnIHZpZXdCb3g9Jy02OS4xNjgyNSAtNjUuMjY1NDY3IDM0My4yMDg3MjUgMTQ1LjA0Njc5Nyc+CjxkZWZzPgo8Y2xpcFBhdGggaWQ9J2NsaXAxJz4KPHBhdGggZD0nTS02Ni4xMzMgNzYuNzQ2MDhWLTU5LjMxNjQySDI1Ny4wMlY3Ni43NDYwOFpNMjU3LjAyLTU5LjMxNjQyJy8+CjwvY2xpcFBhdGg+CjxwYXRoIGlkPSdnMC0wJyBkPSdNNi41NjUzOC0yLjI5MTQwN0M2LjczNDc0NS0yLjI5MTQwNyA2LjkxNDA3Mi0yLjI5MTQwNyA2LjkxNDA3Mi0yLjQ5MDY2UzYuNzM0NzQ1LTIuNjg5OTEzIDYuNTY1MzgtMi42ODk5MTNIMS4xNzU1OTJDMS4wMDYyMjctMi42ODk5MTMgLjgyNjg5OS0yLjY4OTkxMyAuODI2ODk5LTIuNDkwNjZTMS4wMDYyMjctMi4yOTE0MDcgMS4xNzU1OTItMi4yOTE0MDdINi41NjUzOFonLz4KPHBhdGggaWQ9J2cyLTQ5JyBkPSdNMi45MjkwMTYtNi4zNzYwOUMyLjkyOTAxNi02LjYxNTE5MyAyLjkyOTAxNi02LjYzNTExOCAyLjY5OTg3NS02LjYzNTExOEMyLjA4MjE5Mi01Ljk5NzUwOSAxLjIwNTQ3OS01Ljk5NzUwOSAuODg2Njc1LTUuOTk3NTA5Vi01LjY4ODY2N0MxLjA4NTkyOC01LjY4ODY2NyAxLjY3MzcyNC01LjY4ODY2NyAyLjE5MTc4MS01Ljk0NzY5NlYtLjc4NzA0OUMyLjE5MTc4MS0uNDI4Mzk0IDIuMTYxODkzLS4zMDg4NDIgMS4yNjUyNTUtLjMwODg0MkguOTQ2NDUxVjBDMS4yOTUxNDMtLjAyOTg4OCAyLjE2MTg5My0uMDI5ODg4IDIuNTYwMzk5LS4wMjk4ODhTMy44MjU2NTQtLjAyOTg4OCA0LjE3NDM0NiAwVi0uMzA4ODQySDMuODU1NTQyQzIuOTU4OTA0LS4zMDg4NDIgMi45MjkwMTYtLjQxODQzMSAyLjkyOTAxNi0uNzg3MDQ5Vi02LjM3NjA5WicvPgo8cGF0aCBpZD0nZzItNTAnIGQ9J00xLjI2NTI1NS0uNzY3MTIzTDIuMzIxMjk1LTEuNzkzMjc1QzMuODc1NDY3LTMuMTY4MTIgNC40NzMyMjUtMy43MDYxMDIgNC40NzMyMjUtNC43MDIzNjZDNC40NzMyMjUtNS44MzgxMDcgMy41NzY1ODgtNi42MzUxMTggMi4zNjExNDYtNi42MzUxMThDMS4yMzUzNjctNi42MzUxMTggLjQ5ODEzMi01LjcxODU1NSAuNDk4MTMyLTQuODMxODhDLjQ5ODEzMi00LjI3Mzk3MyAuOTk2MjY0LTQuMjczOTczIDEuMDI2MTUyLTQuMjczOTczQzEuMTk1NTE3LTQuMjczOTczIDEuNTQ0MjA5LTQuMzkzNTI0IDEuNTQ0MjA5LTQuODAxOTkzQzEuNTQ0MjA5LTUuMDYxMDIxIDEuMzY0ODgyLTUuMzIwMDUgMS4wMTYxODktNS4zMjAwNUMuOTM2NDg4LTUuMzIwMDUgLjkxNjU2My01LjMyMDA1IC44ODY2NzUtNS4zMTAwODdDMS4xMTU4MTYtNS45NTc2NTkgMS42NTM3OTgtNi4zMjYyNzYgMi4yMzE2MzEtNi4zMjYyNzZDMy4xMzgyMzItNi4zMjYyNzYgMy41NjY2MjUtNS41MTkzMDMgMy41NjY2MjUtNC43MDIzNjZDMy41NjY2MjUtMy45MDUzNTUgMy4wNjg0OTMtMy4xMTgzMDYgMi41MjA1NDgtMi41MDA2MjNMLjYwNzcyMS0uMzY4NjE4Qy40OTgxMzItLjI1OTAyOSAuNDk4MTMyLS4yMzkxMDMgLjQ5ODEzMiAwSDQuMTk0MjcxTDQuNDczMjI1LTEuNzMzNDk5SDQuMjI0MTU5QzQuMTc0MzQ2LTEuNDM0NjIgNC4xMDQ2MDgtLjk5NjI2NCA0LjAwNDk4MS0uODQ2ODI0QzMuOTM1MjQzLS43NjcxMjMgMy4yNzc3MDktLjc2NzEyMyAzLjA1ODUzMS0uNzY3MTIzSDEuMjY1MjU1WicvPgo8cGF0aCBpZD0nZzEtNzknIGQ9J003LjM3MjM1NC00LjM0MzcxMUM3LjM3MjM1NC01Ljk0NzY5NiA2LjMxNjMxNC03LjAyMzY2MSA0LjgzMTg4LTcuMDIzNjYxQzIuNjc5OTUtNy4wMjM2NjEgLjQ4ODE2OS00Ljc2MjE0MiAuNDg4MTY5LTIuNDQwODQ3Qy40ODgxNjktLjc4NzA0OSAxLjYwMzk4NSAuMjE5MTc4IDMuMDM4NjA1IC4yMTkxNzhDNS4xNTA2ODUgLjIxOTE3OCA3LjM3MjM1NC0xLjk2MjY0IDcuMzcyMzU0LTQuMzQzNzExWk0zLjA5ODM4MS0uMDM5ODUxQzIuMTEyMDgtLjAzOTg1MSAxLjQxNDY5NS0uODQ2ODI0IDEuNDE0Njk1LTIuMTYxODkzQzEuNDE0Njk1LTIuNjAwMjQ5IDEuNTU0MTcyLTQuMDU0Nzk1IDIuMzIxMjk1LTUuMjIwNDIzQzMuMDA4NzE3LTYuMjU2NTM4IDMuOTg1MDU2LTYuNzc0NTk1IDQuNzcyMTA1LTYuNzc0NTk1QzUuNTg5MDQxLTYuNzc0NTk1IDYuNDg1Njc5LTYuMjE2Njg3IDYuNDg1Njc5LTQuNzMyMjU0QzYuNDg1Njc5LTQuMDE0OTQ0IDYuMjE2Njg3LTIuNDYwNzcyIDUuMjMwMzg2LTEuMjM1MzY3QzQuNzUyMTc5LS42Mjc2NDYgMy45MzUyNDMtLjAzOTg1MSAzLjA5ODM4MS0uMDM5ODUxWicvPgo8cGF0aCBpZD0nZzEtMTIwJyBkPSdNMy4zMjc1MjItMy4wMDg3MTdDMy4zODcyOTgtMy4yNjc3NDYgMy42MTY0MzgtNC4xODQzMDkgNC4zMTM4MjMtNC4xODQzMDlDNC4zNjM2MzYtNC4xODQzMDkgNC42MDI3NC00LjE4NDMwOSA0LjgxMTk1NS00LjA1NDc5NUM0LjUzMzAwMS00LjAwNDk4MSA0LjMzMzc0OC0zLjc1NTkxNSA0LjMzMzc0OC0zLjUxNjgxMkM0LjMzMzc0OC0zLjM1NzQxIDQuNDQzMzM3LTMuMTY4MTIgNC43MTIzMjktMy4xNjgxMkM0LjkzMTUwNy0zLjE2ODEyIDUuMjUwMzExLTMuMzQ3NDQ3IDUuMjUwMzExLTMuNzQ1OTUzQzUuMjUwMzExLTQuMjY0MDEgNC42NjI1MTYtNC40MDM0ODcgNC4zMjM3ODYtNC40MDM0ODdDMy43NDU5NTMtNC40MDM0ODcgMy4zOTcyNi0zLjg3NTQ2NyAzLjI3NzcwOS0zLjY0NjMyNkMzLjAyODY0My00LjMwMzg2MSAyLjQ5MDY2LTQuNDAzNDg3IDIuMjAxNzQzLTQuNDAzNDg3QzEuMTY1NjI5LTQuNDAzNDg3IC41OTc3NTgtMy4xMTgzMDYgLjU5Nzc1OC0yLjg2OTI0Qy41OTc3NTgtMi43Njk2MTQgLjY5NzM4NS0yLjc2OTYxNCAuNzE3MzEtMi43Njk2MTRDLjc5NzAxMS0yLjc2OTYxNCAuODI2ODk5LTIuNzg5NTM5IC44NDY4MjQtMi44NzkyMDNDMS4xODU1NTQtMy45MzUyNDMgMS44NDMwODgtNC4xODQzMDkgMi4xODE4MTgtNC4xODQzMDlDMi4zNzExMDgtNC4xODQzMDkgMi43MTk4MDEtNC4wOTQ2NDUgMi43MTk4MDEtMy41MTY4MTJDMi43MTk4MDEtMy4yMDc5NyAyLjU1MDQzNi0yLjU0MDQ3MyAyLjE4MTgxOC0xLjE0NTcwNEMyLjAyMjQxNi0uNTI4MDIgMS42NzM3MjQtLjEwOTU4OSAxLjIzNTM2Ny0uMTA5NTg5QzEuMTc1NTkyLS4xMDk1ODkgLjk0NjQ1MS0uMTA5NTg5IC43MzcyMzUtLjIzOTEwM0MuOTg2MzAxLS4yODg5MTcgMS4yMDU0NzktLjQ5ODEzMiAxLjIwNTQ3OS0uNzc3MDg2QzEuMjA1NDc5LTEuMDQ2MDc3IC45ODYzMDEtMS4xMjU3NzggLjgzNjg2Mi0xLjEyNTc3OEMuNTM3OTgzLTEuMTI1Nzc4IC4yODg5MTctLjg2Njc1IC4yODg5MTctLjU0Nzk0NUMuMjg4OTE3LS4wODk2NjQgLjc4NzA0OSAuMTA5NTg5IDEuMjI1NDA1IC4xMDk1ODlDMS44ODI5MzkgLjEwOTU4OSAyLjI0MTU5NC0uNTg3Nzk2IDIuMjcxNDgyLS42NDc1NzJDMi4zOTEwMzQtLjI3ODk1NCAyLjc0OTY4OSAuMTA5NTg5IDMuMzQ3NDQ3IC4xMDk1ODlDNC4zNzM1OTkgLjEwOTU4OSA0Ljk0MTQ2OS0xLjE3NTU5MiA0Ljk0MTQ2OS0xLjQyNDY1OEM0Ljk0MTQ2OS0xLjUyNDI4NCA0Ljg1MTgwNi0xLjUyNDI4NCA0LjgyMTkxOC0xLjUyNDI4NEM0LjczMjI1NC0xLjUyNDI4NCA0LjcxMjMyOS0xLjQ4NDQzMyA0LjY5MjQwMy0xLjQxNDY5NUM0LjM2MzYzNi0uMzQ4NjkyIDMuNjg2MTc3LS4xMDk1ODkgMy4zNjczNzItLjEwOTU4OUMyLjk3ODgyOS0uMTA5NTg5IDIuODE5NDI3LS40MjgzOTQgMi44MTk0MjctLjc2NzEyM0MyLjgxOTQyNy0uOTg2MzAxIDIuODc5MjAzLTEuMjA1NDc5IDIuOTg4NzkyLTEuNjQzODM2TDMuMzI3NTIyLTMuMDA4NzE3WicvPgo8cGF0aCBpZD0nZzEtMTIxJyBkPSdNNC44NDE4NDMtMy43OTU3NjZDNC44ODE2OTQtMy45MzUyNDMgNC44ODE2OTQtMy45NTUxNjggNC44ODE2OTQtNC4wMjQ5MDdDNC44ODE2OTQtNC4yMDQyMzQgNC43NDIyMTctNC4yOTM4OTggNC41OTI3NzctNC4yOTM4OThDNC40OTMxNTEtNC4yOTM4OTggNC4zMzM3NDgtNC4yMzQxMjIgNC4yNDQwODUtNC4wODQ2ODJDNC4yMjQxNTktNC4wMzQ4NjkgNC4xNDQ0NTgtMy43MjYwMjcgNC4xMDQ2MDgtMy41NDY3QzQuMDM0ODY5LTMuMjg3NjcxIDMuOTY1MTMxLTMuMDE4NjggMy45MDUzNTUtMi43NDk2ODlMMy40NTcwMzYtLjk1NjQxM0MzLjQxNzE4Ni0uODA2OTc0IDIuOTg4NzkyLS4xMDk1ODkgMi4zMzEyNTgtLjEwOTU4OUMxLjgyMzE2My0uMTA5NTg5IDEuNzEzNTc0LS41NDc5NDUgMS43MTM1NzQtLjkxNjU2M0MxLjcxMzU3NC0xLjM3NDg0NCAxLjg4MjkzOS0xLjk5MjUyOCAyLjIyMTY2OS0yLjg2OTI0QzIuMzgxMDcxLTMuMjc3NzA5IDIuNDIwOTIyLTMuMzg3Mjk4IDIuNDIwOTIyLTMuNTg2NTVDMi40MjA5MjItNC4wMzQ4NjkgMi4xMDIxMTctNC40MDM0ODcgMS42MDM5ODUtNC40MDM0ODdDLjY1NzUzNC00LjQwMzQ4NyAuMjg4OTE3LTIuOTU4OTA0IC4yODg5MTctMi44NjkyNEMuMjg4OTE3LTIuNzY5NjE0IC4zODg1NDMtMi43Njk2MTQgLjQwODQ2OC0yLjc2OTYxNEMuNTA4MDk1LTIuNzY5NjE0IC41MTgwNTctMi43ODk1MzkgLjU2Nzg3LTIuOTQ4OTQxQy44MzY4NjItMy44ODU0MyAxLjIzNTM2Ny00LjE4NDMwOSAxLjU3NDA5Ny00LjE4NDMwOUMxLjY1Mzc5OC00LjE4NDMwOSAxLjgyMzE2My00LjE4NDMwOSAxLjgyMzE2My0zLjg2NTUwNEMxLjgyMzE2My0zLjYxNjQzOCAxLjcyMzUzNy0zLjM1NzQxIDEuNjUzNzk4LTMuMTY4MTJDMS4yNTUyOTMtMi4xMTIwOCAxLjA3NTk2NS0xLjU0NDIwOSAxLjA3NTk2NS0xLjA3NTk2NUMxLjA3NTk2NS0uMTg5MjkgMS43MDM2MTEgLjEwOTU4OSAyLjI5MTQwNyAuMTA5NTg5QzIuNjc5OTUgLjEwOTU4OSAzLjAxODY4LS4wNTk3NzYgMy4yOTc2MzQtLjMzODczQzMuMTY4MTIgLjE3OTMyOCAzLjA0ODU2OCAuNjY3NDk3IDIuNjUwMDYyIDEuMTk1NTE3QzIuMzkxMDM0IDEuNTM0MjQ3IDIuMDEyNDUzIDEuODIzMTYzIDEuNTU0MTcyIDEuODIzMTYzQzEuNDE0Njk1IDEuODIzMTYzIC45NjYzNzYgMS43OTMyNzUgLjc5NzAxMSAxLjQwNDczMkMuOTU2NDEzIDEuNDA0NzMyIDEuMDg1OTI4IDEuNDA0NzMyIDEuMjI1NDA1IDEuMjg1MTgxQzEuMzI1MDMxIDEuMTk1NTE3IDEuNDI0NjU4IDEuMDY2MDAyIDEuNDI0NjU4IC44NzY3MTJDMS40MjQ2NTggLjU2Nzg3IDEuMTU1NjY2IC41MjgwMiAxLjA1NjA0IC41MjgwMkMuODI2ODk5IC41MjgwMiAuNDk4MTMyIC42ODc0MjIgLjQ5ODEzMiAxLjE3NTU5MkMuNDk4MTMyIDEuNjczNzI0IC45MzY0ODggMi4wNDIzNDEgMS41NTQxNzIgMi4wNDIzNDFDMi41ODAzMjQgMi4wNDIzNDEgMy42MDY0NzYgMS4xMzU3NDEgMy44ODU0MyAuMDA5OTYzTDQuODQxODQzLTMuNzk1NzY2WicvPgo8L2RlZnM+CjxnIGlkPSdwYWdlMSc+CjxwYXRoIGQ9J00tNjguOTY5IDc5LjU4MjA4SDI3MS4xOTVNLTY4Ljk2OSA1MS4yMzQzOEgyNzEuMTk1TS02OC45NjkgMjIuODg2NjhIMjcxLjE5NU0tNjguOTY5LTUuNDU3MDMxSDI3MS4xOTVNLTY4Ljk2OS0zMy44MDQ3MkgyNzEuMTk1TS02OC45NjktNjIuMTQwNjJIMjcxLjE5NU0tNjguOTY5IDc5LjU4MjA4Vi02Mi4xNTIzMk0tNDAuNjIxIDc5LjU4MjA4Vi02Mi4xNTIzMk0tMTIuMjczIDc5LjU4MjA4Vi02Mi4xNTIzMk0xNi4wNzQyIDc5LjU4MjA4Vi02Mi4xNTIzMk00NC40MTggNzkuNTgyMDhWLTYyLjE1MjMyTTcyLjc2NTYgNzkuNTgyMDhWLTYyLjE1MjMyTTEwMS4xMTMyODIgNzkuNTgyMDhWLTYyLjE1MjMyTTEyOS40NjA5IDc5LjU4MjA4Vi02Mi4xNTIzMk0xNTcuODA0NyA3OS41ODIwOFYtNjIuMTUyMzJNMTg2LjE1MjMgNzkuNTgyMDhWLTYyLjE1MjMyTTIxNC41IDc5LjU4MjA4Vi02Mi4xNTIzMk0yNDIuODQ4IDc5LjU4MjA4Vi02Mi4xNTIzMk0yNzEuMTg0IDc5LjU4MjA4Vi02Mi4xNTIzMicgc3Ryb2tlPScjYmZiZmJmJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcgc3Ryb2tlLWRhc2hhcnJheT0nMi45ODg4MyAyLjk4ODgzJy8+CjxwYXRoIGQ9J00tNjguOTY5LTUuNDU3MDMxSDI2OS4yMDMnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJyBzdHJva2UtbGluZWNhcD0ncm91bmQnIHN0cm9rZS1saW5lam9pbj0ncm91bmQnLz4KPHBhdGggZD0nTTI3MS4xOTQ5OS01LjQ1NzAzMUwyNjguMDAzNTgtNy4wNTA3OEwyNjkuMjAyODAxLTUuNDU3MDMxTDI2OC4wMDM1OC0zLjg2MzI4Jy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMTY3LjIzNCA4LjM4OTQ3KSc+Cjx1c2UgeD0nMTAxLjExMjU0MicgeT0nLTUuNDU4NTE5JyB4bGluazpocmVmPScjZzEtMTIwJy8+CjwvZz4KPHBhdGggZD0nTTEwMS4xMTMyODIgNzkuNTgyMDhWLTYwLjE2MDEyJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8+CjxwYXRoIGQ9J00xMDEuMTEzMjgyLTYyLjE1MjMzTDk5LjUxOTUzLTU4Ljk2NDgzTDEwMS4xMTMyODItNjAuMTYwMTM4TDEwMi43MDcwMy01OC45NjQ4MycvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC05LjM0MiAtNTUuNTE3NDgpJz4KPHVzZSB4PScxMDEuMTEyNTQyJyB5PSctNS40NTg1MTknIHhsaW5rOmhyZWY9JyNnMS0xMjEnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC0xMS45NzYxIDEwLjkwNzgyKSc+Cjx1c2UgeD0nMTAxLjExMjU0MicgeT0nLTUuNDU4NTE5JyB4bGluazpocmVmPScjZzEtNzknLz4KPC9nPgo8cGF0aCBkPSdNLTY4Ljk2OS0xMzY2LjEwODUyQy02OC45NjktMTM2Ni4xMDg1Mi02OC4xNDUtMTM1NC42MTg1Mi02Ny44MzItMTM1MC4yMjg1MkMtNjcuNTE2LTEzNDUuODI4NTItNjcuMDA4LTEzMzguODA4NTItNjYuNjkxLTEzMzQuNDM4NTJDLTY2LjM3OS0xMzMwLjA2ODUyLTY1Ljg3MS0xMzIzLjA3ODUyLTY1LjU1NS0xMzE4LjczODUyQy02NS4yMzgtMTMxNC4zOTg1Mi02NC43MzQtMTMwNy40NDg1Mi02NC40MTgtMTMwMy4xMjg1MlMtNjMuNTk0LTEyOTEuOTA4NTItNjMuMjgxLTEyODcuNjE4NTJDLTYyLjk2NS0xMjgzLjMyODUyLTYyLjQ1Ny0xMjc2LjQ1ODUyLTYyLjE0MS0xMjcyLjE4ODUyQy02MS44MjgtMTI2Ny45Mjg1Mi02MS4zMi0xMjYxLjA5ODUyLTYxLjAwNC0xMjU2Ljg1ODUyUy02MC4xODQtMTI0NS44Mzg1Mi01OS44NjctMTI0MS42MTg1MkMtNTkuNTUxLTEyMzcuMzk4NTItNTkuMDQ3LTEyMzAuNjU4NTItNTguNzMtMTIyNi40Njg1MkMtNTguNDE0LTEyMjIuMjc4NTItNTcuOTA2LTEyMTUuNTc4NTItNTcuNTk0LTEyMTEuNDA4NTJDLTU3LjI3Ny0xMjA3LjIzODUyLTU2Ljc3LTEyMDAuNTc4NTItNTYuNDUzLTExOTYuNDM4NTJDLTU2LjE0MS0xMTkyLjI5ODUyLTU1LjYzMy0xMTg1LjY4ODUyLTU1LjMxNi0xMTgxLjU2ODUyQy01NS0xMTc3LjQ0ODUyLTU0LjQ5Ni0xMTcwLjg2ODUyLTU0LjE4LTExNjYuNzc4NTJDLTUzLjg2My0xMTYyLjY4ODUyLTUzLjM1OS0xMTU2LjE0ODUyLTUzLjA0My0xMTUyLjA4ODUyQy01Mi43MjctMTE0OC4wMTg1Mi01Mi4yMTktMTE0MS41Mjg1Mi01MS45MDItMTEzNy40ODg1MkMtNTEuNTktMTEzMy40NDg1Mi01MS4wODItMTEyNi45ODg1Mi01MC43NjYtMTEyMi45Nzg1MkMtNTAuNDQ5LTExMTguOTU4NTItNDkuOTQ1LTExMTIuNTM4NTItNDkuNjI5LTExMDguNTU4NTJDLTQ5LjMxMy0xMTA0LjU2ODUyLTQ4LjgwOS0xMDk4LjE4ODUyLTQ4LjQ5Mi0xMDk0LjIyODUyQy00OC4xNzYtMTA5MC4yNjg1Mi00Ny42NjgtMTA4My45Mjg1Mi00Ny4zNTUtMTA3OS45ODg1MkMtNDcuMDM5LTEwNzYuMDQ4NTItNDYuNTMxLTEwNjkuNzU4NTItNDYuMjE1LTEwNjUuODQ4NTJDLTQ1LjkwMi0xMDYxLjkzODUyLTQ1LjM5NS0xMDU1LjY3ODUyLTQ1LjA3OC0xMDUxLjc4ODUyQy00NC43NjItMTA0Ny44OTg1Mi00NC4yNTgtMTA0MS42ODg1Mi00My45NDEtMTAzNy44Mjg1MkMtNDMuNjI1LTEwMzMuOTY4NTItNDMuMTIxLTEwMjcuNzg4NTItNDIuODA1LTEwMjMuOTU4NTJDLTQyLjQ4OC0xMDIwLjExODUyLTQxLjk4LTEwMTMuOTg4NTItNDEuNjY4LTEwMTAuMTc4NTJDLTQxLjM1Mi0xMDA2LjM1ODUyLTQwLjg0NC0xMDAwLjI3MzUyLTQwLjUyNy05OTYuNDg0NTJDLTQwLjIxMS05OTIuNjk5NTItMzkuNzA3LTk4Ni42NDg1Mi0zOS4zOTEtOTgyLjg4NjUyQy0zOS4wNzQtOTc5LjEyODUyLTM4LjU3LTk3My4xMTc1Mi0zOC4yNTQtOTY5LjM4MjUyQy0zNy45MzgtOTY1LjY0ODUyLTM3LjQzLTk1OS42NzU1Mi0zNy4xMTctOTU1Ljk2NDUyQy0zNi44MDEtOTUyLjI1NzUyLTM2LjI5My05NDYuMzI4NTItMzUuOTc3LTk0Mi42NDQ1MkMtMzUuNjY0LTkzOC45NTc1Mi0zNS4xNTYtOTMzLjA3MDUyLTM0Ljg0LTkyOS40MTA1MkMtMzQuNTIzLTkyNS43NTA1Mi0zNC4wMi05MTkuOTAyNTItMzMuNzAzLTkxNi4yNjk1MkMtMzMuMzg3LTkxMi42MzY1Mi0zMi44ODMtOTA2LjgyODUyLTMyLjU2Ni05MDMuMjE4NTJDLTMyLjI1LTg5OS42MDk1Mi0zMS43NDItODkzLjg0MzUyLTMxLjQzLTg5MC4yNjE1MkMtMzEuMTEzLTg4Ni42NzU1Mi0zMC42MDUtODgwLjk0OTUyLTMwLjI4OS04NzcuMzk0NTJDLTI5Ljk3Ny04NzMuODM1NTItMjkuNDY5LTg2OC4xNDg1Mi0yOS4xNTItODY0LjYxNzUyQy0yOC44MzYtODYxLjA4MjUyLTI4LjMzMi04NTUuNDM3NTItMjguMDE2LTg1MS45MzM1MkMtMjcuNjk5LTg0OC40MjU1Mi0yNy4xOTEtODQyLjgyMDUyLTI2Ljg3OS04MzkuMzM5NTJDLTI2LjU2Mi04MzUuODU1NTItMjYuMDU1LTgzMC4yOTI1Mi0yNS43MzgtODI2LjgzNTUyQy0yNS40MjYtODIzLjM3ODUyLTI0LjkxOC04MTcuODU1NTItMjQuNjAyLTgxNC40MjU1MkMtMjQuMjg1LTgxMC45OTI1Mi0yMy43ODEtODA1LjUxMTUyLTIzLjQ2NS04MDIuMTA1NTJDLTIzLjE0OC03OTguNjk5NTItMjIuNjQ1LTc5My4yNTc1Mi0yMi4zMjgtNzg5Ljg3ODUyQy0yMi4wMTItNzg2LjQ5NjUyLTIxLjUwNC03ODEuMDkzNTItMjEuMTkxLTc3Ny43NDI1MkMtMjAuODc1LTc3NC4zODY1Mi0yMC4zNjctNzY5LjAyMzUyLTIwLjA1MS03NjUuNjk1NTJDLTE5LjczOC03NjIuMzYzNTItMTkuMjMtNzU3LjA0NjUyLTE4LjkxNC03NTMuNzQyNTJDLTE4LjU5OC03NTAuNDM3NTItMTguMDk0LTc0NS4xNTY1Mi0xNy43NzctNzQxLjg3ODUyQy0xNy40NjEtNzM4LjU5NzUyLTE2Ljk1My03MzMuMzU5NTItMTYuNjQxLTczMC4xMDU1MkMtMTYuMzI0LTcyNi44NTE1Mi0xNS44MTYtNzIxLjY1MjUyLTE1LjUtNzE4LjQyNTUyQy0xNS4xODctNzE1LjE5NTUyLTE0LjY4LTcxMC4wMzk1Mi0xNC4zNjMtNzA2LjgzNTUyQy0xNC4wNDctNzAzLjYzMjUyLTEzLjU0My02OTguNTE1NTItMTMuMjI3LTY5NS4zMzk1MkMtMTIuOTEtNjkyLjE2MDUyLTEyLjQwNi02ODcuMDg1NTItMTIuMDktNjgzLjkyOTUyQy0xMS43NzMtNjgwLjc3NzUyLTExLjI2Ni02NzUuNzQyNTItMTAuOTUzLTY3Mi42MTc1MkMtMTAuNjM3LTY2OS40ODg1Mi0xMC4xMjktNjY0LjQ5NjUyLTkuODEyLTY2MS4zOTA1MkMtOS41LTY1OC4yODk1Mi04Ljk5Mi02NTMuMzM1NTItOC42NzYtNjUwLjI1NzUyQy04LjM1OS02NDcuMTgzNTItNy44NTUtNjQyLjI2OTUyLTcuNTM5LTYzOS4yMTg1MlMtNi43MTktNjMxLjI5MjUyLTYuNDAyLTYyOC4yNjk1MkMtNi4wODYtNjI1LjI0MjUyLTUuNTc4LTYyMC40MTA1Mi01LjI2Mi02MTcuNDEwNTJDLTQuOTQ5LTYxNC40MTA1Mi00LjQ0MS02MDkuNjE3NTItNC4xMjUtNjA2LjY0MDUyQy0zLjgwOS02MDMuNjY3NTItMy4zMDUtNTk4LjkxNzUyLTIuOTg4LTU5NS45NjQ1MkMtMi42NzItNTkzLjAxNTUyLTIuMTY4LTU4OC4zMDQ1Mi0xLjg1Mi01ODUuMzgyNTJDLTEuNTM1LTU4Mi40NTc1Mi0xLjAyNy01NzcuNzg1NTItLjcxNS01NzQuODg2NTJDLS4zOTgtNTcxLjk4ODUyIC4xMDktNTY3LjM1OTUyIC40MjYtNTY0LjQ4NDUyQy43MzgtNTYxLjYxMzUyIDEuMjQ2MS01NTcuMDIzNTIgMS41NjI1LTU1NC4xNzU1MkMxLjg3ODktNTUxLjMyODUyIDIuMzgyOC01NDYuNzc3NTIgMi42OTkyLTU0My45NTc1MkMzLjAxNTYtNTQxLjEzMjUyIDMuNTE5NS01MzYuNjI1NTIgMy44MzU5LTUzMy44Mjg1MkM0LjE1MjMtNTMxLjAyNzUyIDQuNjYwMi01MjYuNTYyNTIgNC45NzI3LTUyMy43ODk1MkM1LjI4OTEtNTIxLjAxNTUyIDUuNzk2OS01MTYuNTg5NTIgNi4xMTMzLTUxMy44NDM1MlM2LjkzMzYtNTA2LjcxMDUyIDcuMjUtNTAzLjk4ODUyQzcuNTY2NC01MDEuMjY5NTIgOC4wNzAzLTQ5Ni45MjE1MiA4LjM4NjctNDk0LjIyNjUyUzkuMjEwOS00ODcuMjI2NTIgOS41MjM0LTQ4NC41NTQ1MkM5LjgzOTgtNDgxLjg4MjUyIDEwLjM0NzctNDc3LjYyMTUyIDEwLjY2NDEtNDc0Ljk3MjUyQzEwLjk3NjYtNDcyLjMyODUyIDExLjQ4NDQtNDY4LjEwNTUyIDExLjgwMDgtNDY1LjQ4NDUyUzEyLjYyMTEtNDU4LjY4MzUyIDEyLjkzNzUtNDU2LjA4NTUyQzEzLjI1MzktNDUzLjQ5MjUyIDEzLjc1NzgtNDQ5LjM1MTUyIDE0LjA3NDItNDQ2Ljc4MTUyQzE0LjM5MDYtNDQ0LjIxMDUyIDE0Ljg5ODQtNDQwLjEwOTUyIDE1LjIxMDktNDM3LjU2NjUyQzE1LjUyNzMtNDM1LjAxOTUyIDE2LjAzNTItNDMwLjk2MDUyIDE2LjM1MTYtNDI4LjQ0MTUyQzE2LjY2NDEtNDI1LjkyMTUyIDE3LjE3MTktNDIxLjkwMjUyIDE3LjQ4ODMtNDE5LjQxMDUyQzE3LjgwNDctNDE2LjkxNDUyIDE4LjMwODYtNDEyLjkzNzUyIDE4LjYyNS00MTAuNDY4NTJTMTkuNDQ5Mi00MDQuMDYyNTIgMTkuNzYxNy00MDEuNjE3NTJDMjAuMDc4MS0zOTkuMTc1NTIgMjAuNTg1OS0zOTUuMjc3NTIgMjAuOTAyMy0zOTIuODU5NTJDMjEuMjE0OC0zOTAuNDQxNTIgMjEuNzIyNy0zODYuNTgyNTIgMjIuMDM5MS0zODQuMTkxNTJTMjIuODU5NC0zNzcuOTg0NTIgMjMuMTc1OC0zNzUuNjE3NTJDMjMuNDkyMi0zNzMuMjQ5NTIgMjMuOTk2MS0zNjkuNDcyNTIgMjQuMzEyNS0zNjcuMTI4NTJDMjQuNjI4OS0zNjQuNzg5NTIgMjUuMTM2Ny0zNjEuMDU0NTIgMjUuNDQ5Mi0zNTguNzM4NTJDMjUuNzY1Ni0zNTYuNDIxNTIgMjYuMjczNC0zNTIuNzI2NTIgMjYuNTg5OC0zNTAuNDMzNTJDMjYuOTAyMy0zNDguMTQ0NTIgMjcuNDEwMi0zNDQuNDg4NTIgMjcuNzI2Ni0zNDIuMjIyNTJDMjguMDQzLTMzOS45NTc1MiAyOC41NDY5LTMzNi4zNDM1MiAyOC44NjMzLTMzNC4xMDU1MkMyOS4xNzk3LTMzMS44NjM1MiAyOS42ODM2LTMyOC4yODk1MiAzMC0zMjYuMDc0NTJTMzAuODI0Mi0zMjAuMzI4NTIgMzEuMTQwNi0zMTguMTQwNTJDMzEuNDUzMS0zMTUuOTQ5NTIgMzEuOTYwOS0zMTIuNDU3NTIgMzIuMjc3My0zMTAuMjkyNTJDMzIuNTkzOC0zMDguMTI4NTIgMzMuMDk3Ny0zMDQuNjc5NTIgMzMuNDE0MS0zMDIuNTM5NTJDMzMuNzMwNS0zMDAuMzk4NTIgMzQuMjM0NC0yOTYuOTg4NTIgMzQuNTUwOC0yOTQuODc0NTJDMzQuODY3Mi0yOTIuNzYxNTIgMzUuMzc1LTI4OS4zOTA1MiAzNS42ODc1LTI4Ny4zMDQ1MkMzNi4wMDM5LTI4NS4yMTQ1MiAzNi41MTE3LTI4MS44ODY1MiAzNi44MjgxLTI3OS44MjQ1MkMzNy4xNDA2LTI3Ny43NjE1MiAzNy42NDg0LTI3NC40NzI1MiAzNy45NjQ4LTI3Mi40MzM1MkMzOC4yODEzLTI3MC4zOTQ1MiAzOC43ODUyLTI2Ny4xNDg1MiAzOS4xMDE2LTI2NS4xMzY1MlMzOS45MjE5LTI1OS45MTc1MiA0MC4yMzgzLTI1Ny45Mjk1MlM0MS4wNjI1LTI1Mi43Nzc1MiA0MS4zNzUtMjUwLjgxMjUyQzQxLjY5MTQtMjQ4Ljg1MTUyIDQyLjE5OTItMjQ1LjcyNjUyIDQyLjUxNTYtMjQzLjc4OTUyQzQyLjgzMi0yNDEuODU1NTIgNDMuMzM1OS0yMzguNzY5NTIgNDMuNjUyMy0yMzYuODU5NTJDNDMuOTY4OC0yMzQuOTQ1NTIgNDQuNDcyNy0yMzEuOTAyNTIgNDQuNzg5MS0yMzAuMDE1NTJTNDUuNjEzMy0yMjUuMTI0NTIgNDUuOTI1OC0yMjMuMjY1NTJDNDYuMjQyMi0yMjEuNDA2NTIgNDYuNzUtMjE4LjQ0MTUyIDQ3LjA2NjQtMjE2LjYwNTUyQzQ3LjM3ODktMjE0Ljc3MzUyIDQ3Ljg4NjctMjExLjg1MTUyIDQ4LjIwMzEtMjEwLjAzOTUyQzQ4LjUxOTUtMjA4LjIzMDUyIDQ5LjAyMzQtMjA1LjM0NzUyIDQ5LjMzOTgtMjAzLjU2MjUyQzQ5LjY1NjMtMjAxLjc3NzUyIDUwLjE2MDItMTk4LjkzNzUyIDUwLjQ3NjYtMTk3LjE3OTUyQzUwLjc5My0xOTUuNDE3NTIgNTEuMzAwOC0xOTIuNjE3NTIgNTEuNjEzMy0xOTAuODg2NTJDNTEuOTI5Ny0xODkuMTUyNTIgNTIuNDM3NS0xODYuMzkwNTIgNTIuNzUzOS0xODQuNjgzNTJDNTMuMDY2NC0xODIuOTcyNTIgNTMuNTc0Mi0xODAuMjUzNTIgNTMuODkwNi0xNzguNTcwNTJDNTQuMjA3LTE3Ni44OTA1MiA1NC43MTA5LTE3NC4yMTA1MiA1NS4wMjczLTE3Mi41NTA1MkM1NS4zNDM4LTE3MC44OTQ1MiA1NS44NTE2LTE2OC4yNTc1MiA1Ni4xNjQxLTE2Ni42MjQ1MkM1Ni40ODA1LTE2NC45OTI1MiA1Ni45ODgzLTE2Mi4zOTQ1MiA1Ny4zMDQ3LTE2MC43ODU1MkM1Ny42MTcyLTE1OS4xNzk1MiA1OC4xMjUtMTU2LjYyMTUyIDU4LjQ0MTQtMTU1LjAzOTUyQzU4Ljc1NzgtMTUzLjQ2MDUyIDU5LjI2MTctMTUwLjk0MTUyIDU5LjU3ODEtMTQ5LjM4NjUyQzU5Ljg5NDUtMTQ3LjgzMjUyIDYwLjM5ODQtMTQ1LjM1NTUyIDYwLjcxNDgtMTQzLjgyNDUyQzYxLjAzMTMtMTQyLjI5MjUyIDYxLjUzOTEtMTM5Ljg1OTUyIDYxLjg1MTYtMTM4LjM1MTUyQzYyLjE2OC0xMzYuODQ3NTIgNjIuNjc1OC0xMzQuNDUzNTIgNjIuOTkyMi0xMzIuOTcyNTJDNjMuMzA0Ny0xMzEuNDkyNTIgNjMuODEyNS0xMjkuMTM2NTIgNjQuMTI4OS0xMjcuNjgzNTJDNjQuNDQ1My0xMjYuMjI2NTIgNjQuOTQ5Mi0xMjMuOTE0NTIgNjUuMjY1Ni0xMjIuNDg0NTJTNjYuMDg5OC0xMTguNzgxNTIgNjYuNDAyMy0xMTcuMzc4NTJDNjYuNzE4OC0xMTUuOTcyNTIgNjcuMjI2Ni0xMTMuNzQyNTIgNjcuNTQzLTExMi4zNjM1MkM2Ny44NTU1LTExMC45ODQ1MiA2OC4zNjMzLTEwOC43OTI1MiA2OC42Nzk3LTEwNy40Mzc1MkM2OC45OTYxLTEwNi4wODU1MiA2OS41LTEwMy45MzM2MiA2OS44MTY0LTEwMi42MDU0MkM3MC4xMzI4LTEwMS4yNzczMiA3MC42MzY3LTk5LjE2NzkyIDcwLjk1MzEtOTcuODYzMzJDNzEuMjY5NS05Ni41NjI1MiA3MS43NzczLTk0LjQ5MjIyIDcyLjA4OTgtOTMuMjE0ODJDNzIuNDA2My05MS45Mzc1MiA3Mi45MTQxLTg5LjkwNjIyIDczLjIzMDUtODguNjU2MjJDNzMuNTQzLTg3LjQwMjMyIDc0LjA1MDgtODUuNDE0MDIgNzQuMzY3Mi04NC4xODc1MkM3NC42ODM2LTgyLjk2MDkyIDc1LjE4NzUtODEuMDExNzIgNzUuNTAzOS03OS44MTI1MkM3NS44MjAzLTc4LjYwOTQyIDc2LjMyNDItNzYuNzAzMTIgNzYuNjQwNi03NS41MjczMlM3Ny40NjQ4LTcyLjQ4NDQyIDc3Ljc4MTMtNzEuMzMyMDJDNzguMDkzOC03MC4xODM2MiA3OC42MDE2LTY4LjM1NTQyIDc4LjkxOC02Ny4yMzA0MlM3OS43MzgzLTY0LjMyMDMyIDgwLjA1NDctNjMuMjE4NzJDODAuMzcxMS02Mi4xMjExMiA4MC44NzUtNjAuMzc1MDIgODEuMTkxNC01OS4zMDA4MkM4MS41MDc4LTU4LjIyNjUyIDgyLjAxNTYtNTYuNTE5NTIgODIuMzI4MS01NS40NzI2MkM4Mi42NDQ1LTU0LjQyMTkyIDgzLjE1MjMtNTIuNzU3ODIgODMuNDY4OC01MS43MzQ0MkM4My43ODEzLTUwLjcxMDkyIDg0LjI4OTEtNDkuMDg1OTIgODQuNjA1NS00OC4wODk4MkM4NC45MjE5LTQ3LjA4OTgyIDg1LjQyNTgtNDUuNTA3ODIgODUuNzQyMi00NC41MzUxMkM4Ni4wNTg2LTQzLjU1ODYyIDg2LjU2MjUtNDIuMDE5NTIgODYuODc4OS00MS4wNzAzMlM4Ny43MDMxLTM4LjYyMTEyIDg4LjAxNTYtMzcuNjk5MjJDODguMzMyLTM2Ljc3NzMyIDg4LjgzOTgtMzUuMzE2NDIgODkuMTU2My0zNC40MTc5MkM4OS40NzI3LTMzLjUxOTUyIDg5Ljk3NjYtMzIuMTAxNTIgOTAuMjkzLTMxLjIzMDQyQzkwLjYwOTQtMzAuMzU1NDIgOTEuMTEzMjgtMjguOTc2NTIgOTEuNDI5NjktMjguMTMyODJDOTEuNzQ2MDktMjcuMjg1MTIgOTIuMjUzOTEtMjUuOTQ1MzIgOTIuNTY2NDEtMjUuMTI1MDJDOTIuODgyODEtMjQuMzA0NzIgOTMuMzkwNjMtMjMuMDAzOTIgOTMuNzA3MDMtMjIuMjEwOTJDOTQuMDE5NTMtMjEuNDE0MDIgOTQuNTI3MzQtMjAuMTU2MjIgOTQuODQzNzUtMTkuMzg2NzJDOTUuMTYwMTYtMTguNjEzMzIgOTUuNjY0MDYtMTcuMzk4NDIgOTUuOTgwNDctMTYuNjUyMzJTOTYuODAwNzgtMTQuNzMwNDcgOTcuMTE3MTktMTQuMDExNzJDOTcuNDMzNTktMTMuMjg5MDYgOTcuOTQxNDEtMTIuMTU2MjUgOTguMjUzOTEtMTEuNDYwOTRDOTguNTcwMzEtMTAuNzY1NjMgOTkuMDc4MTMtOS42NzE4OCA5OS4zOTQ1My05LjAwMzkxQzk5LjcwNzAzLTguMzMyMDMgMTAwLjIxNDg0NS03LjI3NzM0IDEwMC41MzEyNTEtNi42MzI4MUMxMDAuODQ3NjU3LTUuOTkyMTg4IDEwMS4zNTE1NjQtNC45NzY1NjMgMTAxLjY2Nzk3LTQuMzU5MzhDMTAxLjk4NDM3Ni0zLjczODI4IDEwMi40OTIxOS0yLjc2NTYzIDEwMi44MDQ2OS0yLjE3MTg4QzEwMy4xMjEwOS0xLjU3ODEzIDEwMy42Mjg5MS0uNjQ4NDQgMTAzLjk0NTMxLS4wNzgxM0MxMDQuMjU3ODEgLjQ4ODI4IDEwNC43NjU2MyAxLjM3ODkxIDEwNS4wODIwMyAxLjkyMTg3QzEwNS4zOTg0NCAyLjQ2NDg0IDEwNS45MDIzNCAzLjMxNjQxIDEwNi4yMTg3NSAzLjgzMjAzQzEwNi41MzUxNiA0LjM1MTU2IDEwNy4wMzkwNiA1LjE2MDE4IDEwNy4zNTU0NyA1LjY1MjM4UzEwOC4xNzk2OSA2LjkxNDA4IDEwOC40OTIxOSA3LjM4Mjc4QzEwOC44MDg1OSA3Ljg0NzY4IDEwOS4zMTY0MSA4LjU3ODA4IDEwOS42MzI4MSA5LjAxOTU4QzEwOS45NDUzMSA5LjQ2MDk4IDExMC40NTMxMyAxMC4xNDg0OCAxMTAuNzY5NTMgMTAuNTYyNDhDMTExLjA4NTk0IDEwLjk4MDQ4IDExMS41ODk4IDExLjYyODg4IDExMS45MDYzIDEyLjAxOTU4QzExMi4yMjI3IDEyLjQxMDE4IDExMi43MjY2IDEzLjAxNTU4IDExMy4wNDMgMTMuMzgyNzhDMTEzLjM1OTQgMTMuNzQ2MDggMTEzLjg2NzIgMTQuMzEyNDggMTE0LjE4MzYgMTQuNjUyMzhDMTE0LjQ5NjEgMTQuOTk2MDggMTE1LjAwMzkgMTUuNTE5NTggMTE1LjMyMDMgMTUuODM1OThDMTE1LjYzNjcgMTYuMTQ4NDggMTE2LjE0MDYgMTYuNjMyNzggMTE2LjQ1NyAxNi45MjU3OEMxMTYuNzczNCAxNy4yMTQ4OCAxMTcuMjc3MyAxNy42NTYyOCAxMTcuNTkzOCAxNy45MjE4OEMxMTcuOTEwMiAxOC4xODc0OCAxMTguNDE4IDE4LjU4OTg4IDExOC43MzA1IDE4LjgyODA4QzExOS4wNDY5IDE5LjA2NjM4IDExOS41NTQ3IDE5LjQyOTY4IDExOS44NzExIDE5LjY0NDU4QzEyMC4xODM2IDE5Ljg1NTQ4IDEyMC42OTE0IDIwLjE3OTY4IDEyMS4wMDc4IDIwLjM2NzE4UzEyMS44MjgxIDIwLjgzNTk4IDEyMi4xNDQ1IDIwLjk5OTk4QzEyMi40NjA5IDIxLjE2NDA4IDEyMi45NjQ4IDIxLjQwNjI4IDEyMy4yODEzIDIxLjU0Mjk4QzEyMy41OTc3IDIxLjY3OTY4IDEyNC4xMDU1IDIxLjg3ODg4IDEyNC40MTggMjEuOTkyMThDMTI0LjczNDQgMjIuMTA1NDggMTI1LjI0MjIgMjIuMjY1NTggMTI1LjU1ODYgMjIuMzUxNThDMTI1Ljg3NSAyMi40Mzc0OCAxMjYuMzc4OSAyMi41NTg1OCAxMjYuNjk1MyAyMi42MTcxOEMxMjcuMDExNyAyMi42Nzk2OCAxMjcuNTE1NiAyMi43NTc3OCAxMjcuODMyIDIyLjc5Njg4QzEyOC4xNDg0IDIyLjgzMjA4IDEyOC42NTYzIDIyLjg3MTA4IDEyOC45Njg4IDIyLjg3ODg4QzEyOS4yODUyIDIyLjg5MDU4IDEyOS43OTMgMjIuODg2NjggMTMwLjEwOTQgMjIuODc0OThDMTMwLjQyMTkgMjIuODU5MzggMTMwLjkyOTcgMjIuODE2MzggMTMxLjI0NjEgMjIuNzc3MzhDMTMxLjU2MjUgMjIuNzM0MzggMTMyLjA2NjQgMjIuNjUyMzggMTMyLjM4MjggMjIuNTg1OThDMTMyLjY5OTIgMjIuNTIzNDggMTMzLjIwMzEgMjIuMzk4NDggMTMzLjUxOTUgMjIuMzA4NThDMTMzLjgzNTkgMjIuMjE0ODggMTM0LjM0MzggMjIuMDUwNzggMTM0LjY1NjMgMjEuOTMzNThDMTM0Ljk3MjcgMjEuODIwMjggMTM1LjQ4MDUgMjEuNjEzMjggMTM1Ljc5NjkgMjEuNDcyNjhDMTM2LjEwOTQgMjEuMzMyMDggMTM2LjYxNzIgMjEuMDg1OTggMTM2LjkzMzYgMjAuOTE3OThTMTM3Ljc1MzkgMjAuNDY0ODggMTM4LjA3MDMgMjAuMjczNDhTMTM4Ljg5NDUgMTkuNzUzODggMTM5LjIwNyAxOS41MzUxOEMxMzkuNTIzNCAxOS4zMjAyOCAxNDAuMDMxMyAxOC45NDkxOCAxNDAuMzQ3NyAxOC43MDcwOEMxNDAuNjYwMiAxOC40NjQ4OCAxNDEuMTY4IDE4LjA1NDY4IDE0MS40ODQ0IDE3Ljc4OTA4QzE0MS44MDA4IDE3LjUxOTU4IDE0Mi4zMDQ3IDE3LjA3MDI4IDE0Mi42MjExIDE2Ljc3NzM4QzE0Mi45Mzc1IDE2LjQ4NDM4IDE0My40NDE0IDE1Ljk5NjA4IDE0My43NTc4IDE1LjY3NTc4UzE0NC41ODIgMTQuODI0MTggMTQ0Ljg5NDUgMTQuNDgwNDhDMTQ1LjIxMDkgMTQuMTM2NjggMTQ1LjcxODggMTMuNTY2MzggMTQ2LjAzNTIgMTMuMTk5MThDMTQ2LjM0NzcgMTIuODI4MDggMTQ2Ljg1NTUgMTIuMjE0ODggMTQ3LjE3MTkgMTEuODIwMjhDMTQ3LjQ4ODMgMTEuNDI1NzggMTQ3Ljk5MjIgMTAuNzczNDggMTQ4LjMwODYgMTAuMzU1NDhDMTQ4LjYyNSA5LjkzMzU4IDE0OS4xMjg5IDkuMjQyMTggMTQ5LjQ0NTMgOC43OTY4OFMxNTAuMjY5NSA3LjYxNzE4IDE1MC41ODU5IDcuMTQ0NThDMTUwLjg5ODQgNi42NzU3OCAxNTEuNDA2MyA1LjkwMjM4IDE1MS43MjI3IDUuNDA2MjhTMTUyLjU0MyA0LjA5Mzc1IDE1Mi44NTk0IDMuNTc0MjJDMTUzLjE3NTggMy4wNTA3OCAxNTMuNjc5NyAyLjE5NTMxIDE1My45OTYxIDEuNjQ4NDRDMTU0LjMxMjUgMS4xMDE1NiAxNTQuODIwMyAuMjA3MDMgMTU1LjEzMjgtLjM2NzE5QzE1NS40NDkyLS45Mzc1IDE1NS45NTctMS44NzUgMTU2LjI3MzQtMi40NzI2NkMxNTYuNTg1OS0zLjA3MDMxIDE1Ny4wOTM4LTQuMDQ2ODggMTU3LjQxMDItNC42Njc5NjlDMTU3LjcyNjYtNS4yOTI5NjkgMTU4LjIzMDUtNi4zMTI1IDE1OC41NDY5LTYuOTU3MDNDMTU4Ljg2MzMtNy42MDU0NyAxNTkuMzY3Mi04LjY2NDA2IDE1OS42ODM2LTkuMzM5ODRDMTYwLTEwLjAxMTcyIDE2MC41MDc4LTExLjExMzI4IDE2MC44MjQyLTExLjgwODU5QzE2MS4xMzY3LTEyLjUwNzgxIDE2MS42NDQ1LTEzLjY0ODQ0IDE2MS45NjA5LTE0LjM3NUMxNjIuMjc3My0xNS4wOTc2NiAxNjIuNzgxMy0xNi4yNzczMiAxNjMuMDk3Ny0xNy4wMjczMlMxNjMuOTE4LTE5LjAwMDAyIDE2NC4yMzQ0LTE5Ljc3MzQyQzE2NC41NTA4LTIwLjU0NjkyIDE2NS4wNTg2LTIxLjgwODYyIDE2NS4zNzExLTIyLjYwOTQyQzE2NS42ODc1LTIzLjQxMDEyIDE2Ni4xOTUzLTI0LjcxMDkyIDE2Ni41MTE3LTI1LjUzOTAyQzE2Ni44MjQyLTI2LjM2MzMyIDE2Ny4zMzItMjcuNzA3MDIgMTY3LjY0ODQtMjguNTU4NjJDMTY3Ljk2NDgtMjkuNDA2MjIgMTY4LjQ2ODgtMzAuNzkyOTIgMTY4Ljc4NTItMzEuNjY3OTJTMTY5LjYwNTUtMzMuOTY4NzIgMTY5LjkyMTktMzQuODcxMTJDMTcwLjIzODMtMzUuNzY5NTIgMTcwLjc0NjEtMzcuMjM0NDIgMTcxLjA1ODYtMzguMTY0MDJDMTcxLjM3NS0zOS4wODk4MiAxNzEuODgyOC00MC41OTM3MiAxNzIuMTk5Mi00MS41NDY5MkMxNzIuNTE1Ni00Mi41MDAwMiAxNzMuMDE5NS00NC4wNDY5MiAxNzMuMzM1OS00NS4wMjM0MkMxNzMuNjUyMy00Ni4wMDAwMiAxNzQuMTU2My00Ny41ODU5MiAxNzQuNDcyNy00OC41ODk4MlMxNzUuMjk2OS01MS4yMjI2MiAxNzUuNjA5NC01Mi4yNTAwMkMxNzUuOTI1OC01My4yNzczMiAxNzYuNDMzNi01NC45NDUzMiAxNzYuNzUtNTYuMDAwMDJDMTc3LjA2MjUtNTcuMDUwODIgMTc3LjU3MDMtNTguNzYxNzIgMTc3Ljg4NjctNTkuODM5ODJTMTc4LjcwNy02Mi42Njc5MiAxNzkuMDIzNC02My43NzM0MkMxNzkuMzM5OC02NC44NzUwMiAxNzkuODQzOC02Ni42Njc5MiAxODAuMTYwMi02Ny43OTY5MkMxODAuNDc2Ni02OC45MjU4MiAxODAuOTg0NC03MC43NTc4MiAxODEuMjk2OS03MS45MTAxMkMxODEuNjEzMy03My4wNjY0MiAxODIuMTIxMS03NC45Mzc1MiAxODIuNDM3NS03Ni4xMTcyMkMxODIuNzUtNzcuMjk2OTIgMTgzLjI1NzgtNzkuMjEwOTIgMTgzLjU3NDItODAuNDE0MDJDMTgzLjg5MDYtODEuNjIxMTIgMTg0LjM5NDUtODMuNTc0MjIgMTg0LjcxMDktODQuODA0NzJDMTg1LjAyNzMtODYuMDM1MTIgMTg1LjUzNTItODguMDI3MzIgMTg1Ljg0NzctODkuMjg1MTJDMTg2LjE2NDEtOTAuNTM5MDIgMTg2LjY3MTktOTIuNTc0MjIgMTg2Ljk4ODMtOTMuODU1NDJDMTg3LjMwMDgtOTUuMTM2NzIgMTg3LjgwODYtOTcuMjEwOTIgMTg4LjEyNS05OC41MTk1MkMxODguNDQxNC05OS44MjQyMiAxODguOTQ1My0xMDEuOTQxNDIgMTg5LjI2MTctMTAzLjI3MzQyUzE5MC4wODItMTA2Ljc2MTUyIDE5MC4zOTg0LTEwOC4xMTc1MkMxOTAuNzE0OC0xMDkuNDc2NTIgMTkxLjIyMjctMTExLjY3MTUyIDE5MS41MzUyLTExMy4wNTQ1MkMxOTEuODUxNi0xMTQuNDM3NTIgMTkyLjM1OTQtMTE2LjY3NTUyIDE5Mi42NzU4LTExOC4wODI1MkMxOTIuOTg4My0xMTkuNDkyNTIgMTkzLjQ5NjEtMTIxLjc2OTUyIDE5My44MTI1LTEyMy4yMDM1MkMxOTQuMTI4OS0xMjQuNjM2NTIgMTk0LjYzMjgtMTI2Ljk1MzUyIDE5NC45NDkyLTEyOC40MTQ1MkMxOTUuMjY1Ni0xMjkuODcxNTIgMTk1Ljc2OTUtMTMyLjIzMDUyIDE5Ni4wODU5LTEzMy43MTQ1MkMxOTYuNDAyMy0xMzUuMTk5NTIgMTk2LjkxMDItMTM3LjU5NzUyIDE5Ny4yMjY2LTEzOS4xMDk1MkMxOTcuNTM5MS0xNDAuNjE3NTIgMTk4LjA0NjktMTQzLjA1ODUyIDE5OC4zNjMzLTE0NC41OTM1MkMxOTguNjc5Ny0xNDYuMTI0NTIgMTk5LjE4MzYtMTQ4LjYwOTUyIDE5OS41LTE1MC4xNjc1MkMxOTkuODE2NC0xNTEuNzI2NTIgMjAwLjMyMDMtMTU0LjI0OTUyIDIwMC42MzY3LTE1NS44MzU1MlMyMDEuNDYxLTE1OS45ODQ1MiAyMDEuNzczLTE2MS41OTM1MkMyMDIuMDktMTYzLjIwMzUyIDIwMi41OTgtMTY1LjgwODUyIDIwMi45MTQtMTY3LjQ0NTUyQzIwMy4yMjctMTY5LjA3ODUyIDIwMy43MzQtMTcxLjcyMjUyIDIwNC4wNTEtMTczLjM4MjUyQzIwNC4zNjctMTc1LjA0NjUyIDIwNC44NzEtMTc3LjczMDUyIDIwNS4xODgtMTc5LjQxNzUyQzIwNS41MDQtMTgxLjEwNTUyIDIwNi4wMDgtMTgzLjgyODUyIDIwNi4zMjQtMTg1LjUzOTUyQzIwNi42NDEtMTg3LjI1MzUyIDIwNy4xNDgtMTkwLjAxOTUyIDIwNy40NjEtMTkxLjc1MzUyQzIwNy43NzctMTkzLjQ5MjUyIDIwOC4yODUtMTk2LjMwMDUyIDIwOC42MDItMTk4LjA2MjUyQzIwOC45MTgtMTk5LjgyNDUyIDIwOS40MjItMjAyLjY3MTUyIDIwOS43MzgtMjA0LjQ2MDUyQzIxMC4wNTUtMjA2LjI0NjUyIDIxMC41NTktMjA5LjEzNjUyIDIxMC44NzUtMjEwLjk0OTUyQzIxMS4xOTEtMjEyLjc2MTUyIDIxMS42OTktMjE1LjY5MTUyIDIxMi4wMTItMjE3LjUyNzUyQzIxMi4zMjgtMjE5LjM2NzUyIDIxMi44MzYtMjIyLjMzNTUyIDIxMy4xNTItMjI0LjE5OTUyQzIxMy40NjUtMjI2LjA2MjUyIDIxMy45NzMtMjI5LjA3NDUyIDIxNC4yODktMjMwLjk2MDUyQzIxNC42MDUtMjMyLjg1MTUyIDIxNS4xMDktMjM1LjkwMjUyIDIxNS40MjYtMjM3LjgxNjUyQzIxNS43NDItMjM5LjczMDUyIDIxNi4yNDYtMjQyLjgyNDUyIDIxNi41NjMtMjQ0Ljc2MTUyQzIxNi44NzktMjQ2LjcwMzUyIDIxNy4zODctMjQ5LjgzMjUyIDIxNy42OTktMjUxLjgwMDUyQzIxOC4wMTYtMjUzLjc2NTUyIDIxOC41MjMtMjU2LjkzNzUyIDIxOC44NC0yNTguOTI1NTJDMjE5LjE1Mi0yNjAuOTE3NTIgMjE5LjY2LTI2NC4xMjg1MiAyMTkuOTc3LTI2Ni4xNDQ1MkMyMjAuMjkzLTI2OC4xNjA1MiAyMjAuNzk3LTI3MS40MTQ1MiAyMjEuMTEzLTI3My40NTc1MkMyMjEuNDMtMjc1LjQ5OTUyIDIyMS45MzgtMjc4Ljc5MjUyIDIyMi4yNS0yODAuODU5NTJDMjIyLjU2Ni0yODIuOTI1NTIgMjIzLjA3NC0yODYuMjYxNTIgMjIzLjM5MS0yODguMzUxNTJDMjIzLjcwMy0yOTAuNDQ1NTIgMjI0LjIxMS0yOTMuODIwNTIgMjI0LjUyNy0yOTUuOTM3NTJDMjI0Ljg0NC0yOTguMDU0NTIgMjI1LjM0OC0zMDEuNDY4NTIgMjI1LjY2NC0zMDMuNjEzNTJDMjI1Ljk4LTMwNS43NTM1MiAyMjYuNDg0LTMwOS4yMTA1MiAyMjYuODAxLTMxMS4zNzg1MkMyMjcuMTE3LTMxMy41NDY1MiAyMjcuNjI1LTMxNy4wNDI1MiAyMjcuOTM4LTMxOS4yMzg1MkMyMjguMjU0LTMyMS40Mjk1MiAyMjguNzYyLTMyNC45Njg1MiAyMjkuMDc4LTMyNy4xODc1MkMyMjkuMzkxLTMyOS40MDY1MiAyMjkuODk4LTMzMi45ODQ1MiAyMzAuMjE1LTMzNS4yMjY1MkMyMzAuNTMxLTMzNy40NzI1MiAyMzEuMDM1LTM0MS4wODk1MiAyMzEuMzUyLTM0My4zNTk1MkMyMzEuNjY4LTM0NS42Mjg1MiAyMzIuMTcyLTM0OS4yODk1MiAyMzIuNDg4LTM1MS41ODU1MkMyMzIuODA1LTM1My44Nzg1MiAyMzMuMzEyLTM1Ny41Nzg1MiAyMzMuNjI5LTM1OS44OTg1MkMyMzMuOTQxLTM2Mi4yMTg1MiAyMzQuNDQ5LTM2NS45NjA1MiAyMzQuNzY2LTM2OC4zMDQ1MkMyMzUuMDgyLTM3MC42NTI1MiAyMzUuNTg2LTM3NC40MzM1MiAyMzUuOTAyLTM3Ni44MDQ1MkMyMzYuMjE5LTM3OS4xNzU1MiAyMzYuNzIzLTM4Mi45OTY1MiAyMzcuMDM5LTM4NS4zOTA1MkMyMzcuMzU1LTM4Ny43ODk1MiAyMzcuODYzLTM5MS42NTI1MiAyMzguMTc2LTM5NC4wNzA1MkMyMzguNDkyLTM5Ni40OTI1MiAyMzktNDAwLjM5ODUyIDIzOS4zMTYtNDAyLjg0MzUyQzIzOS42MjktNDA1LjI4OTUyIDI0MC4xMzctNDA5LjIzNDUyIDI0MC40NTMtNDExLjcwNzUyQzI0MC43Ny00MTQuMTc5NTIgMjQxLjI3My00MTguMTY0NTIgMjQxLjU5LTQyMC42NjA1MkMyNDEuOTA2LTQyMy4xNTY1MiAyNDIuNDEtNDI3LjE4MzUyIDI0Mi43MjctNDI5LjcwNzUyQzI0My4wNDMtNDMyLjIzMDUyIDI0My41NTEtNDM2LjI5MjUyIDI0My44NjctNDM4Ljg0MzUyQzI0NC4xOC00NDEuMzkwNTIgMjQ0LjY4Ny00NDUuNDk2NTIgMjQ1LjAwNC00NDguMDcwNTJDMjQ1LjMyLTQ1MC42NDQ1MiAyNDUuODI0LTQ1NC43OTI1MiAyNDYuMTQxLTQ1Ny4zOTA1MkMyNDYuNDU3LTQ1OS45ODg1MiAyNDYuOTYxLTQ2NC4xNzU1MiAyNDcuMjc3LTQ2Ni44MDA1MkMyNDcuNTk0LTQ2OS40MjU1MiAyNDguMTAyLTQ3My42NTI1MiAyNDguNDE0LTQ3Ni4zMDA1MkMyNDguNzMtNDc4Ljk1MzUyIDI0OS4yMzgtNDgzLjIxODUyIDI0OS41NTUtNDg1Ljg5NDUyQzI0OS44NjctNDg4LjU3MDUyIDI1MC4zNzUtNDkyLjg3ODUyIDI1MC42OTEtNDk1LjU3ODUyQzI1MS4wMDgtNDk4LjI4MTUyIDI1MS41MTItNTAyLjYyODUyIDI1MS44MjgtNTA1LjM1NTUyQzI1Mi4xNDUtNTA4LjA4MjUyIDI1Mi42NDgtNTEyLjQ3MjUyIDI1Mi45NjUtNTE1LjIyMjUyQzI1My4yODEtNTE3Ljk3MjUyIDI1My43ODktNTIyLjQwNjUyIDI1NC4xMDItNTI1LjE3OTUyQzI1NC40MTgtNTI3Ljk1NzUyIDI1NC45MjYtNTMyLjQyOTUyIDI1NS4yNDItNTM1LjIzMDUyQzI1NS41NTktNTM4LjAzMTUyIDI1Ni4wNjItNTQyLjU0NjUyIDI1Ni4zNzktNTQ1LjM3MTUyQzI1Ni42OTUtNTQ4LjE5OTUyIDI1Ny4xOTktNTUyLjc1MzUyIDI1Ny41MTYtNTU1LjYwNTUyQzI1Ny44MzItNTU4LjQ1NzUyIDI1OC4zNC01NjMuMDUwNTIgMjU4LjY1Mi01NjUuOTI5NTJDMjU4Ljk2OS01NjguODA0NTIgMjU5LjQ3Ny01NzMuNDQxNTIgMjU5Ljc5My01NzYuMzQzNTJDMjYwLjEwNS01NzkuMjQ2NTIgMjYwLjYxMy01ODMuOTIxNTIgMjYwLjkzLTU4Ni44NDc1MkMyNjEuMjQ2LTU4OS43Nzc1MiAyNjEuNzUtNTk0LjQ5MjUyIDI2Mi4wNjYtNTk3LjQ0NTUyQzI2Mi4zODMtNjAwLjM5ODUyIDI2Mi44ODctNjA1LjE1NjUyIDI2My4yMDMtNjA4LjEzNjUyQzI2My41Mi02MTEuMTEzNTIgMjY0LjAyNy02MTUuOTEwNTIgMjY0LjM0LTYxOC45MTQ1MkMyNjQuNjU2LTYyMS45MTc1MiAyNjUuMTY0LTYyNi43NTc1MiAyNjUuNDgtNjI5Ljc4NTUyQzI2NS43OTMtNjMyLjgxNjUyIDI2Ni4zMDEtNjM3LjY5NTUyIDI2Ni42MTctNjQwLjc1MDUyQzI2Ni45MzQtNjQzLjgwNDUyIDI2Ny40MzctNjQ4LjcyMjUyIDI2Ny43NTQtNjUxLjgwNDUyQzI2OC4wNy02NTQuODgyNTIgMjY4LjU3OC02NTkuODQzNTIgMjY4Ljg5MS02NjIuOTQ5NTJDMjY5LjIwNy02NjYuMDU0NTIgMjY5LjcxNS02NzEuMDU0NTIgMjcwLjAzMS02NzQuMTgzNTJDMjcwLjM0NC02NzcuMzE2NTIgMjcxLjE2OC02ODUuNTE1NTIgMjcxLjE2OC02ODUuNTE1NTInIHN0cm9rZT0nIzAwZicgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuNzk3MDEnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJyBjbGlwLXBhdGg9J3VybCgjY2xpcDEpJy8+CjxwYXRoIGQ9J00xMjkuNDYwOS03LjQ0OTIyVi0zLjQ2NDg0JyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJyBjbGlwLXBhdGg9J3VybCgjY2xpcDEpJy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgMjUuODU2IDEyLjUxMjk0KSc+Cjx1c2UgeD0nMTAxLjExMjU0MicgeT0nLTUuNDU4NTE5JyB4bGluazpocmVmPScjZzItNDknLz4KPC9nPgo8cGF0aCBkPSdNMTU3LjgwNDctNy40NDkyMlYtMy40NjQ4NCcgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcgY2xpcC1wYXRoPSd1cmwoI2NsaXAxKScvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDU0LjIwMyAxMi41MTI5NCknPgo8dXNlIHg9JzEwMS4xMTI1NDInIHk9Jy01LjQ1ODUxOScgeGxpbms6aHJlZj0nI2cyLTUwJy8+CjwvZz4KPHBhdGggZD0nTTEwMy4xMDU0NyAyMi44ODY2OEg5OS4xMjEwOScgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcgY2xpcC1wYXRoPSd1cmwoI2NsaXAxKScvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC0xOC44MjI3IDMxLjE0MTkyKSc+Cjx1c2UgeD0nMTAxLjExMjU0MicgeT0nLTUuNDU4NTE5JyB4bGluazpocmVmPScjZzAtMCcvPgo8dXNlIHg9JzEwOC44NjEyOScgeT0nLTUuNDU4NTE5JyB4bGluazpocmVmPScjZzItNDknLz4KPC9nPgo8L2c+Cjwvc3ZnPg==\" class=\"latex-image\" style=\"max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto;\">Hàm số $y=f(x)$ nghịch biến trên khoảng nào dưới đây?","rendered_options":["$(- \\infty; 0)$","$(0; 2)$","$(2; + \\infty)$","$(- \\infty; 2)$"]},{"question":"Hàm số $y = -x^3 + 3x^2 - 1$ đồng biến trên khoảng nào dưới đây?","options":["$(0; 2)$","$(- \\infty; 0)$","$(2; + \\infty)$","$(- \\infty; + \\infty)$"],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Hàm số $y = -x^3 + 3x^2 - 1$ đồng biến trên khoảng nào dưới đây?","rendered_options":["$(0; 2)$","$(- \\infty; 0)$","$(2; + \\infty)$","$(- \\infty; + \\infty)$"]},{"question":"Tìm giá trị cực tiểu của hàm số $y = \\dfrac{x^2 - 3x + 3}{x - 2}$.","options":["$-1$","$3$","$1$","$2$"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Tìm giá trị cực tiểu của hàm số $y = \\dfrac{x^2 - 3x + 3}{x - 2}$.","rendered_options":["$-1$","$3$","$1$","$2$"]}];
+        const options = {"title":"Bài kiểm tra - 30/11/2025","timeLimit":45,"retriesAllowed":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"shortAnswerFormat":"freeform","examCode":"EYOOUI","teacherName":"phạm anh dũng","scoring":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxV_S0rNHbOQx-hnjjlQGqdvLBN5GlTog0q8erd1XMpPX7XkuGjIxJnDEPPDJQnpGnf9g/exec";
+        const examCode = "EYOOUI";
+        
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        let lastScore, lastAnswerDetails; // For retrying AI assessment
+
+        // --- UTILS FOR SHUFFLING ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+
+        // --- SHUFFLE LOGIC FOR ONLINE QUIZ ---
+        function applyShuffling() {
+            // 1. Shuffle Options/Statements within each question
+            quizData.forEach(item => {
+                const shuffleOpts = item.shuffleOptions || { answers: true };
+                const type = mapType(item.type);
+                
+                if (shuffleOpts.answers) {
+                    if (type === 'multiple-choice' && item.rendered_options && item.rendered_options.length > 0) {
+                        // Create indices array to shuffle
+                        const indices = item.rendered_options.map((_, i) => i);
+                        shuffleArray(indices);
+                        
+                        // Reorder rendered_options based on shuffled indices
+                        item.rendered_options = indices.map(i => item.rendered_options[i]);
+                        
+                        // Reorder raw options (needed for review/explanation context, though mostly rendered is used)
+                        if (item.options) {
+                            item.options = indices.map(i => item.options[i]);
+                        }
+                        
+                        // Update correctAnswerIndex
+                        // Old index was item.correctAnswerIndex. We need to find where it went.
+                        // New index is the position of the old correct index in the shuffled 'indices' array.
+                        item.correctAnswerIndex = indices.indexOf(item.correctAnswerIndex);
+
+                    } else if (type === 'true-false' && item.statements && item.statements.length > 0) {
+                        // Shuffle statements array directly
+                        shuffleArray(item.statements);
+                    }
+                }
+            });
+
+            // 2. Shuffle Question Order within Parts (respecting "Câu dẫn" aka Stem shuffle option)
+            // We group questions by type first to ensure we don't mix sections
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let newQuizData = [];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (questions) {
+                    const finalPartQuestions = new Array(questions.length).fill(null);
+                    const shufflableQuestions = [];
+                    
+                    // Separate fixed and shufflable questions
+                    questions.forEach((q, i) => {
+                        const shuffleOpts = q.shuffleOptions || { stem: true };
+                        if (shuffleOpts.stem) {
+                            shufflableQuestions.push(q);
+                        } else {
+                            finalPartQuestions[i] = q;
+                        }
+                    });
+
+                    // Shuffle the shufflable ones
+                    shuffleArray(shufflableQuestions);
+
+                    // Merge back
+                    let shufflableIndex = 0;
+                    for (let i = 0; i < finalPartQuestions.length; i++) {
+                        if (finalPartQuestions[i] === null) {
+                            finalPartQuestions[i] = shufflableQuestions[shufflableIndex];
+                            shufflableIndex++;
+                        }
+                    }
+                    newQuizData = newQuizData.concat(finalPartQuestions);
+                }
+            });
+            
+            // Update the global quizData with the shuffled version
+            if (newQuizData.length === quizData.length) {
+                quizData = newQuizData;
+            }
+            
+            // Reset user answers array to match new length (though length is same) and clear it
+            userAnswers = new Array(quizData.length).fill(null);
+        }
+        
+        // --- FALLBACK MODELS CONFIGURATION ---
+        const GEMINI_MODELS_FALLBACK = [
+          "gemini-2.5-flash",
+          "gemini-2.5-flash-lite",
+          "gemini-2.0-flash",
+          "gemini-2.0-flash-lite",
+          "gemini-2.5-pro",
+          "gemini-1.5-pro",
+          "gemini-1.5-flash"
+        ];
+
+        // --- FALLBACK API FUNCTION FOR CLIENT (STUDENT VIEW) ---
+        async function generateContentWithFallback(ai, contents, preferredModel = "gemini-2.5-flash") {
+            if (!ai) throw new Error("AI instance not provided.");
+            
+            const uniqueModels = [...new Set([preferredModel, ...GEMINI_MODELS_FALLBACK])];
+            
+            let lastError;
+            for (const model of uniqueModels) {
+                try {
+                    const response = await ai.models.generateContent({
+                        model: model,
+                        contents: contents
+                    });
+                    return response;
+                } catch (error) {
+                    console.warn('Model failed:', model, error);
+                    lastError = error;
+                    const errStr = error.toString().toLowerCase();
+                    if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("exhausted") || 
+                        errStr.includes("503") || errStr.includes("overloaded") || errStr.includes("500") || 
+                        errStr.includes("internal") || errStr.includes("resource") || errStr.includes("not found")) {
+                        continue;
+                    }
+                     continue;
+                }
+            }
+            throw lastError || new Error("Tất cả các mô hình AI đều bận hoặc gặp sự cố. Vui lòng thử lại sau.");
+        }
+
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitBtnTop = document.getElementById('submit-btn-top');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const toggleNavBtn = document.getElementById('toggle-nav-btn');
+        const navPanel = document.getElementById('nav-panel');
+        const navGrid = document.getElementById('nav-grid');
+
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.toggleExplanation = toggleExplanation;
+        window.fetchAndRenderExplanation = fetchAndRenderExplanation;
+        window.retryAIAssessment = retryAIAssessment;
+        window.setupFormInputs = setupFormInputs;
+        window.saveFormAnswer = saveFormAnswer;
+        window.scrollToQuestion = scrollToQuestion;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        submitBtnTop.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        toggleNavBtn.addEventListener('click', () => {
+            navPanel.classList.toggle('open');
+            document.body.classList.toggle('nav-open');
+        });
+
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            document.getElementById('student-name-display').textContent = studentName;
+
+            applyShuffling();
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            toggleNavBtn.classList.remove('hidden');
+            
+            if (window.innerWidth > 1024) {
+                navPanel.classList.add('open');
+                document.body.classList.add('nav-open');
+            }
+
+            userAnswers = new Array(quizData.length).fill(null);
+            submissionStatus = 'pending';
+            
+            renderAllQuestions();
+            renderNavPanel();
+            updateProgress();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = '∞';
+            }
+            startMonitoring();
+        }
+
+        function renderNavPanel() {
+            navGrid.innerHTML = '';
+            quizData.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.id = `nav-btn-${index}`;
+                btn.textContent = index + 1;
+                btn.onclick = () => scrollToQuestion(index);
+                navGrid.appendChild(btn);
+            });
+        }
+
+        function scrollToQuestion(index) {
+            const el = document.getElementById(`q-${index}`);
+            if (el) {
+                const offset = 100; 
+                const elementPosition = el.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('current'));
+                document.getElementById(`nav-btn-${index}`)?.classList.add('current');
+            }
+            if (window.innerWidth <= 1024) {
+                navPanel.classList.remove('open');
+                document.body.classList.remove('nav-open');
+            }
+        }
+
+        function updateProgress() {
+            let answeredCount = 0;
+            quizData.forEach((item, index) => {
+                const answer = userAnswers[index];
+                const type = mapType(item.type);
+                let isAnswered = false;
+
+                if (type === 'multiple-choice') {
+                    isAnswered = answer !== null;
+                } else if (type === 'true-false') {
+                    isAnswered = Array.isArray(answer) && answer.filter(x => x !== null).length === item.statements.length;
+                } else { 
+                    isAnswered = answer && String(answer).trim().length > 0;
+                }
+
+                const btn = document.getElementById(`nav-btn-${index}`);
+                if (isAnswered) {
+                    answeredCount++;
+                    btn?.classList.add('answered');
+                } else {
+                    btn?.classList.remove('answered');
+                }
+            });
+
+            const percent = Math.round((answeredCount / quizData.length) * 100);
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN', color: 'blue' },
+                'true-false': { title: 'PHẦN II. TRẮC NGHIỆM ĐÚNG/SAI', color: 'purple' },
+                'short-answer': { title: 'PHẦN III. TRẢ LỜI NGẮN', color: 'teal' },
+                'essay': { title: 'PHẦN IV. TỰ LUẬN', color: 'orange' },
+            };
+            
+            let questionCounter = 0;
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `
+                    <div class="mb-6 pb-2 border-b-2 border-${info.color}-200 flex items-center gap-2">
+                        <span class="bg-${info.color}-100 text-${info.color}-700 p-1.5 rounded-md">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </span>
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800">${info.title}</h2>
+                    </div>`;
+                
+                questions.forEach((item) => {
+                    const index = quizData.indexOf(item);
+                    questionCounter++;
+                    
+                    let contentHTML = `<div class="question-card mb-8 p-6 border border-gray-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow scroll-mt-32" id="q-${index}">`;
+                    contentHTML += `
+                        <div class="flex items-start gap-3 mb-4">
+                             <span class="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-sm shadow-sm">Câu ${questionCounter}</span>
+                        </div>
+                    `;
+                    contentHTML += `<div class="prose max-w-none text-gray-800 mb-6 font-medium text-lg leading-relaxed">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `
+                                <div class="option ${isSelected ? 'selected' : ''} p-4 border border-gray-200 rounded-xl cursor-pointer flex items-start gap-3 hover:bg-gray-50" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full border-2 ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-500'} flex items-center justify-center font-bold text-sm transition-colors">${String.fromCharCode(65 + i)}</div>
+                                    <div class="flex-grow pt-1 text-gray-700">${opt}</div>
+                                </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div class="flex-grow flex gap-3">
+                                                    <span class="font-bold text-gray-500">${String.fromCharCode(97 + i)})</span>
+                                                    <div class="prose max-w-none text-gray-700">${stmt.rendered_statement}</div>
+                                                </div>
+                                                <div class="flex-shrink-0 flex gap-2 self-end sm:self-auto">
+                                                    <button class="${isTrueSelected ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50'} px-5 py-2 rounded-lg font-semibold transition-all" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white shadow-md ring-2 ring-red-300' : 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50'} px-5 py-2 rounded-lg font-semibold transition-all" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        const savedAnswerStr = userAnswers[index] || '';
+                        if (options.shortAnswerFormat === 'form') {
+                             answerHTML = `<div id="sa-form-${index}" class="flex items-center gap-3 p-4 bg-teal-50 rounded-xl border border-teal-100">`;
+                            for (let i = 0; i < 4; i++) {
+                                answerHTML += `<input type="text" maxlength="1" data-q-index="${index}" class="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring focus:ring-teal-200 focus:outline-none bg-white shadow-sm transition-all" value="">`;
+                            }
+                            answerHTML += `</div>`;
+                        } else {
+                            answerHTML = `<input type="text" class="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-lg" placeholder="Nhập câu trả lời của bạn..." value="${savedAnswerStr}" onchange="saveTextAnswer(this, ${index})">`;
+                        }
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all" rows="6" placeholder="Nhập bài làm tự luận..." onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+            container.innerHTML = allHTML;
+
+            document.querySelectorAll('[id^="sa-form-"]').forEach(formContainer => {
+                const inputs = formContainer.querySelectorAll('input');
+                if (inputs.length > 0) {
+                    setupFormInputs(inputs);
+                }
+            });
+
+            safeTypeset([container]);
+        }
+
+        function setupFormInputs(inputs) {
+            const qIndex = inputs[0].dataset.qIndex;
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    saveFormAnswer(qIndex, inputs);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                     saveFormAnswer(qIndex, inputs);
+                });
+                 input.addEventListener('change', () => saveFormAnswer(qIndex, inputs));
+            });
+        }
+
+        function saveFormAnswer(qIndex, inputs) {
+            let combinedValue = '';
+            inputs.forEach(inp => { combinedValue += inp.value; });
+            userAnswers[qIndex] = combinedValue;
+            updateProgress();
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.querySelector('div:first-child').classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white');
+                opt.querySelector('div:first-child').classList.add('border-gray-300', 'text-gray-500');
+            });
+            element.classList.add('selected');
+            element.querySelector('div:first-child').classList.remove('border-gray-300', 'text-gray-500');
+            element.querySelector('div:first-child').classList.add('border-indigo-600', 'bg-indigo-600', 'text-white');
+            updateProgress();
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            
+            // Reset styles
+            const trueBtn = parent.children[0];
+            const falseBtn = parent.children[1];
+            
+            trueBtn.className = 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 px-5 py-2 rounded-lg font-semibold transition-all';
+            falseBtn.className = 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50 px-5 py-2 rounded-lg font-semibold transition-all';
+
+            if (answer) {
+                trueBtn.className = 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300 px-5 py-2 rounded-lg font-semibold transition-all';
+            } else {
+                falseBtn.className = 'bg-red-500 text-white shadow-md ring-2 ring-red-300 px-5 py-2 rounded-lg font-semibold transition-all';
+            }
+            updateProgress();
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+            updateProgress();
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            
+            const submitBtnEl = document.getElementById('submit-btn');
+            submitBtnEl.disabled = true;
+            submitBtnEl.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang nộp bài...';
+            
+            progressContainer.classList.add('hidden');
+            toggleNavBtn.classList.add('hidden');
+            navPanel.classList.remove('open');
+            document.body.classList.remove('nav-open');
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            lastScore = score;
+            lastAnswerDetails = answerDetails;
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment) {
+                aiAssessment = await getAIAssessment(finalScore, answerDetails);
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            // Trigger Confetti
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6']
+            });
+            
+            if (options.showAnswers) {
+                const scoreDisplay = document.getElementById('score-display');
+                scoreDisplay.querySelector('span:last-child').textContent = score;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                const scoreDisplay = document.getElementById('score-display');
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600 font-bold mb-4">Nộp bài thành công!</p><p class="text-gray-500">Kết quả đã được ghi nhận.</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                if (assessment.startsWith("Lỗi")) {
+                    // handled
+                } else {
+                     document.querySelector('#assessment-display .assessment-content').innerHTML = assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                     assessmentDisplay.classList.remove('hidden');
+                }
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<div class="text-center p-8 bg-gray-50 rounded-xl border border-gray-200"><p class="text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p></div>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else if (type === 'short-answer') {
+                    const correctAnswer = (item.answer || '').toString().trim().toLowerCase();
+                    const studentAnswer = (userAnswer || '').toString().trim().toLowerCase();
+                    isCorrect = studentAnswer === correctAnswer;
+                    if (isCorrect) {
+                        score += pointsPerSa;
+                    }
+                } else {
+                    isCorrect = null; // For 'essay' type
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Xem lại bài làm chi tiết</h3>';
+            quizData.forEach((item, index) => {
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                const isCorrectQuestion = detail?.isCorrect;
+
+                let borderColor = isCorrectQuestion ? 'border-green-200' : (isCorrectQuestion === false ? 'border-red-200' : 'border-gray-200');
+                let bgColor = isCorrectQuestion ? 'bg-green-50' : (isCorrectQuestion === false ? 'bg-red-50' : 'bg-gray-50');
+                
+                reviewHTML += `<div class="mb-8 p-6 border ${borderColor} rounded-2xl ${bgColor} shadow-sm relative overflow-hidden">`;
+                
+                // Status Badge
+                if (type !== 'essay') {
+                     reviewHTML += `<div class="absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-bl-lg ${isCorrectQuestion ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">${isCorrectQuestion ? 'Đúng' : 'Sai'}</div>`;
+                }
+
+                reviewHTML += `<div class="flex gap-2 mb-3"><span class="bg-white border border-gray-200 text-gray-700 font-bold px-2.5 py-0.5 rounded-md text-sm">Câu ${index + 1}</span></div>`;
+                reviewHTML += `<div class="prose max-w-none mb-4 text-gray-800">${item.rendered_question}</div>`;
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'p-3 border rounded-lg flex items-start gap-3';
+                        let icon = '';
+                        
+                        if (i === item.correctAnswerIndex) {
+                            classes += ' bg-green-100 border-green-400 ring-1 ring-green-400'; // Correct answer style
+                            icon = '<svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+                        } else if (userAnswers[index] === i) {
+                            classes += ' bg-red-100 border-red-400'; // Selected wrong answer
+                            icon = '<svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+                        } else {
+                            classes += ' bg-white border-gray-200 opacity-70';
+                        }
+
+                        reviewHTML += `<div class="${classes}">
+                            <span class="font-bold flex-shrink-0 w-6">${String.fromCharCode(65 + i)}.</span>
+                            <div class="flex-grow">${opt}</div>
+                            ${icon}
+                        </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="space-y-2 mt-4">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isStmtCorrect = userChoice === stmt.is_correct;
+                         let classes = 'p-3 border rounded-lg flex items-center justify-between gap-4 bg-white';
+                         
+                         if (userChoice !== null) {
+                            classes = isStmtCorrect ? 'p-3 border border-green-300 bg-green-100 rounded-lg flex items-center justify-between gap-4' : 'p-3 border border-red-300 bg-red-100 rounded-lg flex items-center justify-between gap-4';
+                         }
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none text-sm">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 text-right text-sm">
+                                             <div class="${stmt.is_correct ? 'text-green-700 font-bold' : 'text-red-700 font-bold'}">Đáp án: ${stmt.is_correct ? 'Đúng' : 'Sai'}</div>
+                                             <div class="text-gray-600">Bạn chọn: <span class="font-medium">${userChoice === true ? 'Đúng' : userChoice === false ? 'Sai' : '...'}</span></div>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-4 bg-white border border-gray-200 rounded-xl">
+                        <p class="text-sm font-bold text-gray-500 mb-1">Câu trả lời của bạn:</p>
+                        <div class="text-gray-800">${userAnswers[index] || '<em class="text-gray-400">Chưa trả lời</em>'}</div>
+                    </div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                            <p class="text-sm font-bold text-green-700 mb-1">Đáp án gợi ý:</p>
+                            <div class="prose max-w-none text-green-900">${item.rendered_answer}</div>
+                        </div>`;
+                    }
+                }
+                
+                if (options.showExplanation) {
+                     reviewHTML += `<div class="mt-4 pt-4 border-t border-gray-200/50">
+                                      <button class="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="toggleExplanation(${index}, this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Xem giải thích chi tiết từ AI
+                                      </button>
+                                      <div id="explanation-${index}" class="mt-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl hidden text-sm text-gray-700 leading-relaxed"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        async function toggleExplanation(index, button) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+
+            const isHidden = explanationContainer.classList.toggle('hidden');
+            button.innerHTML = isHidden 
+                ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Xem giải thích chi tiết từ AI' 
+                : '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg> Ẩn giải thích';
+
+            const hasLoaded = explanationContainer.hasAttribute('data-loaded');
+            const hadError = explanationContainer.getAttribute('data-loaded') === 'error';
+
+            if (!isHidden && (!hasLoaded || hadError)) {
+                await fetchAndRenderExplanation(index);
+            }
+        }
+
+        async function fetchAndRenderExplanation(index) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            explanationContainer.innerHTML = '<div class="flex items-center gap-2 text-indigo-500"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI đang soạn lời giải...</div>';
+            explanationContainer.setAttribute('data-loaded', 'loading');
+
+            if (!API_KEY) {
+                explanationContainer.innerHTML = '<p class="text-red-500 font-medium">⚠️ Lỗi: Giáo viên chưa cung cấp khóa AI. Vui lòng liên hệ giáo viên.</p>';
+                explanationContainer.setAttribute('data-loaded', 'error');
+                return;
+            }
+            
+            try {
+                const ai = new GoogleGenAI({ apiKey: API_KEY });
+                const item = quizData[index];
+                const questionText = (mapType(item.type) === 'true-false') ? (item.main_question || '') : (item.question || '');
+                let prompt = `Bạn là một trợ lý giáo viên AI xuất sắc. Hãy viết lời giải chi tiết, dễ hiểu cho câu hỏi này.\n---\nCÂU HỎI:\n${questionText}\n---`;
+                
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${item.options[item.correctAnswerIndex] || ''}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n${item.statements.map((s, i) => `${String.fromCharCode(97 + i)}) ${s.statement || ''} -> ${s.is_correct ? 'Đúng' : 'Sai'}`).join('\n')}`;
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${item.answer || ''}`;
+                }
+                prompt += `\n---\n**YÊU CẦU:** Giải thích từng bước logic. Định dạng công thức toán bằng LaTeX (trong dấu $). Dùng **...** để in đậm các ý quan trọng.`;
+                
+                const response = await generateContentWithFallback(ai, prompt);
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+                explanationContainer.setAttribute('data-loaded', 'true');
+
+            } catch (error) {
+                console.error("AI Explanation Error:", error);
+                explanationContainer.innerHTML = `<div class="text-red-600 text-sm">Đã xảy ra lỗi khi tải lời giải. <button onclick="event.preventDefault(); fetchAndRenderExplanation(${index})" class="underline font-semibold ml-1">Thử lại</button></div>`;
+                explanationContainer.setAttribute('data-loaded', 'error');
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            if (!API_KEY) {
+                const errorMsg = "Không thể tạo nhận xét do giáo viên chưa cung cấp khóa AI.";
+                document.querySelector('#assessment-display .assessment-content').innerHTML = `<p class="text-red-600">${errorMsg}</p>`;
+                assessmentDisplay.classList.remove('hidden');
+                return errorMsg;
+            }
+            
+            document.querySelector('#assessment-display .assessment-content').innerHTML = '<div class="flex items-center gap-2 text-indigo-600"><svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI đang phân tích bài làm của bạn...</div>';
+            assessmentDisplay.classList.remove('hidden');
+
+            try {
+                const ai = new GoogleGenAI({ apiKey: API_KEY });
+                const wrongAnswers = answerDetails.filter(d => d.isCorrect === false || (d.type === 'true-false' && d.details && d.details.some(sub => !sub.isCorrect)));
+                if (wrongAnswers.length === 0) {
+                    const congrats = "Tuyệt vời! Em đã làm bài xuất sắc và không sai câu nào. Kiến thức của em rất vững vàng. Hãy tiếp tục duy trì phong độ này nhé! 🌟";
+                    document.querySelector('#assessment-display .assessment-content').innerHTML = congrats;
+                    return congrats;
+                }
+                const wrongQuestionsSummary = wrongAnswers.map(d => {
+                    const item = quizData[d.questionNumber - 1];
+                    const questionText = item.question || item.main_question || '';
+                    return `- Câu ${d.questionNumber}: ${questionText}`;
+                }).join('\n');
+                
+                const prompt = `Bạn là một giáo viên AI tâm lý và tận tụy. Dựa vào kết quả bài làm sau, hãy viết một đoạn nhận xét ngắn gọn (khoảng 100 từ) cho học sinh.\n**Kết quả:**\n- Điểm số: ${score} / 10\n- Các câu làm sai (nội dung tóm tắt):\n${wrongQuestionsSummary}\n**YÊU CẦU:**\n1. Bắt đầu bằng lời khen ngợi nỗ lực.\n2. Chỉ ra các mảng kiến thức cần ôn tập lại dựa trên các câu sai.\n3. Đưa ra 1 lời khuyên cụ thể để cải thiện.\n4. Kết thúc bằng lời động viên ấm áp.\n5. Sử dụng icon cảm xúc phù hợp.`;
+
+                const response = await generateContentWithFallback(ai, prompt);
+                const assessmentText = response.text || "Không thể tạo nhận xét.";
+                
+                document.querySelector('#assessment-display .assessment-content').innerHTML = assessmentText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                return assessmentText;
+
+            } catch (error) {
+                console.error("AI Assessment Error:", error);
+                document.querySelector('#assessment-display .assessment-content').innerHTML = `<div class="text-red-600">Lỗi kết nối với AI. <button onclick="retryAIAssessment()" class="underline font-bold ml-1">Thử lại</button></div>`;
+                return "Lỗi khi tạo nhận xét AI.";
+            }
+        }
+        
+        async function retryAIAssessment() {
+            if (lastAnswerDetails) {
+                const finalScore = (lastScore / (quizData.length > 0 ? 10 : 1) * 10).toFixed(2);
+                await getAIAssessment(finalScore, lastAnswerDetails);
+            }
+        }
+    </script>
+</body>
+</html>
+    
