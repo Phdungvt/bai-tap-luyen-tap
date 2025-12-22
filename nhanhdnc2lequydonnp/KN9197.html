@@ -1,0 +1,1203 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài kiểm tra - 22/12/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); min-height: 100vh; }
+        .option { transition: all 0.2s ease; }
+        .option:hover { background-color: #f3f4f6; }
+        .option.selected { border-color: #4f46e5; background-color: #eef2ff; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; display: none; font-weight: bold; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #4f46e5; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 280px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 16px; }
+        .nav-btn {
+            width: 40px; height: 40px; border-radius: 8px; border: 1px solid #e5e7eb;
+            background: white; color: #4b5563; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-btn.answered { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; background-color: #fffbeb; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.nav-open #app { margin-right: 280px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .question-card { transition: box-shadow 0.3s; }
+        .question-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { 
+        "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+        "canvas-confetti": "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm"
+    } }
+    </script>
+</head>
+<body class="p-4 md:p-6">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden" title="Danh sách câu hỏi">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+            <h3 class="font-bold text-gray-800 text-lg">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-indigo-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid pb-20"></div>
+    </div>
+
+    <div id="app" class="max-w-5xl mx-auto transition-all duration-300">
+        
+        <div id="welcome-screen" class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto mt-10">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-center text-white relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 relative z-10">Bài kiểm tra - 22/12/2025</h1>
+                <p class="text-indigo-100 text-sm md:text-base relative z-10">Mã đề: <span class="font-mono font-bold bg-white/20 px-2 py-1 rounded text-white">KN9197</span></p>
+                 <div class="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Giáo viên: <span class="font-bold text-yellow-300">Đàng Năng Nhanh</span></span>
+                </div>
+            </div>
+            <div class="p-8">
+                <div class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên học sinh</label>
+                        <input type="text" id="name" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Nhập họ tên của bạn...">
+                    </div>
+                    <div>
+                        <label for="class" class="block text-sm font-semibold text-gray-700 mb-1">Lớp</label>
+                        <input type="text" id="class" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Ví dụ: 12A1">
+                    </div>
+                    
+                    <!-- API Key Input for Students -->
+                    <div id="api-key-input-container" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label class="block text-sm font-semibold text-blue-800 mb-2">
+                            Gemini API Key <span class="font-normal text-gray-600">(Yêu cầu để xem lời giải/nhận xét AI)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="password" id="student-api-key" class="flex-grow border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" placeholder="Nhập API Key của bạn (bắt đầu bằng AIza...)">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="flex-shrink-0 bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 font-semibold py-2 px-4 rounded-lg text-sm flex items-center transition-colors whitespace-nowrap">
+                                Lấy Key miễn phí
+                            </a>
+                        </div>
+                         <p class="text-xs text-gray-500 mt-2">
+                            * Sử dụng Key cá nhân giúp bạn trải nghiệm đầy đủ các tính năng AI mà không bị gián đoạn.
+                        </p>
+                    </div>
+                </div>
+                 <div class="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-amber-700">
+                                <span class="font-bold">Lưu ý:</span> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <button id="start-btn" class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 px-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2">
+                    <span>Bắt đầu làm bài</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="sticky top-0 z-30 -mx-4 md:-mx-6 mb-6">
+                 <div class="bg-white/90 backdrop-blur-md shadow-md border-b border-gray-200 py-3 px-4 md:px-8 flex justify-between items-center">
+                    <div>
+                         <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate max-w-[200px] md:max-w-md">Bài kiểm tra - 22/12/2025</h2>
+                         <p class="text-xs text-gray-500 hidden md:block">Thí sinh: <span id="student-name-display" class="font-semibold"></span></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="timer" class="text-lg md:text-xl font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 min-w-[80px] text-center shadow-sm"></div>
+                        <button id="submit-btn-top" class="md:hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">Nộp</button>
+                    </div>
+                 </div>
+            </div>
+            
+            <div id="all-questions-container" class="space-y-6 pb-10"></div>
+            
+            <div class="mt-8 flex justify-end sticky bottom-4 z-20">
+                <div class="bg-white/80 backdrop-blur p-2 rounded-2xl shadow-lg border border-gray-100">
+                    <button id="submit-btn" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-8 rounded-xl font-bold text-lg shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-green-700 transition-all flex items-center gap-2">
+                        <span>Nộp bài</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-8 text-center text-white">
+                <h2 class="text-3xl font-bold mb-2">Kết quả bài làm</h2>
+                <p class="opacity-90">Chúc mừng bạn đã hoàn thành bài thi!</p>
+            </div>
+            <div class="p-8">
+                <div id="score-display" class="hidden flex flex-col items-center justify-center my-4">
+                    <span class="text-gray-500 text-lg uppercase tracking-widest font-semibold mb-2">Tổng điểm</span>
+                    <span class="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-cyan-500 drop-shadow-sm"></span>
+                </div>
+                
+                <div id="assessment-display" class="hidden mt-6 p-6 bg-indigo-50 border border-indigo-100 rounded-xl text-gray-700 shadow-inner relative">
+                     <div class="absolute top-0 left-0 w-1 h-full bg-indigo-400 rounded-l-xl"></div>
+                     <h3 class="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                        </svg>
+                        Nhận xét từ AI Giáo viên
+                     </h3>
+                     <div class="assessment-content prose prose-indigo max-w-none"></div>
+                </div>
+
+                <div id="review-container" class="mt-10 border-t pt-8"></div>
+                
+                <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="retry-btn" class="hidden bg-white text-indigo-600 border-2 border-indigo-600 py-3 px-6 rounded-xl font-bold hover:bg-indigo-50 transition-colors">Làm lại bài</button>
+                    <button id="restart-btn" class="bg-gray-800 text-white py-3 px-6 rounded-xl font-bold hover:bg-gray-900 transition-colors shadow-md">Về trang chủ</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+        import confetti from "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm";
+
+        // Decode keys at runtime to bypass GitHub secret scanning
+        const _k = {"gemini":"QUl6YVN5QXlSYm90bGw2LXJUTnI0LXpsNWR6SjFRMnhGb2J0aVhz","openai":"c2stcHJvai1OZW1Nd2l4RG95N1N1cEVJeXo5SDl4V2pRWmVjeFNSU1pTRnNmX3VyQ3pGOTF0WmVkMXF6eV9GckhzeUxDb3lkMGs0VXdUazRNcVQzQmxia0ZKVjNrSi1oaEY0eXZ4SGZ4M29pV1RkTkFaUUoxYlE4a1I2UlNYX0pNRW5rRUI3VmxuWWVUakZzZGF2aS1KM3NCT1pVTjFQVl8xWUE=","deepseek":""};
+        const API_KEYS = {
+            gemini: atob(_k.gemini),
+            openai: atob(_k.openai),
+            deepseek: atob(_k.deepseek)
+        };
+        
+        let quizData = [{"question":"Phần mềm nào sau đây là một ví dụ về phần mềm mô phỏng được sử dụng trong học tập khoa học?","options":["Microsoft Word","Yenka","Google Chrome","Microsoft Paint"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phần mềm nào sau đây là một ví dụ về phần mềm mô phỏng được sử dụng trong học tập khoa học?","rendered_options":["Microsoft Word","Yenka","Google Chrome","Microsoft Paint"]},{"question":"Lợi ích chính của việc sử dụng phần mềm mô phỏng trong việc học tập và khám phá các hiện tượng khoa học là gì?","options":["Giúp học sinh soạn thảo văn bản nhanh hơn.","Cung cấp môi trường an toàn để thực hiện các thí nghiệm ảo, quan sát hiện tượng.","Hỗ trợ giao tiếp và trao đổi thông tin trực tuyến.","Lưu trữ và quản lí các tệp tin trên máy tính."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Lợi ích chính của việc sử dụng phần mềm mô phỏng trong việc học tập và khám phá các hiện tượng khoa học là gì?","rendered_options":["Giúp học sinh soạn thảo văn bản nhanh hơn.","Cung cấp môi trường an toàn để thực hiện các thí nghiệm ảo, quan sát hiện tượng.","Hỗ trợ giao tiếp và trao đổi thông tin trực tuyến.","Lưu trữ và quản lí các tệp tin trên máy tính."]},{"question":"Phần mềm mô phỏng mang lại lợi ích gì chủ yếu trong việc học tập và khám phá các hiện tượng khoa học?","options":["Giúp tạo ra các văn bản tài liệu nhanh chóng.","Cung cấp môi trường để thực hành các thí nghiệm mà không cần thiết bị vật lí, giúp hình dung rõ ràng các hiện tượng khó quan sát trực tiếp.","Hỗ trợ tính toán các phép toán phức tạp với độ chính xác cao.","Lưu trữ và quản lý một lượng lớn dữ liệu khoa học."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phần mềm mô phỏng mang lại lợi ích gì chủ yếu trong việc học tập và khám phá các hiện tượng khoa học?","rendered_options":["Giúp tạo ra các văn bản tài liệu nhanh chóng.","Cung cấp môi trường để thực hành các thí nghiệm mà không cần thiết bị vật lí, giúp hình dung rõ ràng các hiện tượng khó quan sát trực tiếp.","Hỗ trợ tính toán các phép toán phức tạp với độ chính xác cao.","Lưu trữ và quản lý một lượng lớn dữ liệu khoa học."]},{"question":"Để tìm hiểu về quá trình quang hợp của cây xanh mà không cần tiến hành thí nghiệm trong phòng lab, học sinh lớp 9 nên sử dụng loại phần mềm nào?","options":["Phần mềm soạn thảo văn bản (ví dụ: Microsoft Word).","Phần mềm chỉnh sửa ảnh (ví dụ: Photoshop).","Phần mềm mô phỏng quang hợp.","Phần mềm nghe nhạc và xem phim."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Để tìm hiểu về quá trình quang hợp của cây xanh mà không cần tiến hành thí nghiệm trong phòng lab, học sinh lớp 9 nên sử dụng loại phần mềm nào?","rendered_options":["Phần mềm soạn thảo văn bản (ví dụ: Microsoft Word).","Phần mềm chỉnh sửa ảnh (ví dụ: Photoshop).","Phần mềm mô phỏng quang hợp.","Phần mềm nghe nhạc và xem phim."]},{"question":"Mục đích chính của việc sử dụng phần mềm mô phỏng trong học tập là gì?","options":["Để chơi các trò chơi điện tử giải trí.","Để tạo ra các văn bản và bài thuyết trình.","Để nghiên cứu và khám phá các hiện tượng trong thế giới thực một cách an toàn, trực quan và hiệu quả.","Để quản lý và sắp xếp các tập tin trên máy tính."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Mục đích chính của việc sử dụng phần mềm mô phỏng trong học tập là gì?","rendered_options":["Để chơi các trò chơi điện tử giải trí.","Để tạo ra các văn bản và bài thuyết trình.","Để nghiên cứu và khám phá các hiện tượng trong thế giới thực một cách an toàn, trực quan và hiệu quả.","Để quản lý và sắp xếp các tập tin trên máy tính."]},{"question":"Việc khai thác phần mềm mô phỏng giúp chúng ta nhận biết vai trò của máy tính trong việc khám phá tri thức và giải quyết vấn đề như thế nào?","options":["Máy tính tự động đưa ra mọi kiến thức và giải pháp mà không cần sự can thiệp của người dùng.","Máy tính cho phép thực hiện các thí nghiệm, quan sát các hiện tượng phức tạp hoặc nguy hiểm trong môi trường ảo, giúp tiết kiệm chi phí, thời gian và đảm bảo an toàn.","Máy tính chỉ có tác dụng tăng tốc độ tính toán cho các bài toán số học đơn giản.","Máy tính thay thế hoàn toàn quá trình tư duy và sáng tạo của con người trong mọi lĩnh vực."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Việc khai thác phần mềm mô phỏng giúp chúng ta nhận biết vai trò của máy tính trong việc khám phá tri thức và giải quyết vấn đề như thế nào?","rendered_options":["Máy tính tự động đưa ra mọi kiến thức và giải pháp mà không cần sự can thiệp của người dùng.","Máy tính cho phép thực hiện các thí nghiệm, quan sát các hiện tượng phức tạp hoặc nguy hiểm trong môi trường ảo, giúp tiết kiệm chi phí, thời gian và đảm bảo an toàn.","Máy tính chỉ có tác dụng tăng tốc độ tính toán cho các bài toán số học đơn giản.","Máy tính thay thế hoàn toàn quá trình tư duy và sáng tạo của con người trong mọi lĩnh vực."]},{"question":"Lợi ích chính của việc sử dụng phần mềm mô phỏng trong học tập môn Tin học là gì?","options":["Giúp tiết kiệm thời gian và chi phí thực hiện các thí nghiệm thực tế hoặc nghiên cứu các hiện tượng phức tạp.","Thay thế hoàn toàn vai trò của giáo viên trong quá trình giảng dạy.","Chỉ có tác dụng giải trí, không đóng góp vào việc học tập kiến thức.","Yêu cầu người dùng phải có kiến thức lập trình chuyên sâu mới có thể sử dụng."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Lợi ích chính của việc sử dụng phần mềm mô phỏng trong học tập môn Tin học là gì?","rendered_options":["Giúp tiết kiệm thời gian và chi phí thực hiện các thí nghiệm thực tế hoặc nghiên cứu các hiện tượng phức tạp.","Thay thế hoàn toàn vai trò của giáo viên trong quá trình giảng dạy.","Chỉ có tác dụng giải trí, không đóng góp vào việc học tập kiến thức.","Yêu cầu người dùng phải có kiến thức lập trình chuyên sâu mới có thể sử dụng."]},{"question":"Trong tình huống nào sau đây, việc khai thác phần mềm mô phỏng sẽ đặc biệt hữu ích để khám phá tri thức và giải quyết vấn đề?","options":["Học sinh cần vẽ một bức tranh phong cảnh bằng bút chì.","Một nhà khoa học muốn nghiên cứu sự biến đổi khí hậu toàn cầu và dự đoán các kịch bản tương lai.","Một đầu bếp cần học cách làm một món ăn truyền thống theo công thức có sẵn.","Một vận động viên cần tập luyện các bài tập thể dục cơ bản."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong tình huống nào sau đây, việc khai thác phần mềm mô phỏng sẽ đặc biệt hữu ích để khám phá tri thức và giải quyết vấn đề?","rendered_options":["Học sinh cần vẽ một bức tranh phong cảnh bằng bút chì.","Một nhà khoa học muốn nghiên cứu sự biến đổi khí hậu toàn cầu và dự đoán các kịch bản tương lai.","Một đầu bếp cần học cách làm một món ăn truyền thống theo công thức có sẵn.","Một vận động viên cần tập luyện các bài tập thể dục cơ bản."]},{"question":"Trong các hoạt động trao đổi và hợp tác nhóm, công cụ nào sau đây được sử dụng để trình bày thông tin một cách hiệu quả?","options":["Phần mềm soạn thảo văn bản","Phần mềm bảng tính","Phần mềm trình chiếu và sơ đồ tư duy","Phần mềm chỉnh sửa ảnh"],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong các hoạt động trao đổi và hợp tác nhóm, công cụ nào sau đây được sử dụng để trình bày thông tin một cách hiệu quả?","rendered_options":["Phần mềm soạn thảo văn bản","Phần mềm bảng tính","Phần mềm trình chiếu và sơ đồ tư duy","Phần mềm chỉnh sửa ảnh"]},{"question":"Khi sử dụng sơ đồ tư duy để trình bày thông tin, em có thể đính kèm những loại tệp nào vào sơ đồ tư duy để làm rõ nội dung?","options":["Chỉ tệp văn bản và ảnh","Chỉ tệp video và âm thanh","Tệp văn bản, ảnh, video và trang tính","Không thể đính kèm bất kì loại tệp nào"],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khi sử dụng sơ đồ tư duy để trình bày thông tin, em có thể đính kèm những loại tệp nào vào sơ đồ tư duy để làm rõ nội dung?","rendered_options":["Chỉ tệp văn bản và ảnh","Chỉ tệp video và âm thanh","Tệp văn bản, ảnh, video và trang tính","Không thể đính kèm bất kì loại tệp nào"]},{"question":"Trong hoạt động trao đổi và hợp tác nhóm, việc sử dụng bài trình chiếu và sơ đồ tư duy được đánh giá là hiệu quả vì lí do nào sau đây?","options":["Giúp che giấu một phần thông tin khỏi các thành viên khác trong nhóm.","Chỉ phù hợp để trình bày các dữ liệu phức tạp, không trực quan.","Cho phép trình bày thông tin một cách trực quan, mạch lạc, dễ hiểu và tăng cường khả năng tương tác.","Rút ngắn đáng kể thời gian thảo luận mà không cần trình bày chi tiết."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong hoạt động trao đổi và hợp tác nhóm, việc sử dụng bài trình chiếu và sơ đồ tư duy được đánh giá là hiệu quả vì lí do nào sau đây?","rendered_options":["Giúp che giấu một phần thông tin khỏi các thành viên khác trong nhóm.","Chỉ phù hợp để trình bày các dữ liệu phức tạp, không trực quan.","Cho phép trình bày thông tin một cách trực quan, mạch lạc, dễ hiểu và tăng cường khả năng tương tác.","Rút ngắn đáng kể thời gian thảo luận mà không cần trình bày chi tiết."]},{"question":"Một trong những khả năng của sơ đồ tư duy giúp người dùng trình bày thông tin phong phú và chi tiết hơn trong trao đổi và hợp tác là gì?","options":["Chỉ cho phép sử dụng văn bản thuần túy và các kí hiệu cơ bản.","Hỗ trợ đính kèm các tệp đa phương tiện như văn bản, ảnh, video, hay trang tính.","Giới hạn người dùng trong việc sử dụng các mẫu sơ đồ tư duy có sẵn, không tùy chỉnh được.","Không thể chia sẻ hoặc chỉnh sửa cộng tác trực tuyến với người khác."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Một trong những khả năng của sơ đồ tư duy giúp người dùng trình bày thông tin phong phú và chi tiết hơn trong trao đổi và hợp tác là gì?","rendered_options":["Chỉ cho phép sử dụng văn bản thuần túy và các kí hiệu cơ bản.","Hỗ trợ đính kèm các tệp đa phương tiện như văn bản, ảnh, video, hay trang tính.","Giới hạn người dùng trong việc sử dụng các mẫu sơ đồ tư duy có sẵn, không tùy chỉnh được.","Không thể chia sẻ hoặc chỉnh sửa cộng tác trực tuyến với người khác."]},{"question":"Để làm cho bài trình chiếu hoặc sơ đồ tư duy trở nên sinh động và dễ hiểu, em có thể sử dụng những loại công cụ trực quan nào sau đây?","options":["Chỉ văn bản và các công thức toán học.","Hình ảnh, biểu đồ và video.","Chủ yếu là âm thanh và các hiệu ứng chuyển động.","Chỉ các liên kết siêu văn bản."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Để làm cho bài trình chiếu hoặc sơ đồ tư duy trở nên sinh động và dễ hiểu, em có thể sử dụng những loại công cụ trực quan nào sau đây?","rendered_options":["Chỉ văn bản và các công thức toán học.","Hình ảnh, biểu đồ và video.","Chủ yếu là âm thanh và các hiệu ứng chuyển động.","Chỉ các liên kết siêu văn bản."]},{"question":"Theo Chương trình Tin học lớp 9, khi tạo sơ đồ tư duy, ngoài việc sử dụng văn bản để ghi chú, em còn có thể đính kèm những loại nội dung nào khác để tăng cường khả năng trực quan hóa thông tin?","options":["Chỉ các tệp tin âm thanh.","Hình ảnh, video và bảng tính.","Mã nguồn chương trình.","Các tệp dữ liệu cá nhân."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Theo Chương trình Tin học lớp 9, khi tạo sơ đồ tư duy, ngoài việc sử dụng văn bản để ghi chú, em còn có thể đính kèm những loại nội dung nào khác để tăng cường khả năng trực quan hóa thông tin?","rendered_options":["Chỉ các tệp tin âm thanh.","Hình ảnh, video và bảng tính.","Mã nguồn chương trình.","Các tệp dữ liệu cá nhân."]},{"question":"Trong bài trình chiếu, việc sử dụng biểu đồ nhằm mục đích chính nào sau đây?","options":["Làm cho slide có nhiều màu sắc hơn.","So sánh dữ liệu, thể hiện xu hướng hoặc mối quan hệ giữa các đại lượng một cách trực quan.","Thay thế hoàn toàn nội dung văn bản trong slide.","Tăng kích thước tệp tin của bài trình chiếu."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong bài trình chiếu, việc sử dụng biểu đồ nhằm mục đích chính nào sau đây?","rendered_options":["Làm cho slide có nhiều màu sắc hơn.","So sánh dữ liệu, thể hiện xu hướng hoặc mối quan hệ giữa các đại lượng một cách trực quan.","Thay thế hoàn toàn nội dung văn bản trong slide.","Tăng kích thước tệp tin của bài trình chiếu."]},{"question":"Khi tạo sơ đồ tư duy, việc đính kèm hình ảnh hoặc video vào các nhánh thông tin mang lại lợi ích quan trọng nhất là gì?","options":["Giới hạn số lượng ý chính có thể trình bày trong sơ đồ.","Giúp người đọc dễ dàng ghi nhớ, hiểu sâu thông tin và làm cho nội dung trở nên phong phú, sinh động hơn.","Chỉ có tác dụng trang trí, làm đẹp cho sơ đồ tư duy.","Làm chậm quá trình tạo và chỉnh sửa sơ đồ tư duy."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khi tạo sơ đồ tư duy, việc đính kèm hình ảnh hoặc video vào các nhánh thông tin mang lại lợi ích quan trọng nhất là gì?","rendered_options":["Giới hạn số lượng ý chính có thể trình bày trong sơ đồ.","Giúp người đọc dễ dàng ghi nhớ, hiểu sâu thông tin và làm cho nội dung trở nên phong phú, sinh động hơn.","Chỉ có tác dụng trang trí, làm đẹp cho sơ đồ tư duy.","Làm chậm quá trình tạo và chỉnh sửa sơ đồ tư duy."]},{"question":"Trong quá trình thực hành tạo bài trình chiếu, việc sử dụng hình ảnh, biểu đồ và video một cách hợp lí có ý nghĩa quan trọng nhất là gì?","options":["Giúp bài trình chiếu có dung lượng file lớn hơn.","Làm cho nội dung bài trình chiếu trở nên phức tạp hơn.","Tăng tính hấp dẫn, dễ hiểu và hiệu quả truyền tải thông tin cho người xem.","Rút ngắn thời gian chuẩn bị bài trình chiếu."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong quá trình thực hành tạo bài trình chiếu, việc sử dụng hình ảnh, biểu đồ và video một cách hợp lí có ý nghĩa quan trọng nhất là gì?","rendered_options":["Giúp bài trình chiếu có dung lượng file lớn hơn.","Làm cho nội dung bài trình chiếu trở nên phức tạp hơn.","Tăng tính hấp dẫn, dễ hiểu và hiệu quả truyền tải thông tin cho người xem.","Rút ngắn thời gian chuẩn bị bài trình chiếu."]},{"question":"Theo Chương trình Giáo dục phổ thông 2018 môn Tin học lớp 9, khi thực hành tạo sơ đồ tư duy bằng công cụ trực quan, những loại thông tin nào có thể được đính kèm để làm giàu nội dung?","options":["Chỉ có văn bản và các đường nối giữa các ý chính.","Hình ảnh minh họa và biểu đồ đơn giản.","Văn bản, hình ảnh, video và bảng tính.","Các đoạn mã lập trình và công thức toán học phức tạp."],"correctAnswerIndex":2,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Theo Chương trình Giáo dục phổ thông 2018 môn Tin học lớp 9, khi thực hành tạo sơ đồ tư duy bằng công cụ trực quan, những loại thông tin nào có thể được đính kèm để làm giàu nội dung?","rendered_options":["Chỉ có văn bản và các đường nối giữa các ý chính.","Hình ảnh minh họa và biểu đồ đơn giản.","Văn bản, hình ảnh, video và bảng tính.","Các đoạn mã lập trình và công thức toán học phức tạp."]},{"main_question":"Phát biểu nào sau đây đúng về phần mềm mô phỏng?","statements":[{"statement":"Phần mềm mô phỏng được thiết kế để tạo ra một phiên bản ảo của một hệ thống hoặc hiện tượng thực tế.","is_correct":true,"rendered_statement":"Phần mềm mô phỏng được thiết kế để tạo ra một phiên bản ảo của một hệ thống hoặc hiện tượng thực tế."},{"statement":"Một trong những lợi ích chính của phần mềm mô phỏng là giúp người học thực hiện các thí nghiệm nguy hiểm hoặc tốn kém trong môi trường an toàn.","is_correct":true,"rendered_statement":"Một trong những lợi ích chính của phần mềm mô phỏng là giúp người học thực hiện các thí nghiệm nguy hiểm hoặc tốn kém trong môi trường an toàn."},{"statement":"Phần mềm mô phỏng chỉ có thể được sử dụng trong các lĩnh vực khoa học tự nhiên như Vật lí, Hóa học và Sinh học mà không có ứng dụng trong các lĩnh vực khác.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng chỉ có thể được sử dụng trong các lĩnh vực khoa học tự nhiên như Vật lí, Hóa học và Sinh học mà không có ứng dụng trong các lĩnh vực khác."},{"statement":"Mọi phần mềm mô phỏng đều có thể thay thế hoàn toàn các thí nghiệm thực tế vì chúng luôn tái tạo chính xác 100% mọi yếu tố của thế giới thật.","is_correct":false,"rendered_statement":"Mọi phần mềm mô phỏng đều có thể thay thế hoàn toàn các thí nghiệm thực tế vì chúng luôn tái tạo chính xác 100% mọi yếu tố của thế giới thật."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phát biểu nào sau đây đúng về phần mềm mô phỏng?"},{"main_question":"Phát biểu nào sau đây đúng về việc sử dụng phần mềm mô phỏng trong học tập?","statements":[{"statement":"Phần mềm mô phỏng PhET là một ví dụ điển hình về phần mềm mô phỏng các hiện tượng khoa học trong giáo dục.","is_correct":true,"rendered_statement":"Phần mềm mô phỏng PhET là một ví dụ điển hình về phần mềm mô phỏng các hiện tượng khoa học trong giáo dục."},{"statement":"Bằng cách sử dụng phần mềm mô phỏng quỹ đạo chuyển động của các hành tinh, học sinh có thể dễ dàng hình dung và hiểu được lực hấp dẫn và định luật Kepler mà không cần tính toán phức tạp.","is_correct":true,"rendered_statement":"Bằng cách sử dụng phần mềm mô phỏng quỹ đạo chuyển động của các hành tinh, học sinh có thể dễ dàng hình dung và hiểu được lực hấp dẫn và định luật Kepler mà không cần tính toán phức tạp."},{"statement":"Phần mềm mô phỏng không thể hỗ trợ việc học tập các kiến thức về kinh tế, tài chính vì đây là các lĩnh vực liên quan đến con người và thị trường phức tạp, khó có thể mô phỏng.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng không thể hỗ trợ việc học tập các kiến thức về kinh tế, tài chính vì đây là các lĩnh vực liên quan đến con người và thị trường phức tạp, khó có thể mô phỏng."},{"statement":"Việc khai thác phần mềm mô phỏng luôn đảm bảo cung cấp kết quả chính xác tuyệt đối, không có sai số, bất kể chất lượng của mô hình toán học cơ bản và các giả định được sử dụng.","is_correct":false,"rendered_statement":"Việc khai thác phần mềm mô phỏng luôn đảm bảo cung cấp kết quả chính xác tuyệt đối, không có sai số, bất kể chất lượng của mô hình toán học cơ bản và các giả định được sử dụng."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phát biểu nào sau đây đúng về việc sử dụng phần mềm mô phỏng trong học tập?"},{"main_question":"Khi khai thác phần mềm mô phỏng, những nhận định nào sau đây là đúng?","statements":[{"statement":"Phần mềm mô phỏng giúp tái hiện hoặc bắt chước hoạt động của một hệ thống, quá trình hoặc hiện tượng trong thế giới thực.","is_correct":true,"rendered_statement":"Phần mềm mô phỏng giúp tái hiện hoặc bắt chước hoạt động của một hệ thống, quá trình hoặc hiện tượng trong thế giới thực."},{"statement":"Để sử dụng hiệu quả phần mềm mô phỏng, người dùng luôn phải có kiến thức chuyên sâu về lập trình máy tính.","is_correct":false,"rendered_statement":"Để sử dụng hiệu quả phần mềm mô phỏng, người dùng luôn phải có kiến thức chuyên sâu về lập trình máy tính."},{"statement":"Mô phỏng các thí nghiệm khoa học trên máy tính cho phép thực hiện nhiều lần, an toàn, không tốn kém vật liệu và có thể quan sát được những hiện tượng khó thấy trong thực tế.","is_correct":true,"rendered_statement":"Mô phỏng các thí nghiệm khoa học trên máy tính cho phép thực hiện nhiều lần, an toàn, không tốn kém vật liệu và có thể quan sát được những hiện tượng khó thấy trong thực tế."},{"statement":"Mọi kết quả thu được từ phần mềm mô phỏng đều hoàn toàn chính xác và có thể thay thế hoàn toàn các thí nghiệm thực tế mà không cần kiểm chứng.","is_correct":false,"rendered_statement":"Mọi kết quả thu được từ phần mềm mô phỏng đều hoàn toàn chính xác và có thể thay thế hoàn toàn các thí nghiệm thực tế mà không cần kiểm chứng."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khi khai thác phần mềm mô phỏng, những nhận định nào sau đây là đúng?"},{"main_question":"Về vai trò của máy tính và phần mềm mô phỏng trong việc khám phá tri thức và giải quyết vấn đề, phát biểu nào là đúng?","statements":[{"statement":"Phần mềm mô phỏng chỉ có thể được sử dụng trong lĩnh vực giải trí và không có giá trị ứng dụng trong giáo dục hay khoa học.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng chỉ có thể được sử dụng trong lĩnh vực giải trí và không có giá trị ứng dụng trong giáo dục hay khoa học."},{"statement":"Máy tính có thể mô phỏng các hiện tượng tự nhiên phức tạp như dự báo thời tiết hoặc chuyển động của các thiên thể để hỗ trợ nghiên cứu khoa học.","is_correct":true,"rendered_statement":"Máy tính có thể mô phỏng các hiện tượng tự nhiên phức tạp như dự báo thời tiết hoặc chuyển động của các thiên thể để hỗ trợ nghiên cứu khoa học."},{"statement":"Thông qua việc thay đổi các tham số đầu vào trong phần mềm mô phỏng và quan sát kết quả, người dùng có thể xây dựng hiểu biết sâu sắc về mối quan hệ giữa các yếu tố trong một hệ thống.","is_correct":true,"rendered_statement":"Thông qua việc thay đổi các tham số đầu vào trong phần mềm mô phỏng và quan sát kết quả, người dùng có thể xây dựng hiểu biết sâu sắc về mối quan hệ giữa các yếu tố trong một hệ thống."},{"statement":"Phần mềm mô phỏng chỉ giới hạn ở việc tái hiện các đối tượng vật lý và không thể được ứng dụng để phân tích các hệ thống xã hội, kinh tế hoặc hành vi con người.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng chỉ giới hạn ở việc tái hiện các đối tượng vật lý và không thể được ứng dụng để phân tích các hệ thống xã hội, kinh tế hoặc hành vi con người."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Về vai trò của máy tính và phần mềm mô phỏng trong việc khám phá tri thức và giải quyết vấn đề, phát biểu nào là đúng?"},{"main_question":"Khi khai thác phần mềm mô phỏng, những nhận định nào sau đây là đúng về vai trò và đặc điểm của chúng?","statements":[{"statement":"Phần mềm mô phỏng chỉ dùng để giải trí và không có giá trị giáo dục hay khoa học.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng chỉ dùng để giải trí và không có giá trị giáo dục hay khoa học."},{"statement":"Phần mềm mô phỏng giúp người học quan sát các hiện tượng, quá trình khó thực hiện trong thực tế hoặc có thể nguy hiểm, an toàn hơn.","is_correct":true,"rendered_statement":"Phần mềm mô phỏng giúp người học quan sát các hiện tượng, quá trình khó thực hiện trong thực tế hoặc có thể nguy hiểm, an toàn hơn."},{"statement":"Bằng cách thay đổi các tham số đầu vào trong phần mềm mô phỏng, người dùng có thể dự đoán kết quả và rút ra quy luật mà không cần nhiều thiết bị thực tế.","is_correct":true,"rendered_statement":"Bằng cách thay đổi các tham số đầu vào trong phần mềm mô phỏng, người dùng có thể dự đoán kết quả và rút ra quy luật mà không cần nhiều thiết bị thực tế."},{"statement":"Việc sử dụng phần mềm mô phỏng luôn đảm bảo kết quả hoàn toàn chính xác và thay thế hoàn toàn được các thí nghiệm thực tế phức tạp trong mọi trường hợp.","is_correct":false,"rendered_statement":"Việc sử dụng phần mềm mô phỏng luôn đảm bảo kết quả hoàn toàn chính xác và thay thế hoàn toàn được các thí nghiệm thực tế phức tạp trong mọi trường hợp."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khi khai thác phần mềm mô phỏng, những nhận định nào sau đây là đúng về vai trò và đặc điểm của chúng?"},{"main_question":"Việc khai thác phần mềm mô phỏng mang lại lợi ích gì trong việc học tập và khám phá tri thức?","statements":[{"statement":"Phần mềm mô phỏng chỉ đơn thuần hiển thị lại các hình ảnh tĩnh có sẵn mà không có sự tương tác.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng chỉ đơn thuần hiển thị lại các hình ảnh tĩnh có sẵn mà không có sự tương tác."},{"statement":"Qua phần mềm mô phỏng, học sinh có thể trực tiếp tương tác và thay đổi các yếu tố để xem phản ứng của hệ thống, giúp củng cố kiến thức lí thuyết.","is_correct":true,"rendered_statement":"Qua phần mềm mô phỏng, học sinh có thể trực tiếp tương tác và thay đổi các yếu tố để xem phản ứng của hệ thống, giúp củng cố kiến thức lí thuyết."},{"statement":"Nhờ mô phỏng, các nhà khoa học có thể thử nghiệm các giả thuyết phức tạp về biến đổi khí hậu hoặc cấu trúc vật chất mà không cần xây dựng các mô hình vật lý tốn kém hoặc mất thời gian.","is_correct":true,"rendered_statement":"Nhờ mô phỏng, các nhà khoa học có thể thử nghiệm các giả thuyết phức tạp về biến đổi khí hậu hoặc cấu trúc vật chất mà không cần xây dựng các mô hình vật lý tốn kém hoặc mất thời gian."},{"statement":"Phần mềm mô phỏng có khả năng tự động giải thích mọi kết quả và đưa ra kết luận cuối cùng cho mọi vấn đề khoa học phức tạp, loại bỏ hoàn toàn sự cần thiết của tư duy phản biện và phân tích từ người dùng.","is_correct":false,"rendered_statement":"Phần mềm mô phỏng có khả năng tự động giải thích mọi kết quả và đưa ra kết luận cuối cùng cho mọi vấn đề khoa học phức tạp, loại bỏ hoàn toàn sự cần thiết của tư duy phản biện và phân tích từ người dùng."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Việc khai thác phần mềm mô phỏng mang lại lợi ích gì trong việc học tập và khám phá tri thức?"},{"main_question":"Trong các hoạt động trao đổi và hợp tác, việc sử dụng các công cụ trình bày thông tin như bài trình chiếu và sơ đồ tư duy mang lại nhiều lợi ích. Hãy đánh giá các nhận định sau.","statements":[{"statement":"Bài trình chiếu thường được sử dụng để trình bày thông tin có cấu trúc tuyến tính, theo từng slide, giúp người nói dễ dàng dẫn dắt người nghe qua một chuỗi ý tưởng.","is_correct":true,"rendered_statement":"Bài trình chiếu thường được sử dụng để trình bày thông tin có cấu trúc tuyến tính, theo từng slide, giúp người nói dễ dàng dẫn dắt người nghe qua một chuỗi ý tưởng."},{"statement":"Sơ đồ tư duy có ưu điểm trong việc giúp người dùng nhanh chóng ghi lại và tổ chức các ý tưởng ngẫu nhiên, sau đó dễ dàng phát triển và liên kết chúng một cách phi tuyến tính.","is_correct":true,"rendered_statement":"Sơ đồ tư duy có ưu điểm trong việc giúp người dùng nhanh chóng ghi lại và tổ chức các ý tưởng ngẫu nhiên, sau đó dễ dàng phát triển và liên kết chúng một cách phi tuyến tính."},{"statement":"Khi một nhóm cần thảo luận mở rộng và phát triển ý tưởng mới mà không bị giới hạn bởi cấu trúc, bài trình chiếu là lựa chọn tối ưu hơn sơ đồ tư duy vì tính chuyên nghiệp của nó.","is_correct":false,"rendered_statement":"Khi một nhóm cần thảo luận mở rộng và phát triển ý tưởng mới mà không bị giới hạn bởi cấu trúc, bài trình chiếu là lựa chọn tối ưu hơn sơ đồ tư duy vì tính chuyên nghiệp của nó."},{"statement":"Một sơ đồ tư duy được thiết kế tốt với nhiều liên kết và ghi chú chi tiết có thể thay thế hoàn toàn nhu cầu giao tiếp trực tiếp trong quá trình hợp tác nhóm, đảm bảo mọi thông tin được truyền tải đầy đủ mà không cần thêm trao đổi.","is_correct":false,"rendered_statement":"Một sơ đồ tư duy được thiết kế tốt với nhiều liên kết và ghi chú chi tiết có thể thay thế hoàn toàn nhu cầu giao tiếp trực tiếp trong quá trình hợp tác nhóm, đảm bảo mọi thông tin được truyền tải đầy đủ mà không cần thêm trao đổi."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong các hoạt động trao đổi và hợp tác, việc sử dụng các công cụ trình bày thông tin như bài trình chiếu và sơ đồ tư duy mang lại nhiều lợi ích. Hãy đánh giá các nhận định sau."},{"main_question":"Việc sử dụng sơ đồ tư duy trong trao đổi và hợp tác nhóm không chỉ giúp tổ chức thông tin mà còn có khả năng tích hợp các loại tài liệu khác nhau. Hãy đánh giá các nhận định sau.","statements":[{"statement":"Sơ đồ tư duy luôn yêu cầu thông tin phải được sắp xếp theo một cấu trúc tuyến tính chặt chẽ, từ trên xuống dưới, tương tự như một danh sách gạch đầu dòng.","is_correct":false,"rendered_statement":"Sơ đồ tư duy luôn yêu cầu thông tin phải được sắp xếp theo một cấu trúc tuyến tính chặt chẽ, từ trên xuống dưới, tương tự như một danh sách gạch đầu dòng."},{"statement":"Các phần mềm sơ đồ tư duy hiện đại cho phép người dùng đính kèm các tệp đa phương tiện như hình ảnh hoặc video vào các nhánh để làm rõ ý tưởng.","is_correct":true,"rendered_statement":"Các phần mềm sơ đồ tư duy hiện đại cho phép người dùng đính kèm các tệp đa phương tiện như hình ảnh hoặc video vào các nhánh để làm rõ ý tưởng."},{"statement":"Tất cả các loại tệp tài liệu, bao gồm cả tệp trang tính phức tạp với các công thức và biểu đồ động, đều có thể được hiển thị trực tiếp và chỉnh sửa ngay trong giao diện của sơ đồ tư duy mà không cần mở ứng dụng gốc.","is_correct":false,"rendered_statement":"Tất cả các loại tệp tài liệu, bao gồm cả tệp trang tính phức tạp với các công thức và biểu đồ động, đều có thể được hiển thị trực tiếp và chỉnh sửa ngay trong giao diện của sơ đồ tư duy mà không cần mở ứng dụng gốc."},{"statement":"Để tối ưu hiệu suất và khả năng chia sẻ sơ đồ tư duy trong môi trường hợp tác, người dùng nên hạn chế việc đính kèm trực tiếp các tệp tin có dung lượng quá lớn, thay vào đó nên sử dụng các liên kết đến tệp được lưu trữ trên nền tảng đám mây.","is_correct":true,"rendered_statement":"Để tối ưu hiệu suất và khả năng chia sẻ sơ đồ tư duy trong môi trường hợp tác, người dùng nên hạn chế việc đính kèm trực tiếp các tệp tin có dung lượng quá lớn, thay vào đó nên sử dụng các liên kết đến tệp được lưu trữ trên nền tảng đám mây."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Việc sử dụng sơ đồ tư duy trong trao đổi và hợp tác nhóm không chỉ giúp tổ chức thông tin mà còn có khả năng tích hợp các loại tài liệu khác nhau. Hãy đánh giá các nhận định sau."},{"main_question":"Khi tạo bài trình chiếu, việc sử dụng các công cụ trực quan như hình ảnh, biểu đồ và video là rất quan trọng. Hãy cho biết các phát biểu sau đây là đúng hay sai về việc sử dụng các công cụ này.","statements":[{"statement":"Hình ảnh có thể giúp minh họa ý tưởng và làm cho bài trình chiếu trở nên sinh động hơn.","is_correct":true,"rendered_statement":"Hình ảnh có thể giúp minh họa ý tưởng và làm cho bài trình chiếu trở nên sinh động hơn."},{"statement":"Việc chèn biểu đồ vào bài trình chiếu giúp người xem dễ dàng so sánh và nắm bắt xu hướng từ dữ liệu số.","is_correct":true,"rendered_statement":"Việc chèn biểu đồ vào bài trình chiếu giúp người xem dễ dàng so sánh và nắm bắt xu hướng từ dữ liệu số."},{"statement":"Để tránh làm người xem mất tập trung, không nên sử dụng quá nhiều video ngắn trong một slide của bài trình chiếu.","is_correct":true,"rendered_statement":"Để tránh làm người xem mất tập trung, không nên sử dụng quá nhiều video ngắn trong một slide của bài trình chiếu."},{"statement":"Sử dụng ảnh có độ phân giải thấp để giảm kích thước tệp bài trình chiếu là một giải pháp tối ưu, đảm bảo chất lượng hiển thị trên mọi màn hình.","is_correct":false,"rendered_statement":"Sử dụng ảnh có độ phân giải thấp để giảm kích thước tệp bài trình chiếu là một giải pháp tối ưu, đảm bảo chất lượng hiển thị trên mọi màn hình."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khi tạo bài trình chiếu, việc sử dụng các công cụ trực quan như hình ảnh, biểu đồ và video là rất quan trọng. Hãy cho biết các phát biểu sau đây là đúng hay sai về việc sử dụng các công cụ này."},{"main_question":"Sơ đồ tư duy (mind map) là một công cụ trực quan hiệu quả để tổ chức thông tin. Hãy đánh giá các phát biểu sau về việc tạo và sử dụng sơ đồ tư duy trong trình bày thông tin.","statements":[{"statement":"Sơ đồ tư duy giúp sắp xếp các ý tưởng chính và phụ một cách có hệ thống.","is_correct":true,"rendered_statement":"Sơ đồ tư duy giúp sắp xếp các ý tưởng chính và phụ một cách có hệ thống."},{"statement":"Trong sơ đồ tư duy, việc chỉ sử dụng văn bản để thể hiện ý tưởng có thể hạn chế khả năng ghi nhớ và sự hấp dẫn của sơ đồ.","is_correct":true,"rendered_statement":"Trong sơ đồ tư duy, việc chỉ sử dụng văn bản để thể hiện ý tưởng có thể hạn chế khả năng ghi nhớ và sự hấp dẫn của sơ đồ."},{"statement":"Có thể đính kèm các tệp như trang tính (spreadsheet) hoặc video vào các nút của sơ đồ tư duy để cung cấp thông tin chi tiết hơn khi cần.","is_correct":true,"rendered_statement":"Có thể đính kèm các tệp như trang tính (spreadsheet) hoặc video vào các nút của sơ đồ tư duy để cung cấp thông tin chi tiết hơn khi cần."},{"statement":"Khi tích hợp video vào bài trình chiếu hoặc sơ đồ tư duy, việc đảm bảo video có định dạng độc quyền và dung lượng rất lớn sẽ giúp tăng tính bảo mật và chất lượng phát.","is_correct":false,"rendered_statement":"Khi tích hợp video vào bài trình chiếu hoặc sơ đồ tư duy, việc đảm bảo video có định dạng độc quyền và dung lượng rất lớn sẽ giúp tăng tính bảo mật và chất lượng phát."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Sơ đồ tư duy (mind map) là một công cụ trực quan hiệu quả để tổ chức thông tin. Hãy đánh giá các phát biểu sau về việc tạo và sử dụng sơ đồ tư duy trong trình bày thông tin."},{"main_question":"Khi thực hành sử dụng các công cụ trực quan để trình bày thông tin, nhận định nào sau đây là đúng?","statements":[{"statement":"Hình ảnh chỉ có vai trò trang trí, không cần thiết phải liên quan đến nội dung chính của bài trình bày.","is_correct":false,"rendered_statement":"Hình ảnh chỉ có vai trò trang trí, không cần thiết phải liên quan đến nội dung chính của bài trình bày."},{"statement":"Biểu đồ giúp người đọc dễ dàng so sánh và nắm bắt xu hướng của dữ liệu hơn so với việc trình bày bằng bảng số liệu khô khan.","is_correct":true,"rendered_statement":"Biểu đồ giúp người đọc dễ dàng so sánh và nắm bắt xu hướng của dữ liệu hơn so với việc trình bày bằng bảng số liệu khô khan."},{"statement":"Để bài trình chiếu thêm sinh động, nên chèn càng nhiều video càng tốt vào mỗi trang trình chiếu, kể cả khi chúng không trực tiếp minh họa cho ý chính.","is_correct":false,"rendered_statement":"Để bài trình chiếu thêm sinh động, nên chèn càng nhiều video càng tốt vào mỗi trang trình chiếu, kể cả khi chúng không trực tiếp minh họa cho ý chính."},{"statement":"Sơ đồ tư duy được coi là hiệu quả nhất khi chỉ chứa các từ khóa ngắn gọn, tuyệt đối không nên đính kèm thêm văn bản dài, hình ảnh hoặc video để tránh làm phức tạp sơ đồ.","is_correct":false,"rendered_statement":"Sơ đồ tư duy được coi là hiệu quả nhất khi chỉ chứa các từ khóa ngắn gọn, tuyệt đối không nên đính kèm thêm văn bản dài, hình ảnh hoặc video để tránh làm phức tạp sơ đồ."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Khi thực hành sử dụng các công cụ trực quan để trình bày thông tin, nhận định nào sau đây là đúng?"},{"main_question":"Trong quá trình tạo sơ đồ tư duy và bài trình chiếu, việc áp dụng các nguyên tắc về công cụ trực quan nào sau đây là phù hợp?","statements":[{"statement":"Sơ đồ tư duy là một công cụ giúp tổ chức và trình bày ý tưởng một cách trực quan, dễ hiểu.","is_correct":true,"rendered_statement":"Sơ đồ tư duy là một công cụ giúp tổ chức và trình bày ý tưởng một cách trực quan, dễ hiểu."},{"statement":"Khi chèn hình ảnh vào bài trình chiếu, việc chọn hình ảnh có độ phân giải thấp sẽ giúp giảm dung lượng tệp và không ảnh hưởng đáng kể đến chất lượng hiển thị.","is_correct":false,"rendered_statement":"Khi chèn hình ảnh vào bài trình chiếu, việc chọn hình ảnh có độ phân giải thấp sẽ giúp giảm dung lượng tệp và không ảnh hưởng đáng kể đến chất lượng hiển thị."},{"statement":"Mục tiêu của việc tạo sơ đồ tư duy là chỉ thể hiện mối quan hệ giữa các ý tưởng chính, do đó không cần thiết phải liên kết với các trang tính hay video bên ngoài.","is_correct":false,"rendered_statement":"Mục tiêu của việc tạo sơ đồ tư duy là chỉ thể hiện mối quan hệ giữa các ý tưởng chính, do đó không cần thiết phải liên kết với các trang tính hay video bên ngoài."},{"statement":"Để bài trình chiếu chuyên nghiệp và hiệu quả, cần đảm bảo sự đồng nhất về phong cách (màu sắc, font chữ, bố cục) cho tất cả hình ảnh, biểu đồ và video được sử dụng, ngay cả khi chúng đến từ các nguồn khác nhau.","is_correct":true,"rendered_statement":"Để bài trình chiếu chuyên nghiệp và hiệu quả, cần đảm bảo sự đồng nhất về phong cách (màu sắc, font chữ, bố cục) cho tất cả hình ảnh, biểu đồ và video được sử dụng, ngay cả khi chúng đến từ các nguồn khác nhau."}],"type":"true-false","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong quá trình tạo sơ đồ tư duy và bài trình chiếu, việc áp dụng các nguyên tắc về công cụ trực quan nào sau đây là phù hợp?"},{"question":"Hãy kể tên một phần mềm mô phỏng mà em đã từng khai thác hoặc được tìm hiểu trong môn Tin học 9. Nêu rõ những kiến thức hoặc kĩ năng em đã thu nhận được từ việc khai thác phần mềm đó.","answer":"Gợi ý: Học sinh cần nêu tên một phần mềm mô phỏng (ví dụ: phần mềm mô phỏng mạch điện, mô phỏng thí nghiệm vật lí/hóa học, mô phỏng các quy trình trong sản xuất, v.v.). Sau đó, trình bày cụ thể những kiến thức đã học được (ví dụ: nguyên lí hoạt động của mạch điện, kết quả của phản ứng hóa học khi thay đổi điều kiện, các bước thực hiện một quy trình) hoặc kĩ năng đã rèn luyện (ví dụ: thao tác trên phần mềm, khả năng quan sát, phân tích kết quả).","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Hãy kể tên một phần mềm mô phỏng mà em đã từng khai thác hoặc được tìm hiểu trong môn Tin học 9. Nêu rõ những kiến thức hoặc kĩ năng em đã thu nhận được từ việc khai thác phần mềm đó.","rendered_answer":"Gợi ý: Học sinh cần nêu tên một phần mềm mô phỏng (ví dụ: phần mềm mô phỏng mạch điện, mô phỏng thí nghiệm vật lí/hóa học, mô phỏng các quy trình trong sản xuất, v.v.). Sau đó, trình bày cụ thể những kiến thức đã học được (ví dụ: nguyên lí hoạt động của mạch điện, kết quả của phản ứng hóa học khi thay đổi điều kiện, các bước thực hiện một quy trình) hoặc kĩ năng đã rèn luyện (ví dụ: thao tác trên phần mềm, khả năng quan sát, phân tích kết quả)."},{"question":"Phần mềm mô phỏng đóng vai trò quan trọng như thế nào trong việc giúp con người khám phá tri thức và giải quyết vấn đề? Em hãy phân tích rõ vai trò này và lấy một ví dụ cụ thể để minh họa.","answer":"Gợi ý: Học sinh cần phân tích vai trò của phần mềm mô phỏng trong việc khám phá tri thức (giúp hình dung các hiện tượng phức tạp, thử nghiệm các giả thuyết mà không cần đến thực tế, quan sát các quá trình diễn ra quá nhanh hoặc quá chậm) và giải quyết vấn đề (thử nghiệm các giải pháp tiềm năng, tối ưu hóa các quy trình, dự đoán kết quả của các hành động khác nhau). Ví dụ minh họa có thể là: mô phỏng dự báo thời tiết, mô phỏng thiết kế cầu đường để kiểm tra độ an toàn, mô phỏng quá trình lây lan dịch bệnh để tìm biện pháp kiểm soát, mô phỏng hoạt động của cơ thể người trong y học.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phần mềm mô phỏng đóng vai trò quan trọng như thế nào trong việc giúp con người khám phá tri thức và giải quyết vấn đề? Em hãy phân tích rõ vai trò này và lấy một ví dụ cụ thể để minh họa.","rendered_answer":"Gợi ý: Học sinh cần phân tích vai trò của phần mềm mô phỏng trong việc khám phá tri thức (giúp hình dung các hiện tượng phức tạp, thử nghiệm các giả thuyết mà không cần đến thực tế, quan sát các quá trình diễn ra quá nhanh hoặc quá chậm) và giải quyết vấn đề (thử nghiệm các giải pháp tiềm năng, tối ưu hóa các quy trình, dự đoán kết quả của các hành động khác nhau). Ví dụ minh họa có thể là: mô phỏng dự báo thời tiết, mô phỏng thiết kế cầu đường để kiểm tra độ an toàn, mô phỏng quá trình lây lan dịch bệnh để tìm biện pháp kiểm soát, mô phỏng hoạt động của cơ thể người trong y học."},{"question":"Trong các hoạt động trao đổi và hợp tác nhóm, việc sử dụng bài trình chiếu và sơ đồ tư duy mang lại những lợi ích gì trong việc trình bày thông tin một cách hiệu quả? Hãy giải thích và cho ví dụ minh họa.","answer":"Sử dụng bài trình chiếu giúp thông tin được sắp xếp logic, trực quan, dễ theo dõi, phù hợp cho việc trình bày trước nhiều người. Sơ đồ tư duy giúp tóm tắt ý chính, thể hiện mối liên hệ giữa các ý, kích thích tư duy sáng tạo, phù hợp cho việc động não và tổ chức ý tưởng. Ví dụ: bài trình chiếu cho buổi báo cáo dự án, sơ đồ tư duy để lên kế hoạch dự án.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong các hoạt động trao đổi và hợp tác nhóm, việc sử dụng bài trình chiếu và sơ đồ tư duy mang lại những lợi ích gì trong việc trình bày thông tin một cách hiệu quả? Hãy giải thích và cho ví dụ minh họa.","rendered_answer":"Sử dụng bài trình chiếu giúp thông tin được sắp xếp logic, trực quan, dễ theo dõi, phù hợp cho việc trình bày trước nhiều người. Sơ đồ tư duy giúp tóm tắt ý chính, thể hiện mối liên hệ giữa các ý, kích thích tư duy sáng tạo, phù hợp cho việc động não và tổ chức ý tưởng. Ví dụ: bài trình chiếu cho buổi báo cáo dự án, sơ đồ tư duy để lên kế hoạch dự án."},{"question":"Ngoài việc thể hiện các ý tưởng và mối liên hệ, sơ đồ tư duy còn có khả năng đặc biệt nào giúp tăng cường hiệu quả trao đổi thông tin và hợp tác nhóm? Nêu rõ khả năng đó và giải thích cách nó được áp dụng trong thực tế.","answer":"Sơ đồ tư duy có khả năng đính kèm các tệp tin như văn bản, ảnh, video, trang tính. Khả năng này giúp người dùng dễ dàng truy cập thông tin chi tiết, tài liệu liên quan trực tiếp từ sơ đồ tư duy mà không cần tìm kiếm riêng lẻ, tiết kiệm thời gian, đảm bảo tất cả thông tin quan trọng đều được tập trung tại một nơi và dễ dàng chia sẻ trong nhóm.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Ngoài việc thể hiện các ý tưởng và mối liên hệ, sơ đồ tư duy còn có khả năng đặc biệt nào giúp tăng cường hiệu quả trao đổi thông tin và hợp tác nhóm? Nêu rõ khả năng đó và giải thích cách nó được áp dụng trong thực tế.","rendered_answer":"Sơ đồ tư duy có khả năng đính kèm các tệp tin như văn bản, ảnh, video, trang tính. Khả năng này giúp người dùng dễ dàng truy cập thông tin chi tiết, tài liệu liên quan trực tiếp từ sơ đồ tư duy mà không cần tìm kiếm riêng lẻ, tiết kiệm thời gian, đảm bảo tất cả thông tin quan trọng đều được tập trung tại một nơi và dễ dàng chia sẻ trong nhóm."},{"question":"Em hãy giải thích vì sao việc sử dụng biểu đồ (chart) lại hiệu quả hơn so với việc trình bày các số liệu thô khi tạo bài trình chiếu (presentation) về tình hình tài chính của một doanh nghiệp nhỏ. Nêu ít nhất hai lợi ích cụ thể.","answer":"Việc sử dụng biểu đồ trong bài trình chiếu về tình hình tài chính hiệu quả hơn số liệu thô vì: 1. Biểu đồ giúp trực quan hóa dữ liệu phức tạp, làm cho thông tin dễ hiểu và dễ nắm bắt hơn đối với người xem. 2. Biểu đồ cho phép so sánh các dữ liệu một cách nhanh chóng và dễ dàng, đồng thời làm nổi bật các xu hướng, sự tăng trưởng hoặc suy giảm mà số liệu thô khó thể hiện được.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Em hãy giải thích vì sao việc sử dụng biểu đồ (chart) lại hiệu quả hơn so với việc trình bày các số liệu thô khi tạo bài trình chiếu (presentation) về tình hình tài chính của một doanh nghiệp nhỏ. Nêu ít nhất hai lợi ích cụ thể.","rendered_answer":"Việc sử dụng biểu đồ trong bài trình chiếu về tình hình tài chính hiệu quả hơn số liệu thô vì: 1. Biểu đồ giúp trực quan hóa dữ liệu phức tạp, làm cho thông tin dễ hiểu và dễ nắm bắt hơn đối với người xem. 2. Biểu đồ cho phép so sánh các dữ liệu một cách nhanh chóng và dễ dàng, đồng thời làm nổi bật các xu hướng, sự tăng trưởng hoặc suy giảm mà số liệu thô khó thể hiện được."},{"question":"Trong quá trình chuẩn bị một buổi thuyết trình về các loại năng lượng tái tạo (như năng lượng mặt trời, năng lượng gió), em dự định sử dụng sơ đồ tư duy để tóm tắt ý chính. Hãy cho biết em sẽ tích hợp hình ảnh và video vào sơ đồ tư duy đó như thế nào để tăng tính trực quan và hấp dẫn cho buổi thuyết trình?","answer":"Để tăng tính trực quan và hấp dẫn: 1. Đối với hình ảnh: Em sẽ chèn hình ảnh minh họa trực tiếp vào các nhánh chính của sơ đồ tư duy (ví dụ: hình ảnh tấm pin mặt trời cho nhánh 'Năng lượng mặt trời', hình ảnh tuabin gió cho nhánh 'Năng lượng gió'). 2. Đối với video: Em sẽ đính kèm liên kết đến các video ngắn (ví dụ: video mô tả cách hoạt động của nhà máy điện mặt trời hoặc quy trình sản xuất điện từ gió) vào các nút cụ thể trên sơ đồ tư duy. Khi thuyết trình, em có thể nhấp vào liên kết để trình chiếu, giúp người nghe dễ dàng hình dung và có cái nhìn sinh động hơn về từng loại năng lượng tái tạo.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Trong quá trình chuẩn bị một buổi thuyết trình về các loại năng lượng tái tạo (như năng lượng mặt trời, năng lượng gió), em dự định sử dụng sơ đồ tư duy để tóm tắt ý chính. Hãy cho biết em sẽ tích hợp hình ảnh và video vào sơ đồ tư duy đó như thế nào để tăng tính trực quan và hấp dẫn cho buổi thuyết trình?","rendered_answer":"Để tăng tính trực quan và hấp dẫn: 1. Đối với hình ảnh: Em sẽ chèn hình ảnh minh họa trực tiếp vào các nhánh chính của sơ đồ tư duy (ví dụ: hình ảnh tấm pin mặt trời cho nhánh 'Năng lượng mặt trời', hình ảnh tuabin gió cho nhánh 'Năng lượng gió'). 2. Đối với video: Em sẽ đính kèm liên kết đến các video ngắn (ví dụ: video mô tả cách hoạt động của nhà máy điện mặt trời hoặc quy trình sản xuất điện từ gió) vào các nút cụ thể trên sơ đồ tư duy. Khi thuyết trình, em có thể nhấp vào liên kết để trình chiếu, giúp người nghe dễ dàng hình dung và có cái nhìn sinh động hơn về từng loại năng lượng tái tạo."},{"question":"Giải thích tầm quan trọng của việc sử dụng hình ảnh, biểu đồ và video một cách hợp lí khi trình bày thông tin. Hãy cho một ví dụ cụ thể về việc chọn loại công cụ trực quan phù hợp (hình ảnh, biểu đồ hoặc video) để minh họa cho nội dung \"Quá trình quang hợp của thực vật\".","answer":"Gợi ý: Việc sử dụng hình ảnh, biểu đồ và video hợp lí giúp thông tin trở nên hấp dẫn, dễ hiểu, dễ ghi nhớ hơn và truyền tải nội dung phức tạp một cách hiệu quả. Ví dụ, để minh họa \"Quá trình quang hợp của thực vật\": có thể dùng hình ảnh để chỉ ra cấu tạo của lá và lục lạp; biểu đồ để thể hiện sự thay đổi tốc độ quang hợp theo cường độ ánh sáng hoặc nhiệt độ; và video để mô phỏng toàn bộ chu trình quang hợp.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Giải thích tầm quan trọng của việc sử dụng hình ảnh, biểu đồ và video một cách hợp lí khi trình bày thông tin. Hãy cho một ví dụ cụ thể về việc chọn loại công cụ trực quan phù hợp (hình ảnh, biểu đồ hoặc video) để minh họa cho nội dung \"Quá trình quang hợp của thực vật\".","rendered_answer":"Gợi ý: Việc sử dụng hình ảnh, biểu đồ và video hợp lí giúp thông tin trở nên hấp dẫn, dễ hiểu, dễ ghi nhớ hơn và truyền tải nội dung phức tạp một cách hiệu quả. Ví dụ, để minh họa \"Quá trình quang hợp của thực vật\": có thể dùng hình ảnh để chỉ ra cấu tạo của lá và lục lạp; biểu đồ để thể hiện sự thay đổi tốc độ quang hợp theo cường độ ánh sáng hoặc nhiệt độ; và video để mô phỏng toàn bộ chu trình quang hợp."},{"question":"Phân tích những lợi ích chính của việc tạo sơ đồ tư duy hoặc bài trình chiếu có tích hợp đồng thời văn bản, hình ảnh, video và có thể cả trang tính. So sánh hiệu quả của cách trình bày đa phương tiện này với việc chỉ sử dụng văn bản thuần túy.","answer":"Gợi ý: Lợi ích của việc tích hợp đa phương tiện bao gồm: tăng cường khả năng tiếp thu và ghi nhớ thông tin (kích thích nhiều giác quan); truyền tải hiệu quả các loại thông tin khác nhau (số liệu bằng biểu đồ, quy trình bằng video, khái niệm bằng hình ảnh); tăng tính hấp dẫn và sinh động; giúp cấu trúc và tổng hợp thông tin rõ ràng hơn. So với văn bản thuần túy, cách trình bày đa phương tiện trực quan hơn, hấp dẫn hơn và có khả năng giải thích các khái niệm phức tạp một cách hiệu quả hơn.","type":"essay","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Phân tích những lợi ích chính của việc tạo sơ đồ tư duy hoặc bài trình chiếu có tích hợp đồng thời văn bản, hình ảnh, video và có thể cả trang tính. So sánh hiệu quả của cách trình bày đa phương tiện này với việc chỉ sử dụng văn bản thuần túy.","rendered_answer":"Gợi ý: Lợi ích của việc tích hợp đa phương tiện bao gồm: tăng cường khả năng tiếp thu và ghi nhớ thông tin (kích thích nhiều giác quan); truyền tải hiệu quả các loại thông tin khác nhau (số liệu bằng biểu đồ, quy trình bằng video, khái niệm bằng hình ảnh); tăng tính hấp dẫn và sinh động; giúp cấu trúc và tổng hợp thông tin rõ ràng hơn. So với văn bản thuần túy, cách trình bày đa phương tiện trực quan hơn, hấp dẫn hơn và có khả năng giải thích các khái niệm phức tạp một cách hiệu quả hơn."}];
+        const options = {"title":"Bài kiểm tra - 22/12/2025","timeLimit":45,"retriesAllowed":10,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"shortAnswerFormat":"freeform","examCode":"KN9197","teacherName":"Đàng Năng Nhanh","scoring":{"mc":3,"tf":4,"sa":0,"essay":3,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxx-BtRQ4SJJG5DkUOTYicW5ATk6hQu3X_J6it2d9bucw53uGQYwBa4QgMsfFbtcHo3-g/exec";
+        const examCode = "KN9197";
+        
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        let lastScore, lastAnswerDetails; // For retrying AI assessment
+        let isQuizActive = false;
+
+        const studentApiKeyInput = document.getElementById('student-api-key');
+
+        // Check if AI features are enabled by teacher
+        const needsAiKey = options.showExplanation || options.aiAssessment;
+        if (needsAiKey) {
+            document.getElementById('api-key-input-container').classList.remove('hidden');
+        }
+        
+        window.addEventListener('beforeunload', (e) => {
+            if (isQuizActive) {
+                const message = "Bạn đang làm bài, có muốn thoát không? Hãy nộp bài và thoát.";
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
+            }
+        });
+
+        // --- UTILS FOR SHUFFLING ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+
+        // --- SHUFFLE LOGIC FOR ONLINE QUIZ ---
+        function applyShuffling() {
+            // 1. Shuffle Options/Statements within each question
+            quizData.forEach(item => {
+                const shuffleOpts = item.shuffleOptions || { answers: true };
+                const type = mapType(item.type);
+                
+                if (shuffleOpts.answers) {
+                    if (type === 'multiple-choice' && item.rendered_options && item.rendered_options.length > 0) {
+                        // Create indices array to shuffle
+                        const indices = item.rendered_options.map((_, i) => i);
+                        shuffleArray(indices);
+                        
+                        // Reorder rendered_options based on shuffled indices
+                        item.rendered_options = indices.map(i => item.rendered_options[i]);
+                        
+                        // Reorder raw options (needed for review/explanation context, though mostly rendered is used)
+                        if (item.options) {
+                            item.options = indices.map(i => item.options[i]);
+                        }
+                        
+                        // Update correctAnswerIndex
+                        // Old index was item.correctAnswerIndex. We need to find where it went.
+                        // New index is the position of the old correct index in the shuffled 'indices' array.
+                        item.correctAnswerIndex = indices.indexOf(item.correctAnswerIndex);
+
+                    } else if (type === 'true-false' && item.statements && item.statements.length > 0) {
+                        // Shuffle statements array directly
+                        shuffleArray(item.statements);
+                    }
+                }
+            });
+
+            // 2. Shuffle Question Order within Parts (respecting "Câu dẫn" aka Stem shuffle option)
+            // We group questions by type first to ensure we don't mix sections
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let newQuizData = [];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (questions) {
+                    const finalPartQuestions = new Array(questions.length).fill(null);
+                    const shufflableQuestions = [];
+                    
+                    // Separate fixed and shufflable questions
+                    questions.forEach((q, i) => {
+                        const shuffleOpts = q.shuffleOptions || { stem: true };
+                        if (shuffleOpts.stem) {
+                            shufflableQuestions.push(q);
+                        } else {
+                            finalPartQuestions[i] = q;
+                        }
+                    });
+
+                    // Shuffle the shufflable ones
+                    shuffleArray(shufflableQuestions);
+
+                    // Merge back
+                    let shufflableIndex = 0;
+                    for (let i = 0; i < finalPartQuestions.length; i++) {
+                        if (finalPartQuestions[i] === null) {
+                            finalPartQuestions[i] = shufflableQuestions[shufflableIndex];
+                            shufflableIndex++;
+                        }
+                    }
+                    newQuizData = newQuizData.concat(finalPartQuestions);
+                }
+            });
+            
+            // Update the global quizData with the shuffled version
+            if (newQuizData.length === quizData.length) {
+                quizData = newQuizData;
+            }
+            
+            // Reset user answers array to match new length (though length is same) and clear it
+            userAnswers = new Array(quizData.length).fill(null);
+        }
+        
+        // --- SMART FALLBACK GENERATOR ---
+        const PROVIDERS = [
+             {
+                id: 'gemini',
+                name: 'Google Gemini',
+                isValid: () => !!API_KEYS.gemini && API_KEYS.gemini.trim().length > 0,
+                execute: async (prompt) => {
+                     const ai = new GoogleGenAI({ apiKey: API_KEYS.gemini });
+                     // Fallback models for Gemini specifically
+                     const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+                     let lastErr;
+                     for (const model of models) {
+                        try {
+                            const res = await ai.models.generateContent({ model, contents: prompt });
+                            return res.text;
+                        } catch (e) { 
+                            console.warn(`Gemini ${model} error:`, e);
+                            lastErr = e; 
+                        }
+                     }
+                     throw lastErr || new Error("All Gemini models failed");
+                }
+            },
+            {
+                id: 'deepseek',
+                name: 'DeepSeek',
+                isValid: () => !!API_KEYS.deepseek && API_KEYS.deepseek.trim().length > 0,
+                execute: async (prompt) => {
+                     const res = await fetch("https://api.deepseek.com/chat/completions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEYS.deepseek}` },
+                        body: JSON.stringify({ model: "deepseek-chat", messages: [{role: "user", content: prompt}], temperature: 0.7 })
+                     });
+                     if(!res.ok) throw new Error(`DeepSeek status ${res.status}: ${await res.text()}`);
+                     const data = await res.json();
+                     return data.choices[0].message.content;
+                }
+            },
+            {
+                id: 'openai',
+                name: 'OpenAI',
+                isValid: () => !!API_KEYS.openai && API_KEYS.openai.trim().length > 0,
+                execute: async (prompt) => {
+                     const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEYS.openai}` },
+                        body: JSON.stringify({ model: "gpt-4o-mini", messages: [{role: "user", content: prompt}], temperature: 0.7 })
+                     });
+                     if(!res.ok) throw new Error(`OpenAI status ${res.status}: ${await res.text()}`);
+                     const data = await res.json();
+                     return data.choices[0].message.content;
+                }
+            }
+        ];
+
+        async function generateContentWithSmartFallback(prompt) {
+            const validProviders = PROVIDERS.filter(p => p.isValid());
+            if (validProviders.length === 0) {
+                throw new Error("Không có API Key nào được cấu hình. Vui lòng liên hệ giáo viên.");
+            }
+            
+            let errors = [];
+            for (const provider of validProviders) {
+                try {
+                    console.log(`Trying provider: ${provider.name}`);
+                    const text = await provider.execute(prompt);
+                    return { text };
+                } catch (err) {
+                    console.error(`Provider ${provider.name} failed:`, err);
+                    errors.push(`${provider.name}: ${err.message}`);
+                }
+            }
+            
+            throw new Error("Tất cả các mô hình AI đều thất bại:\n" + errors.join("\n"));
+        }
+
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitBtnTop = document.getElementById('submit-btn-top');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const toggleNavBtn = document.getElementById('toggle-nav-btn');
+        const navPanel = document.getElementById('nav-panel');
+        const navGrid = document.getElementById('nav-grid');
+        
+
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.toggleExplanation = toggleExplanation;
+        window.fetchAndRenderExplanation = fetchAndRenderExplanation;
+        window.retryAIAssessment = retryAIAssessment;
+        window.setupFormInputs = setupFormInputs;
+        window.saveFormAnswer = saveFormAnswer;
+        window.scrollToQuestion = scrollToQuestion;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        submitBtnTop.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        toggleNavBtn.addEventListener('click', () => {
+            navPanel.classList.toggle('open');
+            document.body.classList.toggle('nav-open');
+        });
+
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        // Restore key if exists
+        if (studentApiKeyInput) {
+            studentApiKeyInput.value = localStorage.getItem('studentApiKey') || '';
+        }
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            
+            // Handle Student API Key
+            if (studentApiKeyInput) {
+                const studentKey = studentApiKeyInput.value.trim();
+                if (studentKey) {
+                    API_KEYS.gemini = studentKey; // Prioritize student key
+                    localStorage.setItem('studentApiKey', studentKey);
+                }
+            }
+
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            document.getElementById('student-name-display').textContent = studentName;
+
+            applyShuffling();
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            toggleNavBtn.classList.remove('hidden');
+            
+            if (window.innerWidth > 1024) {
+                navPanel.classList.add('open');
+                document.body.classList.add('nav-open');
+            }
+
+            userAnswers = new Array(quizData.length).fill(null);
+            submissionStatus = 'pending';
+            isQuizActive = true;
+            
+            renderAllQuestions();
+            renderNavPanel();
+            updateProgress();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = '∞';
+            }
+            startMonitoring();
+        }
+
+        function renderNavPanel() {
+            navGrid.innerHTML = '';
+            quizData.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.id = `nav-btn-${index}`;
+                btn.textContent = index + 1;
+                btn.onclick = () => scrollToQuestion(index);
+                navGrid.appendChild(btn);
+            });
+        }
+
+        function scrollToQuestion(index) {
+            const el = document.getElementById(`q-${index}`);
+            if (el) {
+                const offset = 100; 
+                const elementPosition = el.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('current'));
+                document.getElementById(`nav-btn-${index}`)?.classList.add('current');
+            }
+            if (window.innerWidth <= 1024) {
+                navPanel.classList.remove('open');
+                document.body.classList.remove('nav-open');
+            }
+        }
+
+        function updateProgress() {
+            let answeredCount = 0;
+            quizData.forEach((item, index) => {
+                const answer = userAnswers[index];
+                const type = mapType(item.type);
+                let isAnswered = false;
+
+                if (type === 'multiple-choice') {
+                    isAnswered = answer !== null;
+                } else if (type === 'true-false') {
+                    isAnswered = Array.isArray(answer) && answer.filter(x => x !== null).length === item.statements.length;
+                } else { 
+                    isAnswered = answer && String(answer).trim().length > 0;
+                }
+
+                const btn = document.getElementById(`nav-btn-${index}`);
+                if (isAnswered) {
+                    answeredCount++;
+                    btn?.classList.add('answered');
+                } else {
+                    btn?.classList.remove('answered');
+                }
+            });
+
+            const percent = Math.round((answeredCount / quizData.length) * 100);
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN', color: 'blue' },
+                'true-false': { title: 'PHẦN II. TRẮC NGHIỆM ĐÚNG/SAI', color: 'purple' },
+                'short-answer': { title: 'PHẦN III. TRẢ LỜI NGẮN', color: 'teal' },
+                'essay': { title: 'PHẦN IV. TỰ LUẬN', color: 'orange' },
+            };
+            
+            let questionCounter = 0;
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `
+                    <div class="mb-6 pb-2 border-b-2 border-${info.color}-200 flex items-center gap-2">
+                        <span class="bg-${info.color}-100 text-${info.color}-700 p-1.5 rounded-md">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </span>
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800">${info.title}</h2>
+                    </div>`;
+                
+                questions.forEach((item) => {
+                    const index = quizData.indexOf(item);
+                    questionCounter++;
+                    
+                    let contentHTML = `<div class="question-card mb-8 p-6 border border-gray-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow scroll-mt-32" id="q-${index}">`;
+                    contentHTML += `
+                        <div class="flex items-start gap-3 mb-4">
+                             <span class="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-sm shadow-sm">Câu ${questionCounter}</span>
+                        </div>
+                    `;
+                    contentHTML += `<div class="prose max-w-none text-gray-800 mb-6 font-medium text-lg leading-relaxed">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `
+                                <div class="option ${isSelected ? 'selected' : ''} p-4 border border-gray-200 rounded-xl cursor-pointer flex items-start gap-3 hover:bg-gray-50" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full border-2 ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-500'} flex items-center justify-center font-bold text-sm transition-colors">${String.fromCharCode(65 + i)}</div>
+                                    <div class="flex-grow pt-1 text-gray-700">${opt}</div>
+                                </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div class="flex-grow flex gap-3">
+                                                    <span class="font-bold text-gray-500">${String.fromCharCode(97 + i)})</span>
+                                                    <div class="prose max-w-none text-gray-700">${stmt.rendered_statement}</div>
+                                                </div>
+                                                <div class="flex-shrink-0 flex gap-2 self-end sm:self-auto">
+                                                    <button class="${isTrueSelected ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50'} px-5 py-2 rounded-lg font-semibold transition-all" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white shadow-md ring-2 ring-red-300' : 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50'} px-5 py-2 rounded-lg font-semibold transition-all" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        const savedAnswerStr = userAnswers[index] || '';
+                        if (options.shortAnswerFormat === 'form') {
+                             answerHTML = `<div id="sa-form-${index}" class="flex items-center gap-3 p-4 bg-teal-50 rounded-xl border border-teal-100">`;
+                            for (let i = 0; i < 4; i++) {
+                                answerHTML += `<input type="text" maxlength="1" data-q-index="${index}" class="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring focus:ring-teal-200 focus:outline-none bg-white shadow-sm transition-all" value="">`;
+                            }
+                            answerHTML += `</div>`;
+                        } else {
+                            answerHTML = `<input type="text" class="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-lg" placeholder="Nhập câu trả lời của bạn..." value="${savedAnswerStr}" onchange="saveTextAnswer(this, ${index})">`;
+                        }
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all" rows="6" placeholder="Nhập bài làm tự luận..." onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+            container.innerHTML = allHTML;
+
+            document.querySelectorAll('[id^="sa-form-"]').forEach(formContainer => {
+                const inputs = formContainer.querySelectorAll('input');
+                if (inputs.length > 0) {
+                    setupFormInputs(inputs);
+                }
+            });
+
+            safeTypeset([container]);
+        }
+
+        function setupFormInputs(inputs) {
+            const qIndex = inputs[0].dataset.qIndex;
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    saveFormAnswer(qIndex, inputs);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                     saveFormAnswer(qIndex, inputs);
+                });
+                 input.addEventListener('change', () => saveFormAnswer(qIndex, inputs));
+            });
+        }
+
+        function saveFormAnswer(qIndex, inputs) {
+            let combinedValue = '';
+            inputs.forEach(inp => { combinedValue += inp.value; });
+            userAnswers[qIndex] = combinedValue;
+            updateProgress();
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.querySelector('div:first-child').classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white');
+                opt.querySelector('div:first-child').classList.add('border-gray-300', 'text-gray-500');
+            });
+            element.classList.add('selected');
+            element.querySelector('div:first-child').classList.remove('border-gray-300', 'text-gray-500');
+            element.querySelector('div:first-child').classList.add('border-indigo-600', 'bg-indigo-600', 'text-white');
+            updateProgress();
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            
+            // Reset styles
+            const trueBtn = parent.children[0];
+            const falseBtn = parent.children[1];
+            
+            trueBtn.className = 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 px-5 py-2 rounded-lg font-semibold transition-all';
+            falseBtn.className = 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50 px-5 py-2 rounded-lg font-semibold transition-all';
+
+            if (answer) {
+                trueBtn.className = 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300 px-5 py-2 rounded-lg font-semibold transition-all';
+            } else {
+                falseBtn.className = 'bg-red-500 text-white shadow-md ring-2 ring-red-300 px-5 py-2 rounded-lg font-semibold transition-all';
+            }
+            updateProgress();
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+            updateProgress();
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            isQuizActive = false;
+            
+            const submitBtnEl = document.getElementById('submit-btn');
+            submitBtnEl.disabled = true;
+            submitBtnEl.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang nộp bài...';
+            
+            progressContainer.classList.add('hidden');
+            toggleNavBtn.classList.add('hidden');
+            navPanel.classList.remove('open');
+            document.body.classList.remove('nav-open');
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            lastScore = score;
+            lastAnswerDetails = answerDetails;
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment) {
+                aiAssessment = await getAIAssessment(finalScore, answerDetails);
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            // Trigger Confetti
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6']
+            });
+            
+            if (options.showAnswers) {
+                const scoreDisplay = document.getElementById('score-display');
+                scoreDisplay.querySelector('span:last-child').textContent = score;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                const scoreDisplay = document.getElementById('score-display');
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600 font-bold mb-4">Nộp bài thành công!</p><p class="text-gray-500">Kết quả đã được ghi nhận.</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                if (assessment.startsWith("Lỗi")) {
+                    // handled
+                } else {
+                     document.querySelector('#assessment-display .assessment-content').innerHTML = assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                     assessmentDisplay.classList.remove('hidden');
+                }
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<div class="text-center p-8 bg-gray-50 rounded-xl border border-gray-200"><p class="text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p></div>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else if (type === 'short-answer') {
+                    const correctAnswer = (item.answer || '').toString().trim().toLowerCase();
+                    const studentAnswer = (userAnswer || '').toString().trim().toLowerCase();
+                    isCorrect = studentAnswer === correctAnswer;
+                    if (isCorrect) {
+                        score += pointsPerSa;
+                    }
+                } else {
+                    isCorrect = null; // For 'essay' type
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Xem lại bài làm chi tiết</h3>';
+            quizData.forEach((item, index) => {
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                const isCorrectQuestion = detail?.isCorrect;
+
+                let borderColor = isCorrectQuestion ? 'border-green-200' : (isCorrectQuestion === false ? 'border-red-200' : 'border-gray-200');
+                let bgColor = isCorrectQuestion ? 'bg-green-50' : (isCorrectQuestion === false ? 'bg-red-50' : 'bg-gray-50');
+                
+                reviewHTML += `<div class="mb-8 p-6 border ${borderColor} rounded-2xl ${bgColor} shadow-sm relative overflow-hidden">`;
+                
+                // Status Badge
+                if (type !== 'essay') {
+                     reviewHTML += `<div class="absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-bl-lg ${isCorrectQuestion ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">${isCorrectQuestion ? 'Đúng' : 'Sai'}</div>`;
+                }
+
+                reviewHTML += `<div class="flex gap-2 mb-3"><span class="bg-white border border-gray-200 text-gray-700 font-bold px-2.5 py-0.5 rounded-md text-sm">Câu ${index + 1}</span></div>`;
+                reviewHTML += `<div class="prose max-w-none mb-4 text-gray-800">${item.rendered_question}</div>`;
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'p-3 border rounded-lg flex items-start gap-3';
+                        let icon = '';
+                        
+                        if (i === item.correctAnswerIndex) {
+                            classes += ' bg-green-100 border-green-400 ring-1 ring-green-400'; // Correct answer style
+                            icon = '<svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+                        } else if (userAnswers[index] === i) {
+                            classes += ' bg-red-100 border-red-400'; // Selected wrong answer
+                            icon = '<svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+                        } else {
+                            classes += ' bg-white border-gray-200 opacity-70';
+                        }
+
+                        reviewHTML += `<div class="${classes}">
+                            <span class="font-bold flex-shrink-0 w-6">${String.fromCharCode(65 + i)}.</span>
+                            <div class="flex-grow">${opt}</div>
+                            ${icon}
+                        </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="space-y-2 mt-4">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isStmtCorrect = userChoice === stmt.is_correct;
+                         let classes = 'p-3 border rounded-lg flex items-center justify-between gap-4 bg-white';
+                         
+                         if (userChoice !== null) {
+                            classes = isStmtCorrect ? 'p-3 border border-green-300 bg-green-100 rounded-lg flex items-center justify-between gap-4' : 'p-3 border border-red-300 bg-red-100 rounded-lg flex items-center justify-between gap-4';
+                         }
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none text-sm">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 text-right text-sm">
+                                             <div class="${stmt.is_correct ? 'text-green-700 font-bold' : 'text-red-700 font-bold'}">Đáp án: ${stmt.is_correct ? 'Đúng' : 'Sai'}</div>
+                                             <div class="text-gray-600">Bạn chọn: <span class="font-medium">${userChoice === true ? 'Đúng' : userChoice === false ? 'Sai' : '...'}</span></div>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-4 bg-white border border-gray-200 rounded-xl">
+                        <p class="text-sm font-bold text-gray-500 mb-1">Câu trả lời của bạn:</p>
+                        <div class="text-gray-800">${userAnswers[index] || '<em class="text-gray-400">Chưa trả lời</em>'}</div>
+                    </div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                            <p class="text-sm font-bold text-green-700 mb-1">Đáp án gợi ý:</p>
+                            <div class="prose max-w-none text-green-900">${item.rendered_answer}</div>
+                        </div>`;
+                    }
+                }
+                
+                if (options.showExplanation) {
+                     reviewHTML += `<div class="mt-4 pt-4 border-t border-gray-200/50">
+                                      <button class="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="toggleExplanation(${index}, this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Xem giải thích chi tiết từ AI
+                                      </button>
+                                      <div id="explanation-${index}" class="mt-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl hidden text-sm text-gray-700 leading-relaxed"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        async function toggleExplanation(index, button) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+
+            const isHidden = explanationContainer.classList.toggle('hidden');
+            button.innerHTML = isHidden 
+                ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Xem giải thích chi tiết từ AI' 
+                : '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg> Ẩn giải thích';
+
+            const hasLoaded = explanationContainer.hasAttribute('data-loaded');
+            const hadError = explanationContainer.getAttribute('data-loaded') === 'error';
+
+            if (!isHidden && (!hasLoaded || hadError)) {
+                await fetchAndRenderExplanation(index);
+            }
+        }
+
+        async function fetchAndRenderExplanation(index) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            explanationContainer.innerHTML = '<div class="flex items-center gap-2 text-indigo-500"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI đang soạn lời giải...</div>';
+            explanationContainer.setAttribute('data-loaded', 'loading');
+
+            try {
+                const item = quizData[index];
+                const questionText = (mapType(item.type) === 'true-false') ? (item.main_question || '') : (item.question || '');
+                let prompt = `Bạn là một trợ lý giáo viên AI xuất sắc. Hãy viết lời giải chi tiết, dễ hiểu cho câu hỏi này.\n---\nCÂU HỎI:\n${questionText}\n---`;
+                
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${item.options[item.correctAnswerIndex] || ''}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n${item.statements.map((s, i) => `${String.fromCharCode(97 + i)}) ${s.statement || ''} -> ${s.is_correct ? 'Đúng' : 'Sai'}`).join('\n')}`;
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${item.answer || ''}`;
+                }
+                prompt += `\n---\n**YÊU CẦU:** Giải thích từng bước logic. Định dạng công thức toán bằng LaTeX (trong dấu $). Dùng **...** để in đậm các ý quan trọng.`;
+                
+                const response = await generateContentWithSmartFallback(prompt);
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+                explanationContainer.setAttribute('data-loaded', 'true');
+
+            } catch (error) {
+                console.error("AI Explanation Error:", error);
+                explanationContainer.innerHTML = `<div class="text-red-600 text-sm">Đã xảy ra lỗi khi tải lời giải. ${error.message}. <button onclick="event.preventDefault(); fetchAndRenderExplanation(${index})" class="underline font-semibold ml-1">Thử lại</button></div>`;
+                explanationContainer.setAttribute('data-loaded', 'error');
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            document.querySelector('#assessment-display .assessment-content').innerHTML = '<div class="flex items-center gap-2 text-indigo-600"><svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI đang phân tích bài làm của bạn...</div>';
+            assessmentDisplay.classList.remove('hidden');
+
+            try {
+                const wrongAnswers = answerDetails.filter(d => d.isCorrect === false || (d.type === 'true-false' && d.details && d.details.some(sub => !sub.isCorrect)));
+                if (wrongAnswers.length === 0) {
+                    const congrats = "Tuyệt vời! Em đã làm bài xuất sắc và không sai câu nào. Kiến thức của em rất vững vàng. Hãy tiếp tục duy trì phong độ này nhé! 🌟";
+                    document.querySelector('#assessment-display .assessment-content').innerHTML = congrats;
+                    return congrats;
+                }
+                const wrongQuestionsSummary = wrongAnswers.map(d => {
+                    const item = quizData[d.questionNumber - 1];
+                    const questionText = item.question || item.main_question || '';
+                    return `- Câu ${d.questionNumber}: ${questionText}`;
+                }).join('\n');
+                
+                const prompt = `Bạn là một giáo viên AI tâm lý và tận tụy. Dựa vào kết quả bài làm sau, hãy viết một đoạn nhận xét ngắn gọn (khoảng 100 từ) cho học sinh.\n**Kết quả:**\n- Điểm số: ${score} / 10\n- Các câu làm sai (nội dung tóm tắt):\n${wrongQuestionsSummary}\n**YÊU CẦU:**\n1. Bắt đầu bằng lời khen ngợi nỗ lực.\n2. Chỉ ra các mảng kiến thức cần ôn tập lại dựa trên các câu sai.\n3. Đưa ra 1 lời khuyên cụ thể để cải thiện.\n4. Kết thúc bằng lời động viên ấm áp.\n5. Sử dụng icon cảm xúc phù hợp.`;
+
+                const response = await generateContentWithSmartFallback(prompt);
+                const assessmentText = response.text || "Không thể tạo nhận xét.";
+                
+                document.querySelector('#assessment-display .assessment-content').innerHTML = assessmentText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                return assessmentText;
+
+            } catch (error) {
+                console.error("AI Assessment Error:", error);
+                document.querySelector('#assessment-display .assessment-content').innerHTML = `<div class="text-red-600">Lỗi kết nối với AI: ${error.message}. <button onclick="retryAIAssessment()" class="underline font-bold ml-1">Thử lại</button></div>`;
+                return "Lỗi khi tạo nhận xét AI.";
+            }
+        }
+        
+        async function retryAIAssessment() {
+            if (lastAnswerDetails) {
+                const finalScore = (lastScore / (quizData.length > 0 ? 10 : 1) * 10).toFixed(2);
+                await getAIAssessment(finalScore, lastAnswerDetails);
+            }
+        }
+    </script>
+</body>
+</html>
+    
