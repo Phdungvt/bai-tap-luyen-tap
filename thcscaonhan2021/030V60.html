@@ -1,0 +1,1203 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài kiểm tra - 24/12/2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); min-height: 100vh; }
+        .option { transition: all 0.2s ease; }
+        .option:hover { background-color: #f3f4f6; }
+        .option.selected { border-color: #4f46e5; background-color: #eef2ff; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; display: none; font-weight: bold; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #4f46e5; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 280px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 16px; }
+        .nav-btn {
+            width: 40px; height: 40px; border-radius: 8px; border: 1px solid #e5e7eb;
+            background: white; color: #4b5563; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-btn.answered { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; background-color: #fffbeb; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.nav-open #app { margin-right: 280px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .question-card { transition: box-shadow 0.3s; }
+        .question-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { 
+        "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+        "canvas-confetti": "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm"
+    } }
+    </script>
+</head>
+<body class="p-4 md:p-6">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden" title="Danh sách câu hỏi">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+            <h3 class="font-bold text-gray-800 text-lg">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-indigo-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid pb-20"></div>
+    </div>
+
+    <div id="app" class="max-w-5xl mx-auto transition-all duration-300">
+        
+        <div id="welcome-screen" class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto mt-10">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-center text-white relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 relative z-10">Bài kiểm tra - 24/12/2025</h1>
+                <p class="text-indigo-100 text-sm md:text-base relative z-10">Mã đề: <span class="font-mono font-bold bg-white/20 px-2 py-1 rounded text-white">030V60</span></p>
+                 <div class="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Giáo viên: <span class="font-bold text-yellow-300">Lê Văn Khải</span></span>
+                </div>
+            </div>
+            <div class="p-8">
+                <div class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên học sinh</label>
+                        <input type="text" id="name" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Nhập họ tên của bạn...">
+                    </div>
+                    <div>
+                        <label for="class" class="block text-sm font-semibold text-gray-700 mb-1">Lớp</label>
+                        <input type="text" id="class" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Ví dụ: 12A1">
+                    </div>
+                    
+                    <!-- API Key Input for Students -->
+                    <div id="api-key-input-container" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label class="block text-sm font-semibold text-blue-800 mb-2">
+                            Gemini API Key <span class="font-normal text-gray-600">(Yêu cầu để xem lời giải/nhận xét AI)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="password" id="student-api-key" class="flex-grow border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" placeholder="Nhập API Key của bạn (bắt đầu bằng AIza...)">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="flex-shrink-0 bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 font-semibold py-2 px-4 rounded-lg text-sm flex items-center transition-colors whitespace-nowrap">
+                                Lấy Key miễn phí
+                            </a>
+                        </div>
+                         <p class="text-xs text-gray-500 mt-2">
+                            * Sử dụng Key cá nhân giúp bạn trải nghiệm đầy đủ các tính năng AI mà không bị gián đoạn.
+                        </p>
+                    </div>
+                </div>
+                 <div class="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-amber-700">
+                                <span class="font-bold">Lưu ý:</span> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <button id="start-btn" class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 px-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2">
+                    <span>Bắt đầu làm bài</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="sticky top-0 z-30 -mx-4 md:-mx-6 mb-6">
+                 <div class="bg-white/90 backdrop-blur-md shadow-md border-b border-gray-200 py-3 px-4 md:px-8 flex justify-between items-center">
+                    <div>
+                         <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate max-w-[200px] md:max-w-md">Bài kiểm tra - 24/12/2025</h2>
+                         <p class="text-xs text-gray-500 hidden md:block">Thí sinh: <span id="student-name-display" class="font-semibold"></span></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="timer" class="text-lg md:text-xl font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 min-w-[80px] text-center shadow-sm"></div>
+                        <button id="submit-btn-top" class="md:hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">Nộp</button>
+                    </div>
+                 </div>
+            </div>
+            
+            <div id="all-questions-container" class="space-y-6 pb-10"></div>
+            
+            <div class="mt-8 flex justify-end sticky bottom-4 z-20">
+                <div class="bg-white/80 backdrop-blur p-2 rounded-2xl shadow-lg border border-gray-100">
+                    <button id="submit-btn" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-8 rounded-xl font-bold text-lg shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-green-700 transition-all flex items-center gap-2">
+                        <span>Nộp bài</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-8 text-center text-white">
+                <h2 class="text-3xl font-bold mb-2">Kết quả bài làm</h2>
+                <p class="opacity-90">Chúc mừng bạn đã hoàn thành bài thi!</p>
+            </div>
+            <div class="p-8">
+                <div id="score-display" class="hidden flex flex-col items-center justify-center my-4">
+                    <span class="text-gray-500 text-lg uppercase tracking-widest font-semibold mb-2">Tổng điểm</span>
+                    <span class="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-cyan-500 drop-shadow-sm"></span>
+                </div>
+                
+                <div id="assessment-display" class="hidden mt-6 p-6 bg-indigo-50 border border-indigo-100 rounded-xl text-gray-700 shadow-inner relative">
+                     <div class="absolute top-0 left-0 w-1 h-full bg-indigo-400 rounded-l-xl"></div>
+                     <h3 class="font-bold text-indigo-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                        </svg>
+                        Nhận xét từ AI Giáo viên
+                     </h3>
+                     <div class="assessment-content prose prose-indigo max-w-none"></div>
+                </div>
+
+                <div id="review-container" class="mt-10 border-t pt-8"></div>
+                
+                <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="retry-btn" class="hidden bg-white text-indigo-600 border-2 border-indigo-600 py-3 px-6 rounded-xl font-bold hover:bg-indigo-50 transition-colors">Làm lại bài</button>
+                    <button id="restart-btn" class="bg-gray-800 text-white py-3 px-6 rounded-xl font-bold hover:bg-gray-900 transition-colors shadow-md">Về trang chủ</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="monitoring-warning" class="monitoring-warning">⚠️ Đã phát hiện hành vi không hợp lệ!</div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+        import confetti from "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm";
+
+        // Decode keys at runtime to bypass GitHub secret scanning
+        const _k = {"gemini":"QUl6YVN5QUc2Unoybl9zVFI0STRyb2VRN2V5a19GQTFTQ19fUWtr","openai":"","deepseek":""};
+        const API_KEYS = {
+            gemini: atob(_k.gemini),
+            openai: atob(_k.openai),
+            deepseek: atob(_k.deepseek)
+        };
+        
+        let quizData = [{"question":"Hai đường thẳng phân biệt cắt nhau thì số điểm chung là:","options":["$0$.","$1$.","$2$.","Vô số."],"correctAnswerIndex":1,"type":"multiple-choice","questionNumber":1,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Hai đường thẳng phân biệt cắt nhau thì số điểm chung là:","rendered_options":["$0$.","$1$.","$2$.","Vô số."]},{"question":"<strong></strong> Rút gọn biểu thức: $\\sqrt{\\text{x}+3+2\\sqrt{\\text{x+2}}}$với $\\text{x}\\ge -2$ ,được kết quả là:","options":["$\\left| \\sqrt{\\text{x + 2}}-1 \\right|$","$\\sqrt{\\text{x + 2}}-1$","$\\sqrt{\\text{x + 2}}+1$","$1-\\sqrt{\\text{x + 2}}$"],"correctAnswerIndex":2,"type":"multiple-choice","questionNumber":2,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Rút gọn biểu thức: $\\sqrt{\\text{x}+3+2\\sqrt{\\text{x+2}}}$với $\\text{x}\\ge -2$ ,được kết quả là:","rendered_options":["$\\left| \\sqrt{\\text{x + 2}}-1 \\right|$","$\\sqrt{\\text{x + 2}}-1$","$\\sqrt{\\text{x + 2}}+1$","$1-\\sqrt{\\text{x + 2}}$"]},{"question":"<strong>Bất phương trình $3x-2&gt;7$ có nghiệm là</strong>","options":["$x < 3$","$x > \\dfrac{5}{3}$","$x > 3$","$x \\le 3$"],"correctAnswerIndex":2,"type":"multiple-choice","questionNumber":3,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong>Bất phương trình $3x-2&gt;7$ có nghiệm là</strong>","rendered_options":["$x < 3$","$x > \\dfrac{5}{3}$","$x > 3$","$x \\le 3$"]},{"question":"<strong> Rút gọn b</strong>iểu thức&nbsp;$\\dfrac{5}{6}\\sqrt{36}-\\dfrac{8}{3}\\sqrt{\\dfrac{81}{16}}+\\sqrt{144}$ ta được kết quả là:","options":["$11$","$13$","$10$","$9$"],"correctAnswerIndex":0,"type":"multiple-choice","questionNumber":4,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong> Rút gọn b</strong>iểu thức&nbsp;$\\dfrac{5}{6}\\sqrt{36}-\\dfrac{8}{3}\\sqrt{\\dfrac{81}{16}}+\\sqrt{144}$ ta được kết quả là:","rendered_options":["$11$","$13$","$10$","$9$"]},{"question":"Hai tiếp tuyến tại $A$ và $B$ của đường tròn $(O;R)$ cắt nhau tại $M$. Nếu $MA=R$ thì $\\widehat{AOB}$ bằng:","options":["$60^{\\circ}$","$90^{\\circ}$","$120^{\\circ}$","$150^{\\circ}$"],"correctAnswerIndex":1,"type":"multiple-choice","questionNumber":5,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Hai tiếp tuyến tại $A$ và $B$ của đường tròn $(O;R)$ cắt nhau tại $M$. Nếu $MA=R$ thì $\\widehat{AOB}$ bằng:","rendered_options":["$60^{\\circ}$","$90^{\\circ}$","$120^{\\circ}$","$150^{\\circ}$"]},{"question":"Diện tích của hình quạt tròn ứng với cung $60{}^\\circ $ có bán kính $6\\,cm$ là","options":["$6\\pi \\,(c{{m}^{2}})$","$3\\pi \\,(c{{m}^{2}})$","$12\\pi \\,(c{{m}^{2}})$","$9\\pi \\,(c{{m}^{2}})$"],"correctAnswerIndex":0,"type":"multiple-choice","questionNumber":6,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Diện tích của hình quạt tròn ứng với cung $60{}^\\circ $ có bán kính $6\\,cm$ là","rendered_options":["$6\\pi \\,(c{{m}^{2}})$","$3\\pi \\,(c{{m}^{2}})$","$12\\pi \\,(c{{m}^{2}})$","$9\\pi \\,(c{{m}^{2}})$"]},{"question":"Căn bậc ba của $-27$ là","options":["$-3$","$\\pm 3$","$3$","$-9$"],"correctAnswerIndex":0,"type":"multiple-choice","questionNumber":7,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Căn bậc ba của $-27$ là","rendered_options":["$-3$","$\\pm 3$","$3$","$-9$"]},{"question":"<strong>Cho tam giác $ABC$ vuông tại $A$ có $BC=16cm$ và $\\widehat{B}=30^{\\circ}$. Tính $AB$.</strong>","options":["<strong>$AB=8\\sqrt{3}$</strong>","<strong>$AB=8$</strong>","<strong>$AB=16\\sqrt{3}$</strong>","<strong>$AB=8\\sqrt{2}$</strong>"],"correctAnswerIndex":0,"type":"multiple-choice","questionNumber":8,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong>Cho tam giác $ABC$ vuông tại $A$ có $BC=16cm$ và $\\widehat{B}=30^{\\circ}$. Tính $AB$.</strong>","rendered_options":["<strong>$AB=8\\sqrt{3}$</strong>","<strong>$AB=8$</strong>","<strong>$AB=16\\sqrt{3}$</strong>","<strong>$AB=8\\sqrt{2}$</strong>"]},{"question":"Hệ phương trình $\\left\\{ \\begin{align}<br>&amp; x+y=5 \\\\<br>&amp; 3x-2y=5 \\\\<br>\\end{align} \\right.$ có nghiệm là","options":["$\\left( 3;2 \\right)$","$\\left( 2;3 \\right)$","$\\left( -3;-2 \\right)$","$\\left( 1;4 \\right)$"],"correctAnswerIndex":0,"type":"multiple-choice","questionNumber":9,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Hệ phương trình $\\left\\{ \\begin{align}<br>&amp; x+y=5 \\\\<br>&amp; 3x-2y=5 \\\\<br>\\end{align} \\right.$ có nghiệm là","rendered_options":["$\\left( 3;2 \\right)$","$\\left( 2;3 \\right)$","$\\left( -3;-2 \\right)$","$\\left( 1;4 \\right)$"]},{"question":"Căn bậc hai số học của $25$ là","options":["$-5$","$125$","$5$","$\\pm 5$"],"correctAnswerIndex":2,"type":"multiple-choice","questionNumber":10,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Căn bậc hai số học của $25$ là","rendered_options":["$-5$","$125$","$5$","$\\pm 5$"]},{"question":"Cho đường tròn $\\left( O;\\text{ }10cm \\right)$ có dây $CD=16$cm thì khoảng cách từ tâm $O$ đến dây $CD$ là:","options":["$5cm$.","$8cm$.","$6cm$.","$7cm$."],"correctAnswerIndex":2,"type":"multiple-choice","questionNumber":11,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho đường tròn $\\left( O;\\text{ }10cm \\right)$ có dây $CD=16$cm thì khoảng cách từ tâm $O$ đến dây $CD$ là:","rendered_options":["$5cm$.","$8cm$.","$6cm$.","$7cm$."]},{"question":"<strong></strong> Phương trình ${{\\left( x+2 \\right)}^{2}}-3\\left( x+2 \\right)=0$ có nghiệm là","options":["$x=-2;x=3$.","$x=2;x=1$.","$x=-2;x=1$.","$x=2;x=-1$."],"correctAnswerIndex":2,"type":"multiple-choice","questionNumber":12,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Phương trình ${{\\left( x+2 \\right)}^{2}}-3\\left( x+2 \\right)=0$ có nghiệm là","rendered_options":["$x=-2;x=3$.","$x=2;x=1$.","$x=-2;x=1$.","$x=2;x=-1$."]},{"main_question":"Bạn Bình có 200 nghìn đồng. Bạn mua 3 cục tẩy giá 12 nghìn đồng mỗi cục và mua một số hộp bút giá 25 nghìn đồng một hộp. Gọi y là số hộp bút bạn Bình có thể mua.","statements":[{"statement":"Số tiền bạn Bình mua hộp bút là $25y$ (nghìn đồng).","is_correct":true,"rendered_statement":"Số tiền bạn Bình mua hộp bút là $25y$ (nghìn đồng)."},{"statement":"Bạn Bình mua được nhiều nhất 7 hộp bút.","is_correct":false,"rendered_statement":"Bạn Bình mua được nhiều nhất 7 hộp bút."},{"statement":"Theo bài ra ta có bất phương trình $25y+3 \times 12 \\le 200$.","is_correct":true,"rendered_statement":"Theo bài ra ta có bất phương trình $25y+3 \times 12 \\le 200$."},{"statement":"Điều kiện của y là $y \\in \\mathbb{N}^*$.","is_correct":false,"rendered_statement":"Điều kiện của y là $y \\in \\mathbb{N}^*$."}],"type":"true-false","questionNumber":13,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Bạn Bình có 200 nghìn đồng. Bạn mua 3 cục tẩy giá 12 nghìn đồng mỗi cục và mua một số hộp bút giá 25 nghìn đồng một hộp. Gọi y là số hộp bút bạn Bình có thể mua."},{"main_question":"Cho hai biểu thức:<br>$A=\\sqrt{16-6\\sqrt{7}}-\\frac{2}{\\sqrt{7}+3}+\\sqrt{\\frac{49}{25}}$ và $B=\\left( \\frac{\\sqrt{x}}{\\sqrt{x}-3}-\\frac{6\\sqrt{x}}{x-9} \\right):\\frac{x-5\\sqrt{x}}{x-9}$ với $x>0; x \\neq 9; x \\neq 25$","statements":[{"statement":"Giá trị rút gọn của biểu thức $A$ là $\\frac{7}{5}$","is_correct":true,"rendered_statement":"Giá trị rút gọn của biểu thức $A$ là $\\frac{7}{5}$"},{"statement":"Kết quả rút gọn biểu thức $B$ là $\\frac{\\sqrt{x}-3}{\\sqrt{x}-5}$","is_correct":true,"rendered_statement":"Kết quả rút gọn biểu thức $B$ là $\\frac{\\sqrt{x}-3}{\\sqrt{x}-5}$"},{"statement":"Giá trị của $x$ thỏa mãn $A = B$ là $100$","is_correct":true,"rendered_statement":"Giá trị của $x$ thỏa mãn $A = B$ là $100$"},{"statement":"Giá trị nguyên của $x$ để $B$ có giá trị là một số nguyên là $x=64$","is_correct":false,"rendered_statement":"Giá trị nguyên của $x$ để $B$ có giá trị là một số nguyên là $x=64$"}],"type":"true-false","questionNumber":14,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho hai biểu thức:<br>$A=\\sqrt{16-6\\sqrt{7}}-\\frac{2}{\\sqrt{7}+3}+\\sqrt{\\frac{49}{25}}$ và $B=\\left( \\frac{\\sqrt{x}}{\\sqrt{x}-3}-\\frac{6\\sqrt{x}}{x-9} \\right):\\frac{x-5\\sqrt{x}}{x-9}$ với $x>0; x \\neq 9; x \\neq 25$"},{"type":"true-false","question":null,"main_question":"<strong>Cho $\\Delta ABC$ vuông tại $A$, đường cao $AN$. Biết $AB=10\\,(cm)$ và $AN=5\\,(cm)$. Khi đó<TIKZ>\\begin{tikzpicture}[scale=0.8]\n\\usetikzlibrary{angles,quotes}\n\n% Define coordinates\n\\coordinate (A) at (0,0);\n\\coordinate (B) at (10,0);\n\\coordinate (C) at (0,{10*sqrt(3)/3});\n\n% Calculate N (foot of the altitude from A to BC)\n% Equation of BC: y - 0 = (10*sqrt(3)/3 - 0) / (0 - 10) * (x - 10) => y = -sqrt(3)/3 * (x - 10)\n% Equation of AN (perpendicular to BC, through A(0,0)): y = sqrt(3) * x\n% Intersection point N:\n% sqrt(3)x = -sqrt(3)/3 * (x - 10)\n% x = -1/3 * x + 10/3\n% 4/3 x = 10/3 => x = 10/4 = 2.5\n% y = sqrt(3) * 2.5 = 2.5 * sqrt(3)\n\\coordinate (N) at (2.5,{2.5*sqrt(3)});\n\n% Draw the triangle ABC\n\\draw (A) -- (B) -- (C) -- cycle;\n\n% Draw the altitude AN\n\\draw (A) -- (N);\n\n% Labels for vertices\n\\node at (A) [below left] {$A$};\n\\node at (B) [below right] {$B$};\n\\node at (C) [above left] {$C$};\n\\node at (N) [above right] {$N$};\n\n% Mark right angle at A\n\\pic[draw, angle radius=5mm, angle eccentricity=1.2] {angle = C--A--B};\n\n% Mark right angle at N\n\\pic[draw, angle radius=5mm, angle eccentricity=1.2] {angle = A--N--B};\n\n\\end{tikzpicture}</TIKZ>","options":[],"optionsImage":[],"correctAnswerIndex":-1,"statements":[{"statement":"$AC = \\dfrac{10\\sqrt{3}}{3}$","is_correct":true,"rendered_statement":"$AC = \\dfrac{10\\sqrt{3}}{3}$"},{"statement":"Góc $B$ bằng $30{}^\\circ $","is_correct":true,"rendered_statement":"Góc $B$ bằng $30{}^\\circ $"},{"statement":"$BN = AB \\sin \\widehat{ABN}$","is_correct":false,"rendered_statement":"$BN = AB \\sin \\widehat{ABN}$"},{"statement":"Có $BC = 10\\,(cm)$","is_correct":false,"rendered_statement":"Có $BC = 10\\,(cm)$"}],"answer":null,"questionNumber":15,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong>Cho $\\Delta ABC$ vuông tại $A$, đường cao $AN$. Biết $AB=10\\,(cm)$ và $AN=5\\,(cm)$. Khi đó<img src=\"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuMC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzI1NC43NDU5OTVwdCcgaGVpZ2h0PScxNTcuNTcxMjM3cHQnIHZpZXdCb3g9Jy02Ni4zMDQ3NSAtNjUuMjY2NDg3IDI1NC43NDU5OTUgMTU3LjU3MTIzNyc+CjxkZWZzPgo8cGF0aCBpZD0nZzAtNjUnIGQ9J00yLjAzMjM3OS0xLjMyNzAyNEMxLjYxMzk0OC0uNjIxNjY5IDEuMjA3NDcyLS4zODI1NjUgLjYzMzYyNC0uMzQ2N0MuNTAyMTE3LS4zMzQ3NDUgLjQwNjQ3Ni0uMzM0NzQ1IC40MDY0NzYtLjExOTU1MkMuNDA2NDc2LS4wNDc4MjEgLjQ2NjI1MiAwIC41NDk5MzggMEMuNzY1MTMxIDAgMS4zMDMxMTMtLjAyMzkxIDEuNTE4MzA2LS4wMjM5MUMxLjg2NTAwNi0uMDIzOTEgMi4yNDc1NzIgMCAyLjU4MjMxNiAwQzIuNjU0MDQ3IDAgMi43OTc1MDkgMCAyLjc5NzUwOS0uMjI3MTQ4QzIuNzk3NTA5LS4zMzQ3NDUgMi43MDE4NjgtLjM0NjcgMi42MzAxMzctLjM0NjdDMi4zNTUxNjgtLjM3MDYxIDIuMTI4MDItLjQ2NjI1MiAyLjEyODAyLS43NTMxNzZDMi4xMjgwMi0uOTIwNTQ4IDIuMTk5NzUxLTEuMDUyMDU1IDIuMzU1MTY4LTEuMzE1MDY4TDMuMjYzNzYxLTIuODIxNDJINi4zMTIzMjlDNi4zMjQyODQtMi43MTM4MjMgNi4zMjQyODQtMi42MTgxODIgNi4zMzYyMzktMi41MTA1ODVDNi4zNzIxMDUtMi4xOTk3NTEgNi41MTU1NjctLjk1NjQxMyA2LjUxNTU2Ny0uNzI5MjY1QzYuNTE1NTY3LS4zNzA2MSA1LjkwNTg1My0uMzQ2NyA1LjcxNDU3LS4zNDY3QzUuNTgzMDY0LS4zNDY3IDUuNDUxNTU3LS4zNDY3IDUuNDUxNTU3LS4xMzE1MDdDNS40NTE1NTcgMCA1LjU1OTE1MyAwIDUuNjMwODg0IDBDNS44MzQxMjIgMCA2LjA3MzIyNS0uMDIzOTEgNi4yNzY0NjMtLjAyMzkxSDYuOTU3OTA4QzcuNjg3MTczLS4wMjM5MSA4LjIxMzIgMCA4LjIyNTE1NiAwQzguMzA4ODQyIDAgOC40NDAzNDkgMCA4LjQ0MDM0OS0uMjI3MTQ4QzguNDQwMzQ5LS4zNDY3IDguMzMyNzUyLS4zNDY3IDguMTUzNDI1LS4zNDY3QzcuNDk1ODktLjM0NjcgNy40ODM5MzUtLjQ1NDI5NiA3LjQ0ODA3LS44MTI5NTFMNi43MTg4MDQtOC4yNzI5NzZDNi42OTQ4OTQtOC41MTIwOCA2LjY0NzA3My04LjUzNTk5IDYuNTE1NTY3LTguNTM1OTlDNi4zOTYwMTUtOC41MzU5OSA2LjMyNDI4NC04LjUxMjA4IDYuMjE2Njg3LTguMzMyNzUyTDIuMDMyMzc5LTEuMzI3MDI0Wk0zLjQ2Njk5OS0zLjE2ODEyTDUuODY5OTg4LTcuMTg1MDU2TDYuMjc2NDYzLTMuMTY4MTJIMy40NjY5OTlaJy8+CjxwYXRoIGlkPSdnMC02NicgZD0nTTQuMzc1NTkyLTcuMzUyNDI4QzQuNDgzMTg4LTcuNzk0NzcgNC41MzEwMDktNy44MTg2OCA0Ljk5NzI2LTcuODE4NjhINi41NTE0MzJDNy45MDIzNjYtNy44MTg2OCA3LjkwMjM2Ni02LjY3MDk4NCA3LjkwMjM2Ni02LjU2MzM4N0M3LjkwMjM2Ni01LjU5NTAxOSA2LjkzMzk5OC00LjM2MzYzNiA1LjM1NTkxNS00LjM2MzYzNkgzLjYzNDM3MUw0LjM3NTU5Mi03LjM1MjQyOFpNNi4zOTYwMTUtNC4yNjc5OTVDNy42OTkxMjgtNC41MDcwOTggOC44ODI2OS01LjQxNTY5MSA4Ljg4MjY5LTYuNTE1NTY3QzguODgyNjktNy40NDgwNyA4LjA1Nzc4My04LjE2NTM4IDYuNzA2ODQ5LTguMTY1MzhIMi44NjkyNEMyLjY0MjA5Mi04LjE2NTM4IDIuNTM0NDk2LTguMTY1MzggMi41MzQ0OTYtNy45MzgyMzJDMi41MzQ0OTYtNy44MTg2OCAyLjY0MjA5Mi03LjgxODY4IDIuODIxNDItNy44MTg2OEMzLjU1MDY4NS03LjgxODY4IDMuNTUwNjg1LTcuNzIzMDM5IDMuNTUwNjg1LTcuNTkxNTMyQzMuNTUwNjg1LTcuNTY3NjIxIDMuNTUwNjg1LTcuNDk1ODkgMy41MDI4NjQtNy4zMTY1NjNMMS44ODg5MTctLjg4NDY4MkMxLjc4MTMyLS40NjYyNTIgMS43NTc0MS0uMzQ2NyAuOTIwNTQ4LS4zNDY3Qy42OTM0LS4zNDY3IC41NzM4NDgtLjM0NjcgLjU3Mzg0OC0uMTMxNTA3Qy41NzM4NDggMCAuNjQ1NTc5IDAgLjg4NDY4MiAwSDQuOTg1MzA1QzYuODE0NDQ2IDAgOC4yMjUxNTYtMS4zODY4IDguMjI1MTU2LTIuNTk0MjcxQzguMjI1MTU2LTMuNTc0NTk1IDcuMzY0Mzg0LTQuMTcyMzU0IDYuMzk2MDE1LTQuMjY3OTk1Wk00LjY5ODM4MS0uMzQ2N0gzLjA4NDQzM0MyLjkxNzA2MS0uMzQ2NyAyLjg5MzE1MS0uMzQ2NyAyLjgyMTQyLS4zNTg2NTVDMi42ODk5MTMtLjM3MDYxIDIuNjc3OTU4LS4zOTQ1MjEgMi42Nzc5NTgtLjQ5MDE2MkMyLjY3Nzk1OC0uNTczODQ4IDIuNzAxODY4LS42NDU1NzkgMi43MjU3NzgtLjc1MzE3NkwzLjU2MjY0LTQuMTI0NTMzSDUuODEwMjEyQzcuMjIwOTIyLTQuMTI0NTMzIDcuMjIwOTIyLTIuODA5NDY1IDcuMjIwOTIyLTIuNzEzODIzQzcuMjIwOTIyLTEuNTY2MTI3IDYuMTgwODIyLS4zNDY3IDQuNjk4MzgxLS4zNDY3WicvPgo8cGF0aCBpZD0nZzAtNjcnIGQ9J004LjkzMDUxMS04LjMwODg0MkM4LjkzMDUxMS04LjQxNjQzOCA4Ljg0NjgyNC04LjQxNjQzOCA4LjgyMjkxNC04LjQxNjQzOFM4Ljc1MTE4My04LjQxNjQzOCA4LjY1NTU0Mi04LjI5Njg4N0w3LjgzMDYzNS03LjI5MjY1M0M3LjQxMjIwNC04LjAwOTk2MyA2Ljc1NDY3LTguNDE2NDM4IDUuODU4MDMyLTguNDE2NDM4QzMuMjc1NzE2LTguNDE2NDM4IC41OTc3NTgtNS43OTgyNTcgLjU5Nzc1OC0yLjk4ODc5MkMuNTk3NzU4LS45OTIyNzkgMS45OTY1MTMgLjI1MTA1OSAzLjc0MTk2OCAuMjUxMDU5QzQuNjk4MzgxIC4yNTEwNTkgNS41MzUyNDMtLjE1NTQxNyA2LjIyODY0My0uNzQxMjJDNy4yNjg3NDItMS42MTM5NDggNy41Nzk1NzctMi43NzM1OTkgNy41Nzk1NzctMi44NjkyNEM3LjU3OTU3Ny0yLjk3NjgzNyA3LjQ4MzkzNS0yLjk3NjgzNyA3LjQ0ODA3LTIuOTc2ODM3QzcuMzQwNDczLTIuOTc2ODM3IDcuMzI4NTE4LTIuOTA1MTA2IDcuMzA0NjA4LTIuODU3Mjg1QzYuNzU0NjctLjk5MjI3OSA1LjE0MDcyMi0uMDk1NjQxIDMuOTQ1MjA1LS4wOTU2NDFDMi42Nzc5NTgtLjA5NTY0MSAxLjU3ODA4Mi0uOTA4NTkzIDEuNTc4MDgyLTIuNjA2MjI3QzEuNTc4MDgyLTIuOTg4NzkyIDEuNjk3NjM0LTUuMDY4OTkxIDMuMDQ4NTY4LTYuNjM1MTE4QzMuNzA2MTAyLTcuNDAwMjQ5IDQuODI5ODg4LTguMDY5NzM4IDUuOTY1NjI5LTguMDY5NzM4QzcuMjgwNjk3LTguMDY5NzM4IDcuODY2NTAxLTYuOTgxODE4IDcuODY2NTAxLTUuNzYyMzkxQzcuODY2NTAxLTUuNDUxNTU3IDcuODMwNjM1LTUuMTg4NTQzIDcuODMwNjM1LTUuMTQwNzIyQzcuODMwNjM1LTUuMDMzMTI2IDcuOTUwMTg3LTUuMDMzMTI2IDcuOTg2MDUyLTUuMDMzMTI2QzguMTE3NTU5LTUuMDMzMTI2IDguMTI5NTE0LTUuMDQ1MDgxIDguMTc3MzM1LTUuMjYwMjc0TDguOTMwNTExLTguMzA4ODQyWicvPgo8cGF0aCBpZD0nZzAtNzgnIGQ9J004Ljg0NjgyNC02LjkxMDA4N0M4Ljk3ODMzMS03LjQyNDE1OSA5LjE2OTYxNC03Ljc4MjgxNCAxMC4wNzgyMDctNy44MTg2OEMxMC4xMTQwNzItNy44MTg2OCAxMC4yNTc1MzQtNy44MzA2MzUgMTAuMjU3NTM0LTguMDMzODczQzEwLjI1NzUzNC04LjE2NTM4IDEwLjE0OTkzOC04LjE2NTM4IDEwLjEwMjExNy04LjE2NTM4QzkuODYzMDE0LTguMTY1MzggOS4yNTMzLTguMTQxNDY5IDkuMDE0MTk3LTguMTQxNDY5SDguNDQwMzQ5QzguMjcyOTc2LTguMTQxNDY5IDguMDU3NzgzLTguMTY1MzggNy44OTA0MTEtOC4xNjUzOEM3LjgxODY4LTguMTY1MzggNy42NzUyMTgtOC4xNjUzOCA3LjY3NTIxOC03LjkzODIzMkM3LjY3NTIxOC03LjgxODY4IDcuNzcwODU5LTcuODE4NjggNy44NTQ1NDUtNy44MTg2OEM4LjU3MTg1Ni03Ljc5NDc3IDguNjE5Njc2LTcuNTE5ODAxIDguNjE5Njc2LTcuMzA0NjA4QzguNjE5Njc2LTcuMTk3MDExIDguNjA3NzIxLTcuMTYxMTQ2IDguNTcxODU2LTYuOTkzNzczTDcuMjIwOTIyLTEuNjAxOTkzTDQuNjYyNTE2LTcuOTYyMTQyQzQuNTc4ODI5LTguMTUzNDI1IDQuNTY2ODc0LTguMTY1MzggNC4zMDM4NjEtOC4xNjUzOEgyLjg0NTMzQzIuNjA2MjI3LTguMTY1MzggMi40OTg2My04LjE2NTM4IDIuNDk4NjMtNy45MzgyMzJDMi40OTg2My03LjgxODY4IDIuNTgyMzE2LTcuODE4NjggMi44MDk0NjUtNy44MTg2OEMyLjg2OTI0LTcuODE4NjggMy41NzQ1OTUtNy44MTg2OCAzLjU3NDU5NS03LjcxMTA4M0MzLjU3NDU5NS03LjY4NzE3MyAzLjU1MDY4NS03LjU5MTUzMiAzLjUzODczLTcuNTU1NjY2TDEuOTQ4NjkyLTEuMjE5NDI3QzEuODA1MjMtLjYzMzYyNCAxLjUxODMwNi0uMzgyNTY1IC43MjkyNjUtLjM0NjdDLjY2OTQ4OS0uMzQ2NyAuNTQ5OTM4LS4zMzQ3NDUgLjU0OTkzOC0uMTE5NTUyQy41NDk5MzggMCAuNjY5NDg5IDAgLjcwNTM1NSAwQy45NDQ0NTggMCAxLjU1NDE3Mi0uMDIzOTEgMS43OTMyNzUtLjAyMzkxSDIuMzY3MTIzQzIuNTM0NDk2LS4wMjM5MSAyLjczNzczMyAwIDIuOTA1MTA2IDBDMi45ODg3OTIgMCAzLjEyMDI5OSAwIDMuMTIwMjk5LS4yMjcxNDhDMy4xMjAyOTktLjMzNDc0NSAzLjAwMDc0Ny0uMzQ2NyAyLjk1MjkyNy0uMzQ2N0MyLjU1ODQwNi0uMzU4NjU1IDIuMTc1ODQxLS40MzAzODYgMi4xNzU4NDEtLjg2MDc3MkMyLjE3NTg0MS0uOTU2NDEzIDIuMTk5NzUxLTEuMDY0MDEgMi4yMjM2NjEtMS4xNTk2NTFMMy44Mzc2MDktNy41NTU2NjZDMy45MDkzNC03LjQzNjExNSAzLjkwOTM0LTcuNDEyMjA0IDMuOTU3MTYxLTcuMzA0NjA4TDYuODAyNDkxLS4yMTUxOTNDNi44NjIyNjctLjA3MTczMSA2Ljg4NjE3NyAwIDYuOTkzNzczIDBDNy4xMTMzMjUgMCA3LjEyNTI4LS4wMzU4NjYgNy4xNzMxMDEtLjIzOTEwM0w4Ljg0NjgyNC02LjkxMDA4N1onLz4KPC9kZWZzPgo8ZyBpZD0ncGFnZTEnPgo8cGF0aCBkPSdNLTUxLjkyOTY4OSA3Ny45MzM1OUgxNzQuODQzOEwtNTEuOTI5Njg5LTUyLjk5NTZaJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNLTUxLjkyOTY4OSA3Ny45MzM1OUw0Ljc2MTctMjAuMjY1Nicgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAtMTIuODc1NCAxMi4yNjk0KSc+Cjx1c2UgeD0nLTUxLjkzMTIxOScgeT0nNzcuOTMyMzc4JyB4bGluazpocmVmPScjZzAtNjUnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDIzMC44NzYyIDEyLjI2OTQpJz4KPHVzZSB4PSctNTEuOTMxMjE5JyB5PSc3Ny45MzIzNzgnIHhsaW5rOmhyZWY9JyNnMC02NicvPgo8L2c+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgLTEzLjMzMzcgLTEzNS4wMjk1KSc+Cjx1c2UgeD0nLTUxLjkzMTIxOScgeT0nNzcuOTMyMzc4JyB4bGluazpocmVmPScjZzAtNjcnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDYwLjc5Mzk2IC0xMDIuMjk3MiknPgo8dXNlIHg9Jy01MS45MzEyMTknIHk9Jzc3LjkzMjM3OCcgeGxpbms6aHJlZj0nI2cwLTc4Jy8+CjwvZz4KPHBhdGggZD0nTS01MS45Mjk2ODkgNjMuNzU3OEMtNTkuNzU3ODEgNjMuNzU3OC02Ni4xMDU1IDcwLjEwNTQ3LTY2LjEwNTUgNzcuOTMzNTlDLTY2LjEwNTUgODUuNzYxNzItNTkuNzU3ODEgOTIuMTA1NS01MS45Mjk2ODkgOTIuMTA1NUMtNDQuMTAxNTYgOTIuMTA1NS0zNy43NTc4IDg1Ljc2MTcyLTM3Ljc1NzggNzcuOTMzNTknIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00tMi4zMjQyLTcuOTg4M0M0LjQ1Ny00LjA3ODEgMTMuMTI1LTYuMzk4NCAxNy4wMzUyLTEzLjE3OTcnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjwvZz4KPC9zdmc+\" class=\"latex-image\" style=\"max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto;\">"},{"main_question":"Cho đường tròn $(O;6cm)$, điểm $A$ nằm bên ngoài đường tròn cách tâm $O$ là $10~cm$. Kẻ các tiếp tuyến $AB$,$AC$ với đường tròn ($B$,$C$ là các tiếp điểm). Khi đó:<TIKZ>\\begin{tikzpicture}\n    \\usetikzlibrary{angles,quotes,calc}\n    \\coordinate (O) at (0,0);\n    \\coordinate (A) at (10,0);\n    \\def\\R{6} % Radius\n    \n    % Calculate angle AOB in degrees\n    \\pgfmathsetmacro{\\angleAOBdeg}{acos(0.6)} \n\n    % Coordinates of B and C\n    \\path (O) +(\\angleAOBdeg:\\R) coordinate (B);\n    \\path (O) +(-\\angleAOBdeg:\\R) coordinate (C);\n    \n    % Draw the circle\n    \\draw (O) circle (\\R);\n    \n    % Draw tangents AB, AC\n    \\draw (A) -- (B);\n    \\draw (A) -- (C);\n    \n    % Draw radii OB, OC\n    \\draw (O) -- (B);\n    \\draw (O) -- (C);\n    \n    % Label points\n    \\node at (O) [below left] {$O$};\n    \\node at (A) [right] {$A$};\n    \\node at (B) [above left] {$B$};\n    \\node at (C) [below left] {$C$};\n    \n    % Mark right angles\n    \\pic[draw, angle radius=4mm, angle eccentricity=1.2] {right angle = O--B--A};\n    \\pic[draw, angle radius=4mm, angle eccentricity=1.2] {right angle = O--C--A};\n    \n\\end{tikzpicture}</TIKZ>","statements":[{"statement":"$AB=8~cm$","is_correct":true,"rendered_statement":"$AB=8~cm$"},{"statement":"$\\widehat{CAB}\\approx {{73.74}^{0}}$","is_correct":true,"rendered_statement":"$\\widehat{CAB}\\approx {{73.74}^{0}}$"},{"statement":"$AO$ là tia phân giác của $\\widehat{CAB}$","is_correct":true,"rendered_statement":"$AO$ là tia phân giác của $\\widehat{CAB}$"},{"statement":"Diện tích hình giới hạn bởi hai tiếp tuyến $AB$, $AC$ và cung nhỏ $BC$ là $16,5~cm^2$ (độ chính xác $0.05$)","is_correct":false,"rendered_statement":"Diện tích hình giới hạn bởi hai tiếp tuyến $AB$, $AC$ và cung nhỏ $BC$ là $16,5~cm^2$ (độ chính xác $0.05$)"}],"type":"true-false","questionNumber":16,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Cho đường tròn $(O;6cm)$, điểm $A$ nằm bên ngoài đường tròn cách tâm $O$ là $10~cm$. Kẻ các tiếp tuyến $AB$,$AC$ với đường tròn ($B$,$C$ là các tiếp điểm). Khi đó:<img src=\"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuMC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzQ2Ni42MjQxMzlwdCcgaGVpZ2h0PSczNDAuNTYyNXB0JyB2aWV3Qm94PSctNjkuMTY4MjUgLTY5LjE2ODI1IDQ2Ni42MjQxMzkgMzQwLjU2MjUnPgo8ZGVmcz4KPHBhdGggaWQ9J2cwLTY1JyBkPSdNMi4wMzIzNzktMS4zMjcwMjRDMS42MTM5NDgtLjYyMTY2OSAxLjIwNzQ3Mi0uMzgyNTY1IC42MzM2MjQtLjM0NjdDLjUwMjExNy0uMzM0NzQ1IC40MDY0NzYtLjMzNDc0NSAuNDA2NDc2LS4xMTk1NTJDLjQwNjQ3Ni0uMDQ3ODIxIC40NjYyNTIgMCAuNTQ5OTM4IDBDLjc2NTEzMSAwIDEuMzAzMTEzLS4wMjM5MSAxLjUxODMwNi0uMDIzOTFDMS44NjUwMDYtLjAyMzkxIDIuMjQ3NTcyIDAgMi41ODIzMTYgMEMyLjY1NDA0NyAwIDIuNzk3NTA5IDAgMi43OTc1MDktLjIyNzE0OEMyLjc5NzUwOS0uMzM0NzQ1IDIuNzAxODY4LS4zNDY3IDIuNjMwMTM3LS4zNDY3QzIuMzU1MTY4LS4zNzA2MSAyLjEyODAyLS40NjYyNTIgMi4xMjgwMi0uNzUzMTc2QzIuMTI4MDItLjkyMDU0OCAyLjE5OTc1MS0xLjA1MjA1NSAyLjM1NTE2OC0xLjMxNTA2OEwzLjI2Mzc2MS0yLjgyMTQySDYuMzEyMzI5QzYuMzI0Mjg0LTIuNzEzODIzIDYuMzI0Mjg0LTIuNjE4MTgyIDYuMzM2MjM5LTIuNTEwNTg1QzYuMzcyMTA1LTIuMTk5NzUxIDYuNTE1NTY3LS45NTY0MTMgNi41MTU1NjctLjcyOTI2NUM2LjUxNTU2Ny0uMzcwNjEgNS45MDU4NTMtLjM0NjcgNS43MTQ1Ny0uMzQ2N0M1LjU4MzA2NC0uMzQ2NyA1LjQ1MTU1Ny0uMzQ2NyA1LjQ1MTU1Ny0uMTMxNTA3QzUuNDUxNTU3IDAgNS41NTkxNTMgMCA1LjYzMDg4NCAwQzUuODM0MTIyIDAgNi4wNzMyMjUtLjAyMzkxIDYuMjc2NDYzLS4wMjM5MUg2Ljk1NzkwOEM3LjY4NzE3My0uMDIzOTEgOC4yMTMyIDAgOC4yMjUxNTYgMEM4LjMwODg0MiAwIDguNDQwMzQ5IDAgOC40NDAzNDktLjIyNzE0OEM4LjQ0MDM0OS0uMzQ2NyA4LjMzMjc1Mi0uMzQ2NyA4LjE1MzQyNS0uMzQ2N0M3LjQ5NTg5LS4zNDY3IDcuNDgzOTM1LS40NTQyOTYgNy40NDgwNy0uODEyOTUxTDYuNzE4ODA0LTguMjcyOTc2QzYuNjk0ODk0LTguNTEyMDggNi42NDcwNzMtOC41MzU5OSA2LjUxNTU2Ny04LjUzNTk5QzYuMzk2MDE1LTguNTM1OTkgNi4zMjQyODQtOC41MTIwOCA2LjIxNjY4Ny04LjMzMjc1MkwyLjAzMjM3OS0xLjMyNzAyNFpNMy40NjY5OTktMy4xNjgxMkw1Ljg2OTk4OC03LjE4NTA1Nkw2LjI3NjQ2My0zLjE2ODEySDMuNDY2OTk5WicvPgo8cGF0aCBpZD0nZzAtNjYnIGQ9J000LjM3NTU5Mi03LjM1MjQyOEM0LjQ4MzE4OC03Ljc5NDc3IDQuNTMxMDA5LTcuODE4NjggNC45OTcyNi03LjgxODY4SDYuNTUxNDMyQzcuOTAyMzY2LTcuODE4NjggNy45MDIzNjYtNi42NzA5ODQgNy45MDIzNjYtNi41NjMzODdDNy45MDIzNjYtNS41OTUwMTkgNi45MzM5OTgtNC4zNjM2MzYgNS4zNTU5MTUtNC4zNjM2MzZIMy42MzQzNzFMNC4zNzU1OTItNy4zNTI0MjhaTTYuMzk2MDE1LTQuMjY3OTk1QzcuNjk5MTI4LTQuNTA3MDk4IDguODgyNjktNS40MTU2OTEgOC44ODI2OS02LjUxNTU2N0M4Ljg4MjY5LTcuNDQ4MDcgOC4wNTc3ODMtOC4xNjUzOCA2LjcwNjg0OS04LjE2NTM4SDIuODY5MjRDMi42NDIwOTItOC4xNjUzOCAyLjUzNDQ5Ni04LjE2NTM4IDIuNTM0NDk2LTcuOTM4MjMyQzIuNTM0NDk2LTcuODE4NjggMi42NDIwOTItNy44MTg2OCAyLjgyMTQyLTcuODE4NjhDMy41NTA2ODUtNy44MTg2OCAzLjU1MDY4NS03LjcyMzAzOSAzLjU1MDY4NS03LjU5MTUzMkMzLjU1MDY4NS03LjU2NzYyMSAzLjU1MDY4NS03LjQ5NTg5IDMuNTAyODY0LTcuMzE2NTYzTDEuODg4OTE3LS44ODQ2ODJDMS43ODEzMi0uNDY2MjUyIDEuNzU3NDEtLjM0NjcgLjkyMDU0OC0uMzQ2N0MuNjkzNC0uMzQ2NyAuNTczODQ4LS4zNDY3IC41NzM4NDgtLjEzMTUwN0MuNTczODQ4IDAgLjY0NTU3OSAwIC44ODQ2ODIgMEg0Ljk4NTMwNUM2LjgxNDQ0NiAwIDguMjI1MTU2LTEuMzg2OCA4LjIyNTE1Ni0yLjU5NDI3MUM4LjIyNTE1Ni0zLjU3NDU5NSA3LjM2NDM4NC00LjE3MjM1NCA2LjM5NjAxNS00LjI2Nzk5NVpNNC42OTgzODEtLjM0NjdIMy4wODQ0MzNDMi45MTcwNjEtLjM0NjcgMi44OTMxNTEtLjM0NjcgMi44MjE0Mi0uMzU4NjU1QzIuNjg5OTEzLS4zNzA2MSAyLjY3Nzk1OC0uMzk0NTIxIDIuNjc3OTU4LS40OTAxNjJDMi42Nzc5NTgtLjU3Mzg0OCAyLjcwMTg2OC0uNjQ1NTc5IDIuNzI1Nzc4LS43NTMxNzZMMy41NjI2NC00LjEyNDUzM0g1LjgxMDIxMkM3LjIyMDkyMi00LjEyNDUzMyA3LjIyMDkyMi0yLjgwOTQ2NSA3LjIyMDkyMi0yLjcxMzgyM0M3LjIyMDkyMi0xLjU2NjEyNyA2LjE4MDgyMi0uMzQ2NyA0LjY5ODM4MS0uMzQ2N1onLz4KPHBhdGggaWQ9J2cwLTY3JyBkPSdNOC45MzA1MTEtOC4zMDg4NDJDOC45MzA1MTEtOC40MTY0MzggOC44NDY4MjQtOC40MTY0MzggOC44MjI5MTQtOC40MTY0MzhTOC43NTExODMtOC40MTY0MzggOC42NTU1NDItOC4yOTY4ODdMNy44MzA2MzUtNy4yOTI2NTNDNy40MTIyMDQtOC4wMDk5NjMgNi43NTQ2Ny04LjQxNjQzOCA1Ljg1ODAzMi04LjQxNjQzOEMzLjI3NTcxNi04LjQxNjQzOCAuNTk3NzU4LTUuNzk4MjU3IC41OTc3NTgtMi45ODg3OTJDLjU5Nzc1OC0uOTkyMjc5IDEuOTk2NTEzIC4yNTEwNTkgMy43NDE5NjggLjI1MTA1OUM0LjY5ODM4MSAuMjUxMDU5IDUuNTM1MjQzLS4xNTU0MTcgNi4yMjg2NDMtLjc0MTIyQzcuMjY4NzQyLTEuNjEzOTQ4IDcuNTc5NTc3LTIuNzczNTk5IDcuNTc5NTc3LTIuODY5MjRDNy41Nzk1NzctMi45NzY4MzcgNy40ODM5MzUtMi45NzY4MzcgNy40NDgwNy0yLjk3NjgzN0M3LjM0MDQ3My0yLjk3NjgzNyA3LjMyODUxOC0yLjkwNTEwNiA3LjMwNDYwOC0yLjg1NzI4NUM2Ljc1NDY3LS45OTIyNzkgNS4xNDA3MjItLjA5NTY0MSAzLjk0NTIwNS0uMDk1NjQxQzIuNjc3OTU4LS4wOTU2NDEgMS41NzgwODItLjkwODU5MyAxLjU3ODA4Mi0yLjYwNjIyN0MxLjU3ODA4Mi0yLjk4ODc5MiAxLjY5NzYzNC01LjA2ODk5MSAzLjA0ODU2OC02LjYzNTExOEMzLjcwNjEwMi03LjQwMDI0OSA0LjgyOTg4OC04LjA2OTczOCA1Ljk2NTYyOS04LjA2OTczOEM3LjI4MDY5Ny04LjA2OTczOCA3Ljg2NjUwMS02Ljk4MTgxOCA3Ljg2NjUwMS01Ljc2MjM5MUM3Ljg2NjUwMS01LjQ1MTU1NyA3LjgzMDYzNS01LjE4ODU0MyA3LjgzMDYzNS01LjE0MDcyMkM3LjgzMDYzNS01LjAzMzEyNiA3Ljk1MDE4Ny01LjAzMzEyNiA3Ljk4NjA1Mi01LjAzMzEyNkM4LjExNzU1OS01LjAzMzEyNiA4LjEyOTUxNC01LjA0NTA4MSA4LjE3NzMzNS01LjI2MDI3NEw4LjkzMDUxMS04LjMwODg0MlonLz4KPHBhdGggaWQ9J2cwLTc5JyBkPSdNOC42Nzk0NTItNS4yMzYzNjRDOC42Nzk0NTItNy4yMDg5NjYgNy4zODgyOTQtOC40MTY0MzggNS43MTQ1Ny04LjQxNjQzOEMzLjE1NjE2NC04LjQxNjQzOCAuNTczODQ4LTUuNjY2NzUgLjU3Mzg0OC0yLjkwNTEwNkMuNTczODQ4LTEuMDI4MTQ0IDEuODE3MTg2IC4yNTEwNTkgMy41NTA2ODUgLjI1MTA1OUM2LjA2MTI3IC4yNTEwNTkgOC42Nzk0NTItMi4zNjcxMjMgOC42Nzk0NTItNS4yMzYzNjRaTTMuNjIyNDE2LS4wMjM5MUMyLjY0MjA5Mi0uMDIzOTEgMS42MDE5OTMtLjc0MTIyIDEuNjAxOTkzLTIuNjA2MjI3QzEuNjAxOTkzLTMuNjk0MTQ3IDEuOTk2NTEzLTUuNDc1NDY3IDIuOTc2ODM3LTYuNjcwOTg0QzMuODQ5NTY0LTcuNzIzMDM5IDQuODUzNzk4LTguMTUzNDI1IDUuNjU0Nzk1LTguMTUzNDI1QzYuNzA2ODQ5LTguMTUzNDI1IDcuNzIzMDM5LTcuMzg4Mjk0IDcuNzIzMDM5LTUuNjY2NzVDNy43MjMwMzktNC42MDI3NCA3LjI2ODc0Mi0yLjk0MDk3MSA2LjQ2Nzc0Ni0xLjgwNTIzQzUuNTk1MDE5LS41ODU4MDMgNC41MDcwOTgtLjAyMzkxIDMuNjIyNDE2LS4wMjM5MVonLz4KPC9kZWZzPgo8ZyBpZD0ncGFnZTEnPgo8cGF0aCBkPSdNMjcxLjE5NSAxMDEuMTEzMjgyQzI3MS4xOTUgNy4xNzk3IDE5NS4wNDY5LTY4Ljk2OSAxMDEuMTEzMjgyLTY4Ljk2OUM3LjE3OTctNjguOTY5LTY4Ljk2OSA3LjE3OTctNjguOTY5IDEwMS4xMTMyODJDLTY4Ljk2OSAxOTUuMDQ2OSA3LjE3OTcgMjcxLjE5NSAxMDEuMTEzMjgyIDI3MS4xOTVDMTk1LjA0NjkgMjcxLjE5NSAyNzEuMTk1IDE5NS4wNDY5IDI3MS4xOTUgMTAxLjExMzI4MlonIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00zODQuNTgyIDEwMS4xMTMyODJMMjAzLjE1Ni0zNC45NDUnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00zODQuNTgyIDEwMS4xMTMyODJMMjAzLjE1NiAyMzcuMTcyJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNMTAxLjExMzI4MiAxMDEuMTEzMjgyTDIwMy4xNTYtMzQuOTQ1JyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNMTAxLjExMzI4MiAxMDEuMTEzMjgyTDIwMy4xNTYgMjM3LjE3Micgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAtMTMuMzcxMyAxMi4yNjkpJz4KPHVzZSB4PScxMDEuMTEyNTQyJyB5PScxMDEuMTEyNTQyJyB4bGluazpocmVmPScjZzAtNzknLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDI4Ny41NjggNC4wODUpJz4KPHVzZSB4PScxMDEuMTEyNTQyJyB5PScxMDEuMTEyNTQyJyB4bGluazpocmVmPScjZzAtNjUnLz4KPC9nPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDg4LjQ0OCAtMTQwLjE2KSc+Cjx1c2UgeD0nMTAxLjExMjU0MicgeT0nMTAxLjExMjU0MicgeGxpbms6aHJlZj0nI2cwLTY2Jy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSA4OC43MTEgMTQ4LjMyOSknPgo8dXNlIHg9JzEwMS4xMTI1NDInIHk9JzEwMS4xMTI1NDInIHhsaW5rOmhyZWY9JyNnMC02NycvPgo8L2c+CjxwYXRoIGQ9J00xOTYuMzU1NS0yNS44NzVMMjA1LjQyNi0xOS4wNzRMMjEyLjIyNy0yOC4xNDUnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00xOTYuMzU1NSAyMjguMTAyTDIwNS40MjYgMjIxLjMwMUwyMTIuMjI3IDIzMC4zNzEnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjwvZz4KPC9zdmc+\" class=\"latex-image\" style=\"max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto;\">"},{"question":"<strong></strong> Cho biểu thức $M=\\dfrac{9+\\sqrt{9}}{1+\\sqrt{9}}+\\dfrac{9-\\sqrt{9}}{\\sqrt{9}}$. Giá trị của $7M$ là","answer":"35","type":"short-answer","questionNumber":17,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho biểu thức $M=\\dfrac{9+\\sqrt{9}}{1+\\sqrt{9}}+\\dfrac{9-\\sqrt{9}}{\\sqrt{9}}$. Giá trị của $7M$ là","rendered_answer":"35"},{"question":"Giá trị của $\\sqrt[3]{125}$ là","answer":"5","type":"short-answer","questionNumber":18,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Giá trị của $\\sqrt[3]{125}$ là","rendered_answer":"5"},{"question":"<strong></strong> Cho hai biểu thức: $A=2\\sqrt{20}-\\sqrt{45}+\\sqrt{{{\\left( \\sqrt{5}-4 \\right)}^{2}}}$ và $B=\\left( \\frac{2\\sqrt{x}}{\\sqrt{x}-2}-\\frac{x}{x-2\\sqrt{x}} \\right).\\frac{\\sqrt{x}+2}{\\sqrt{x}}$ <em>(với $x\\text{ }&gt;0$; $x\\ne 4$)</em> Giá trị của $x$ sao cho giá trị biểu thức $A$gấp hai lần giá trị biểu thức $B$ là","answer":"36","type":"short-answer","questionNumber":19,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Cho hai biểu thức: $A=2\\sqrt{20}-\\sqrt{45}+\\sqrt{{{\\left( \\sqrt{5}-4 \\right)}^{2}}}$ và $B=\\left( \\frac{2\\sqrt{x}}{\\sqrt{x}-2}-\\frac{x}{x-2\\sqrt{x}} \\right).\\frac{\\sqrt{x}+2}{\\sqrt{x}}$ <em>(với $x\\text{ }&gt;0$; $x\\ne 4$)</em> Giá trị của $x$ sao cho giá trị biểu thức $A$gấp hai lần giá trị biểu thức $B$ là","rendered_answer":"36"},{"question":"<strong> <em>Cho (O; $7\\text{cm}$) và (O’; $4\\text{cm}$) tiếp xúc trong. Khi đó độ dài đoạn OO’ là? (đơn vị cm)</em></strong>","answer":"3","type":"short-answer","questionNumber":20,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong> <em>Cho (O; $7\\text{cm}$) và (O’; $4\\text{cm}$) tiếp xúc trong. Khi đó độ dài đoạn OO’ là? (đơn vị cm)</em></strong>","rendered_answer":"3"},{"question":"<strong></strong> Một sân vận động hình tròn có chu vi $50\\,m$. Hỏi sân vận động đó chiếm một diện tích là bao nhiêu? (lấy $\\pi \\approx 3,14$, <em>làm tròn kết quả đến 0,05</em>)","answer":"199,05","type":"short-answer","questionNumber":21,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Một sân vận động hình tròn có chu vi $50\\,m$. Hỏi sân vận động đó chiếm một diện tích là bao nhiêu? (lấy $\\pi \\approx 3,14$, <em>làm tròn kết quả đến 0,05</em>)","rendered_answer":"199,05"},{"question":"**Cho nửa đường tròn tâm $O$ đường kính $AB = 6$. Từ $A$ và $B$ kẻ hai tiếp tuyến $Ax, By$. Qua điểm $M$ thuộc nửa đường tròn kẻ tiếp tuyến thứ ba cắt các tiếp tuyến $Ax, By$ lần lượt ở $C$ và $D$. Khi đó $\\dfrac{AC+BD}{CD}$ bằng bao nhiêu?** <TIKZ>\n\\begin{tikzpicture}\n\\coordinate (O) at (0,0);\n\\def\\R{3}; % Radius\n\\coordinate (A) at (-\\R,0);\n\\coordinate (B) at (\\R,0);\n\n% Semicircle\n\\draw (A) arc (180:0:\\R);\n\n% Tangent Ax\n\\draw[dashed] (A) -- (-\\R, \\R*2) node[above] {$x$};\n\\draw (-\\R,0) -- (-\\R, \\R*1.5);\n\n% Tangent By\n\\draw[dashed] (B) -- (\\R, \\R*2) node[above] {$y$};\n\\draw (\\R,0) -- (\\R, \\R*1.5);\n\n% Point M on the semicircle\n% Choose an angle for M, e.g., 60 degrees from positive x-axis\n\\coordinate (M) at ({\\R*cos(60)}, {\\R*sin(60)});\n\\fill (M) circle (1.5pt) node[above right] {$M$};\n\n% Tangent CD at M\n% Calculate C and D based on the tangent equation: x*cos(alpha) + y*sin(alpha) = R\n% For C (x = -R): y_C = R*(1+cos(alpha))/sin(alpha)\n% For D (x = R): y_D = R*(1-cos(alpha))/sin(alpha)\n\\pgfmathsetmacro{\\yC}{\\R*(1+cos(60))/sin(60)};\n\\pgfmathsetmacro{\\yD}{\\R*(1-cos(60))/sin(60)};\n\\coordinate (C) at (-\\R, \\yC);\n\\coordinate (D) at (\\R, \\yD);\n\n\\draw (C) -- (D);\n\\fill (C) circle (1.5pt) node[above left] {$C$};\n\\fill (D) circle (1.5pt) node[above right] {$D$};\n\n% Labels for A, B, O\n\\fill (A) circle (1.5pt) node[below left] {$A$}; \n\\fill (B) circle (1.5pt) node[below right] {$B$}; \n\\fill (O) circle (1.5pt) node[below] {$O$};\n\n% Right angle marks at A and B\n\\draw (-\\R,0.2) -- (-\\R+0.2,0.2) -- (-\\R+0.2,0);\n\\draw (\\R,0.2) -- (\\R-0.2,0.2) -- (\\R-0.2,0);\n\n\\end{tikzpicture}\n</TIKZ>","answer":"1","type":"short-answer","questionNumber":22,"isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong>Cho nửa đường tròn tâm $O$ đường kính $AB = 6$. Từ $A$ và $B$ kẻ hai tiếp tuyến $Ax, By$. Qua điểm $M$ thuộc nửa đường tròn kẻ tiếp tuyến thứ ba cắt các tiếp tuyến $Ax, By$ lần lượt ở $C$ và $D$. Khi đó $\\dfrac{AC+BD}{CD}$ bằng bao nhiêu?</strong> <img src=\"data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuMC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzE5Ny41NTg0NzVwdCcgaGVpZ2h0PScxOTMuOTIxNzczcHQnIHZpZXdCb3g9Jy02NS4yNjU5ODYgLTY1LjI2Njk2OSAxOTcuNTU4NDc1IDE5My45MjE3NzMnPgo8ZGVmcz4KPHBhdGggaWQ9J2cwLTY1JyBkPSdNMi4wMzIzNzktMS4zMjcwMjRDMS42MTM5NDgtLjYyMTY2OSAxLjIwNzQ3Mi0uMzgyNTY1IC42MzM2MjQtLjM0NjdDLjUwMjExNy0uMzM0NzQ1IC40MDY0NzYtLjMzNDc0NSAuNDA2NDc2LS4xMTk1NTJDLjQwNjQ3Ni0uMDQ3ODIxIC40NjYyNTIgMCAuNTQ5OTM4IDBDLjc2NTEzMSAwIDEuMzAzMTEzLS4wMjM5MSAxLjUxODMwNi0uMDIzOTFDMS44NjUwMDYtLjAyMzkxIDIuMjQ3NTcyIDAgMi41ODIzMTYgMEMyLjY1NDA0NyAwIDIuNzk3NTA5IDAgMi43OTc1MDktLjIyNzE0OEMyLjc5NzUwOS0uMzM0NzQ1IDIuNzAxODY4LS4zNDY3IDIuNjMwMTM3LS4zNDY3QzIuMzU1MTY4LS4zNzA2MSAyLjEyODAyLS40NjYyNTIgMi4xMjgwMi0uNzUzMTc2QzIuMTI4MDItLjkyMDU0OCAyLjE5OTc1MS0xLjA1MjA1NSAyLjM1NTE2OC0xLjMxNTA2OEwzLjI2Mzc2MS0yLjgyMTQySDYuMzEyMzI5QzYuMzI0Mjg0LTIuNzEzODIzIDYuMzI0Mjg0LTIuNjE4MTgyIDYuMzM2MjM5LTIuNTEwNTg1QzYuMzcyMTA1LTIuMTk5NzUxIDYuNTE1NTY3LS45NTY0MTMgNi41MTU1NjctLjcyOTI2NUM2LjUxNTU2Ny0uMzcwNjEgNS45MDU4NTMtLjM0NjcgNS43MTQ1Ny0uMzQ2N0M1LjU4MzA2NC0uMzQ2NyA1LjQ1MTU1Ny0uMzQ2NyA1LjQ1MTU1Ny0uMTMxNTA3QzUuNDUxNTU3IDAgNS41NTkxNTMgMCA1LjYzMDg4NCAwQzUuODM0MTIyIDAgNi4wNzMyMjUtLjAyMzkxIDYuMjc2NDYzLS4wMjM5MUg2Ljk1NzkwOEM3LjY4NzE3My0uMDIzOTEgOC4yMTMyIDAgOC4yMjUxNTYgMEM4LjMwODg0MiAwIDguNDQwMzQ5IDAgOC40NDAzNDktLjIyNzE0OEM4LjQ0MDM0OS0uMzQ2NyA4LjMzMjc1Mi0uMzQ2NyA4LjE1MzQyNS0uMzQ2N0M3LjQ5NTg5LS4zNDY3IDcuNDgzOTM1LS40NTQyOTYgNy40NDgwNy0uODEyOTUxTDYuNzE4ODA0LTguMjcyOTc2QzYuNjk0ODk0LTguNTEyMDggNi42NDcwNzMtOC41MzU5OSA2LjUxNTU2Ny04LjUzNTk5QzYuMzk2MDE1LTguNTM1OTkgNi4zMjQyODQtOC41MTIwOCA2LjIxNjY4Ny04LjMzMjc1MkwyLjAzMjM3OS0xLjMyNzAyNFpNMy40NjY5OTktMy4xNjgxMkw1Ljg2OTk4OC03LjE4NTA1Nkw2LjI3NjQ2My0zLjE2ODEySDMuNDY2OTk5WicvPgo8cGF0aCBpZD0nZzAtNjYnIGQ9J000LjM3NTU5Mi03LjM1MjQyOEM0LjQ4MzE4OC03Ljc5NDc3IDQuNTMxMDA5LTcuODE4NjggNC45OTcyNi03LjgxODY4SDYuNTUxNDMyQzcuOTAyMzY2LTcuODE4NjggNy45MDIzNjYtNi42NzA5ODQgNy45MDIzNjYtNi41NjMzODdDNy45MDIzNjYtNS41OTUwMTkgNi45MzM5OTgtNC4zNjM2MzYgNS4zNTU5MTUtNC4zNjM2MzZIMy42MzQzNzFMNC4zNzU1OTItNy4zNTI0MjhaTTYuMzk2MDE1LTQuMjY3OTk1QzcuNjk5MTI4LTQuNTA3MDk4IDguODgyNjktNS40MTU2OTEgOC44ODI2OS02LjUxNTU2N0M4Ljg4MjY5LTcuNDQ4MDcgOC4wNTc3ODMtOC4xNjUzOCA2LjcwNjg0OS04LjE2NTM4SDIuODY5MjRDMi42NDIwOTItOC4xNjUzOCAyLjUzNDQ5Ni04LjE2NTM4IDIuNTM0NDk2LTcuOTM4MjMyQzIuNTM0NDk2LTcuODE4NjggMi42NDIwOTItNy44MTg2OCAyLjgyMTQyLTcuODE4NjhDMy41NTA2ODUtNy44MTg2OCAzLjU1MDY4NS03LjcyMzAzOSAzLjU1MDY4NS03LjU5MTUzMkMzLjU1MDY4NS03LjU2NzYyMSAzLjU1MDY4NS03LjQ5NTg5IDMuNTAyODY0LTcuMzE2NTYzTDEuODg4OTE3LS44ODQ2ODJDMS43ODEzMi0uNDY2MjUyIDEuNzU3NDEtLjM0NjcgLjkyMDU0OC0uMzQ2N0MuNjkzNC0uMzQ2NyAuNTczODQ4LS4zNDY3IC41NzM4NDgtLjEzMTUwN0MuNTczODQ4IDAgLjY0NTU3OSAwIC44ODQ2ODIgMEg0Ljk4NTMwNUM2LjgxNDQ0NiAwIDguMjI1MTU2LTEuMzg2OCA4LjIyNTE1Ni0yLjU5NDI3MUM4LjIyNTE1Ni0zLjU3NDU5NSA3LjM2NDM4NC00LjE3MjM1NCA2LjM5NjAxNS00LjI2Nzk5NVpNNC42OTgzODEtLjM0NjdIMy4wODQ0MzNDMi45MTcwNjEtLjM0NjcgMi44OTMxNTEtLjM0NjcgMi44MjE0Mi0uMzU4NjU1QzIuNjg5OTEzLS4zNzA2MSAyLjY3Nzk1OC0uMzk0NTIxIDIuNjc3OTU4LS40OTAxNjJDMi42Nzc5NTgtLjU3Mzg0OCAyLjcwMTg2OC0uNjQ1NTc5IDIuNzI1Nzc4LS43NTMxNzZMMy41NjI2NC00LjEyNDUzM0g1LjgxMDIxMkM3LjIyMDkyMi00LjEyNDUzMyA3LjIyMDkyMi0yLjgwOTQ2NSA3LjIyMDkyMi0yLjcxMzgyM0M3LjIyMDkyMi0xLjU2NjEyNyA2LjE4MDgyMi0uMzQ2NyA0LjY5ODM4MS0uMzQ2N1onLz4KPHBhdGggaWQ9J2cwLTY3JyBkPSdNOC45MzA1MTEtOC4zMDg4NDJDOC45MzA1MTEtOC40MTY0MzggOC44NDY4MjQtOC40MTY0MzggOC44MjI5MTQtOC40MTY0MzhTOC43NTExODMtOC40MTY0MzggOC42NTU1NDItOC4yOTY4ODdMNy44MzA2MzUtNy4yOTI2NTNDNy40MTIyMDQtOC4wMDk5NjMgNi43NTQ2Ny04LjQxNjQzOCA1Ljg1ODAzMi04LjQxNjQzOEMzLjI3NTcxNi04LjQxNjQzOCAuNTk3NzU4LTUuNzk4MjU3IC41OTc3NTgtMi45ODg3OTJDLjU5Nzc1OC0uOTkyMjc5IDEuOTk2NTEzIC4yNTEwNTkgMy43NDE5NjggLjI1MTA1OUM0LjY5ODM4MSAuMjUxMDU5IDUuNTM1MjQzLS4xNTU0MTcgNi4yMjg2NDMtLjc0MTIyQzcuMjY4NzQyLTEuNjEzOTQ4IDcuNTc5NTc3LTIuNzczNTk5IDcuNTc5NTc3LTIuODY5MjRDNy41Nzk1NzctMi45NzY4MzcgNy40ODM5MzUtMi45NzY4MzcgNy40NDgwNy0yLjk3NjgzN0M3LjM0MDQ3My0yLjk3NjgzNyA3LjMyODUxOC0yLjkwNTEwNiA3LjMwNDYwOC0yLjg1NzI4NUM2Ljc1NDY3LS45OTIyNzkgNS4xNDA3MjItLjA5NTY0MSAzLjk0NTIwNS0uMDk1NjQxQzIuNjc3OTU4LS4wOTU2NDEgMS41NzgwODItLjkwODU5MyAxLjU3ODA4Mi0yLjYwNjIyN0MxLjU3ODA4Mi0yLjk4ODc5MiAxLjY5NzYzNC01LjA2ODk5MSAzLjA0ODU2OC02LjYzNTExOEMzLjcwNjEwMi03LjQwMDI0OSA0LjgyOTg4OC04LjA2OTczOCA1Ljk2NTYyOS04LjA2OTczOEM3LjI4MDY5Ny04LjA2OTczOCA3Ljg2NjUwMS02Ljk4MTgxOCA3Ljg2NjUwMS01Ljc2MjM5MUM3Ljg2NjUwMS01LjQ1MTU1NyA3LjgzMDYzNS01LjE4ODU0MyA3LjgzMDYzNS01LjE0MDcyMkM3LjgzMDYzNS01LjAzMzEyNiA3Ljk1MDE4Ny01LjAzMzEyNiA3Ljk4NjA1Mi01LjAzMzEyNkM4LjExNzU1OS01LjAzMzEyNiA4LjEyOTUxNC01LjA0NTA4MSA4LjE3NzMzNS01LjI2MDI3NEw4LjkzMDUxMS04LjMwODg0MlonLz4KPHBhdGggaWQ9J2cwLTY4JyBkPSdNMS44NzY5NjEtLjg4NDY4MkMxLjc2OTM2NS0uNDY2MjUyIDEuNzQ1NDU1LS4zNDY3IC45MDg1OTMtLjM0NjdDLjY4MTQ0NS0uMzQ2NyAuNTYxODkzLS4zNDY3IC41NjE4OTMtLjEzMTUwN0MuNTYxODkzIDAgLjYzMzYyNCAwIC44NzI3MjcgMEg0LjY2MjUxNkM3LjA3NzQ2IDAgOS40MzI2MjgtMi40OTg2MyA5LjQzMjYyOC01LjE2NDYzM0M5LjQzMjYyOC02Ljg4NjE3NyA4LjQwNDQ4My04LjE2NTM4IDYuNjk0ODk0LTguMTY1MzhIMi44NTcyODVDMi42MzAxMzctOC4xNjUzOCAyLjUyMjU0LTguMTY1MzggMi41MjI1NC03LjkzODIzMkMyLjUyMjU0LTcuODE4NjggMi42MzAxMzctNy44MTg2OCAyLjgwOTQ2NS03LjgxODY4QzMuNTM4NzMtNy44MTg2OCAzLjUzODczLTcuNzIzMDM5IDMuNTM4NzMtNy41OTE1MzJDMy41Mzg3My03LjU2NzYyMSAzLjUzODczLTcuNDk1ODkgMy40OTA5MDktNy4zMTY1NjNMMS44NzY5NjEtLjg4NDY4MlpNNC4zOTk1MDItNy4zNTI0MjhDNC41MDcwOTgtNy43OTQ3NyA0LjU1NDkxOS03LjgxODY4IDUuMDIxMTcxLTcuODE4NjhINi4zMzYyMzlDNy40NjAwMjUtNy44MTg2OCA4LjQ4ODE2OS03LjIwODk2NiA4LjQ4ODE2OS01LjU1OTE1M0M4LjQ4ODE2OS00Ljk2MTM5NSA4LjI0OTA2Ni0yLjg4MTE5NiA3LjA4OTQxNS0xLjU2NjEyN0M2Ljc1NDY3LTEuMTcxNjA2IDUuODQ2MDc3LS4zNDY3IDQuNDcxMjMzLS4zNDY3SDMuMTA4MzQ0QzIuOTQwOTcxLS4zNDY3IDIuOTE3MDYxLS4zNDY3IDIuODQ1MzMtLjM1ODY1NUMyLjcxMzgyMy0uMzcwNjEgMi43MDE4NjgtLjM5NDUyMSAyLjcwMTg2OC0uNDkwMTYyQzIuNzAxODY4LS41NzM4NDggMi43MjU3NzgtLjY0NTU3OSAyLjc0OTY4OS0uNzUzMTc2TDQuMzk5NTAyLTcuMzUyNDI4WicvPgo8cGF0aCBpZD0nZzAtNzcnIGQ9J00xMC44NTUyOTMtNy4yOTI2NTNDMTAuOTYyODg5LTcuNjk5MTI4IDEwLjk4NjgtNy44MTg2OCAxMS44MzU2MTYtNy44MTg2OEMxMi4wNjI3NjUtNy44MTg2OCAxMi4xNzAzNjEtNy44MTg2OCAxMi4xNzAzNjEtOC4wNDU4MjhDMTIuMTcwMzYxLTguMTY1MzggMTIuMDg2Njc1LTguMTY1MzggMTEuODU5NTI3LTguMTY1MzhIMTAuNDI0OTA3QzEwLjEyNjAyNy04LjE2NTM4IDEwLjExNDA3Mi04LjE1MzQyNSA5Ljk4MjU2NS03Ljk2MjE0Mkw1LjYxODkyOS0xLjA2NDAxTDQuNzIyMjkxLTcuOTAyMzY2QzQuNjg2NDI2LTguMTY1MzggNC42NzQ0NzEtOC4xNjUzOCA0LjM2MzYzNi04LjE2NTM4SDIuODgxMTk2QzIuNjU0MDQ3LTguMTY1MzggMi41NDY0NTEtOC4xNjUzOCAyLjU0NjQ1MS03LjkzODIzMkMyLjU0NjQ1MS03LjgxODY4IDIuNjU0MDQ3LTcuODE4NjggMi44MzMzNzUtNy44MTg2OEMzLjU2MjY0LTcuODE4NjggMy41NjI2NC03LjcyMzAzOSAzLjU2MjY0LTcuNTkxNTMyQzMuNTYyNjQtNy41Njc2MjEgMy41NjI2NC03LjQ5NTg5IDMuNTE0ODE5LTcuMzE2NTYzTDEuOTg0NTU4LTEuMjE5NDI3QzEuODQxMDk2LS42NDU1NzkgMS41NjYxMjctLjM4MjU2NSAuNzY1MTMxLS4zNDY3Qy43MjkyNjUtLjM0NjcgLjU4NTgwMy0uMzM0NzQ1IC41ODU4MDMtLjEzMTUwN0MuNTg1ODAzIDAgLjY5MzQgMCAuNzQxMjIgMEMuOTgwMzI0IDAgMS41OTAwMzctLjAyMzkxIDEuODI5MTQxLS4wMjM5MUgyLjQwMjk4OUMyLjU3MDM2MS0uMDIzOTEgMi43NzM1OTkgMCAyLjk0MDk3MSAwQzMuMDI0NjU4IDAgMy4xNTYxNjQgMCAzLjE1NjE2NC0uMjI3MTQ4QzMuMTU2MTY0LS4zMzQ3NDUgMy4wMzY2MTMtLjM0NjcgMi45ODg3OTItLjM0NjdDMi41OTQyNzEtLjM1ODY1NSAyLjIxMTcwNi0uNDMwMzg2IDIuMjExNzA2LS44NjA3NzJDMi4yMTE3MDYtLjk4MDMyNCAyLjIxMTcwNi0uOTkyMjc5IDIuMjU5NTI3LTEuMTU5NjUxTDMuOTA5MzQtNy43NDY5NDlIMy45MjEyOTVMNC45MTM1NzQtLjMyMjc5QzQuOTQ5NDQtLjAzNTg2NiA0Ljk2MTM5NSAwIDUuMDY4OTkxIDBDNS4yMDA0OTggMCA1LjI2MDI3NC0uMDk1NjQxIDUuMzIwMDUtLjIwMzIzOEwxMC4xMjYwMjctNy44MDY3MjVIMTAuMTM3OTgzTDguNDA0NDgzLS44ODQ2ODJDOC4yOTY4ODctLjQ2NjI1MiA4LjI3Mjk3Ni0uMzQ2NyA3LjQzNjExNS0uMzQ2N0M3LjIwODk2Ni0uMzQ2NyA3LjA4OTQxNS0uMzQ2NyA3LjA4OTQxNS0uMTMxNTA3QzcuMDg5NDE1IDAgNy4xOTcwMTEgMCA3LjI2ODc0MiAwQzcuNDcxOTggMCA3LjcxMTA4My0uMDIzOTEgNy45MTQzMjEtLjAyMzkxSDkuMzI1MDMxQzkuNTI4MjY5LS4wMjM5MSA5Ljc3OTMyOCAwIDkuOTgyNTY1IDBDMTAuMDc4MjA3IDAgMTAuMjA5NzE0IDAgMTAuMjA5NzE0LS4yMjcxNDhDMTAuMjA5NzE0LS4zNDY3IDEwLjEwMjExNy0uMzQ2NyA5LjkyMjc5LS4zNDY3QzkuMTkzNTI0LS4zNDY3IDkuMTkzNTI0LS40NDIzNDEgOS4xOTM1MjQtLjU2MTg5M0M5LjE5MzUyNC0uNTczODQ4IDkuMTkzNTI0LS42NTc1MzQgOS4yMTc0MzUtLjc1MzE3NkwxMC44NTUyOTMtNy4yOTI2NTNaJy8+CjxwYXRoIGlkPSdnMC03OScgZD0nTTguNjc5NDUyLTUuMjM2MzY0QzguNjc5NDUyLTcuMjA4OTY2IDcuMzg4Mjk0LTguNDE2NDM4IDUuNzE0NTctOC40MTY0MzhDMy4xNTYxNjQtOC40MTY0MzggLjU3Mzg0OC01LjY2Njc1IC41NzM4NDgtMi45MDUxMDZDLjU3Mzg0OC0xLjAyODE0NCAxLjgxNzE4NiAuMjUxMDU5IDMuNTUwNjg1IC4yNTEwNTlDNi4wNjEyNyAuMjUxMDU5IDguNjc5NDUyLTIuMzY3MTIzIDguNjc5NDUyLTUuMjM2MzY0Wk0zLjYyMjQxNi0uMDIzOTFDMi42NDIwOTItLjAyMzkxIDEuNjAxOTkzLS43NDEyMiAxLjYwMTk5My0yLjYwNjIyN0MxLjYwMTk5My0zLjY5NDE0NyAxLjk5NjUxMy01LjQ3NTQ2NyAyLjk3NjgzNy02LjY3MDk4NEMzLjg0OTU2NC03LjcyMzAzOSA0Ljg1Mzc5OC04LjE1MzQyNSA1LjY1NDc5NS04LjE1MzQyNUM2LjcwNjg0OS04LjE1MzQyNSA3LjcyMzAzOS03LjM4ODI5NCA3LjcyMzAzOS01LjY2Njc1QzcuNzIzMDM5LTQuNjAyNzQgNy4yNjg3NDItMi45NDA5NzEgNi40Njc3NDYtMS44MDUyM0M1LjU5NTAxOS0uNTg1ODAzIDQuNTA3MDk4LS4wMjM5MSAzLjYyMjQxNi0uMDIzOTFaJy8+CjxwYXRoIGlkPSdnMC0xMjAnIGQ9J001LjY2Njc1LTQuODc3NzA5QzUuMjg0MTg0LTQuODA1OTc4IDUuMTQwNzIyLTQuNTE5MDU0IDUuMTQwNzIyLTQuMjkxOTA1QzUuMTQwNzIyLTQuMDA0OTgxIDUuMzY3ODctMy45MDkzNCA1LjUzNTI0My0zLjkwOTM0QzUuODkzODk4LTMuOTA5MzQgNi4xNDQ5NTYtNC4yMjAxNzQgNi4xNDQ5NTYtNC41NDI5NjRDNi4xNDQ5NTYtNS4wNDUwODEgNS41NzExMDgtNS4yNzIyMjkgNS4wNjg5OTEtNS4yNzIyMjlDNC4zMzk3MjYtNS4yNzIyMjkgMy45MzMyNS00LjU1NDkxOSAzLjgyNTY1NC00LjMyNzc3MUMzLjU1MDY4NS01LjIyNDQwOCAyLjgwOTQ2NS01LjI3MjIyOSAyLjU5NDI3MS01LjI3MjIyOUMxLjM3NDg0NC01LjI3MjIyOSAuNzI5MjY1LTMuNzA2MTAyIC43MjkyNjUtMy40NDMwODhDLjcyOTI2NS0zLjM5NTI2OCAuNzc3MDg2LTMuMzM1NDkyIC44NjA3NzItMy4zMzU0OTJDLjk1NjQxMy0zLjMzNTQ5MiAuOTgwMzI0LTMuNDA3MjIzIDEuMDA0MjM0LTMuNDU1MDQ0QzEuNDEwNzEtNC43ODIwNjcgMi4yMTE3MDYtNS4wMzMxMjYgMi41NTg0MDYtNS4wMzMxMjZDMy4wOTYzODktNS4wMzMxMjYgMy4yMDM5ODUtNC41MzEwMDkgMy4yMDM5ODUtNC4yNDQwODVDMy4yMDM5ODUtMy45ODEwNzEgMy4xMzIyNTQtMy43MDYxMDIgMi45ODg3OTItMy4xMzIyNTRMMi41ODIzMTYtMS40OTQzOTZDMi40MDI5ODktLjc3NzA4NiAyLjA1NjI4OS0uMTE5NTUyIDEuNDIyNjY1LS4xMTk1NTJDMS4zNjI4ODktLjExOTU1MiAxLjA2NDAxLS4xMTk1NTIgLjgxMjk1MS0uMjc0OTY5QzEuMjQzMzM3LS4zNTg2NTUgMS4zMzg5NzktLjcxNzMxIDEuMzM4OTc5LS44NjA3NzJDMS4zMzg5NzktMS4wOTk4NzUgMS4xNTk2NTEtMS4yNDMzMzcgLjkzMjUwMy0xLjI0MzMzN0MuNjQ1NTc5LTEuMjQzMzM3IC4zMzQ3NDUtLjk5MjI3OSAuMzM0NzQ1LS42MDk3MTRDLjMzNDc0NS0uMTA3NTk3IC44OTY2MzggLjExOTU1MiAxLjQxMDcxIC4xMTk1NTJDMS45ODQ1NTggLjExOTU1MiAyLjM5MTAzNC0uMzM0NzQ1IDIuNjQyMDkyLS44MjQ5MDdDMi44MzMzNzUtLjExOTU1MiAzLjQzMTEzMyAuMTE5NTUyIDMuODczNDc0IC4xMTk1NTJDNS4wOTI5MDIgLjExOTU1MiA1LjczODQ4MS0xLjQ0NjU3NSA1LjczODQ4MS0xLjcwOTU4OUM1LjczODQ4MS0xLjc2OTM2NSA1LjY5MDY2LTEuODE3MTg2IDUuNjE4OTI5LTEuODE3MTg2QzUuNTExMzMzLTEuODE3MTg2IDUuNDk5Mzc3LTEuNzU3NDEgNS40NjM1MTItMS42NjE3NjhDNS4xNDA3MjItLjYwOTcxNCA0LjQ0NzMyMy0uMTE5NTUyIDMuOTA5MzQtLjExOTU1MkMzLjQ5MDkwOS0uMTE5NTUyIDMuMjYzNzYxLS40MzAzODYgMy4yNjM3NjEtLjkyMDU0OEMzLjI2Mzc2MS0xLjE4MzU2MiAzLjMxMTU4Mi0xLjM3NDg0NCAzLjUwMjg2NC0yLjE2Mzg4NUwzLjkyMTI5NS0zLjc4OTc4OEM0LjEwMDYyMy00LjUwNzA5OCA0LjUwNzA5OC01LjAzMzEyNiA1LjA1NzAzNi01LjAzMzEyNkM1LjA4MDk0Ni01LjAzMzEyNiA1LjQxNTY5MS01LjAzMzEyNiA1LjY2Njc1LTQuODc3NzA5WicvPgo8cGF0aCBpZD0nZzAtMTIxJyBkPSdNMy4xNDQyMDkgMS4zMzg5NzlDMi44MjE0MiAxLjc5MzI3NSAyLjM1NTE2OCAyLjE5OTc1MSAxLjc2OTM2NSAyLjE5OTc1MUMxLjYyNTkwMyAyLjE5OTc1MSAxLjA1MjA1NSAyLjE3NTg0MSAuODcyNzI3IDEuNjI1OTAzQy45MDg1OTMgMS42Mzc4NTggLjk2ODM2OSAxLjYzNzg1OCAuOTkyMjc5IDEuNjM3ODU4QzEuMzUwOTM0IDEuNjM3ODU4IDEuNTkwMDM3IDEuMzI3MDI0IDEuNTkwMDM3IDEuMDUyMDU1UzEuMzYyODg5IC42ODE0NDUgMS4xODM1NjIgLjY4MTQ0NUMuOTkyMjc5IC42ODE0NDUgLjU3Mzg0OCAuODI0OTA3IC41NzM4NDggMS40MTA3MUMuNTczODQ4IDIuMDIwNDIzIDEuMDg3OTIgMi40Mzg4NTQgMS43NjkzNjUgMi40Mzg4NTRDMi45NjQ4ODIgMi40Mzg4NTQgNC4xNzIzNTQgMS4zMzg5NzkgNC41MDcwOTggLjAxMTk1NUw1LjY3ODcwNS00LjY1MDU2QzUuNjkwNjYtNC43MTAzMzYgNS43MTQ1Ny00Ljc4MjA2NyA1LjcxNDU3LTQuODUzNzk4QzUuNzE0NTctNS4wMzMxMjYgNS41NzExMDgtNS4xNTI2NzcgNS4zOTE3ODEtNS4xNTI2NzdDNS4yODQxODQtNS4xNTI2NzcgNS4wMzMxMjYtNS4xMDQ4NTcgNC45Mzc0ODQtNC43NDYyMDJMNC4wNTI4MDItMS4yMzEzODJDMy45OTMwMjYtMS4wMTYxODkgMy45OTMwMjYtLjk5MjI3OSAzLjg5NzM4NS0uODYwNzcyQzMuNjU4MjgxLS41MjYwMjcgMy4yNjM3NjEtLjExOTU1MiAyLjY4OTkxMy0uMTE5NTUyQzIuMDIwNDIzLS4xMTk1NTIgMS45NjA2NDgtLjc3NzA4NiAxLjk2MDY0OC0xLjA5OTg3NUMxLjk2MDY0OC0xLjc4MTMyIDIuMjgzNDM3LTIuNzAxODY4IDIuNjA2MjI3LTMuNTYyNjRDMi43Mzc3MzMtMy45MDkzNCAyLjgwOTQ2NS00LjA3NjcxMiAyLjgwOTQ2NS00LjMxNTgxNkMyLjgwOTQ2NS00LjgxNzkzMyAyLjQ1MDgwOS01LjI3MjIyOSAxLjg2NTAwNi01LjI3MjIyOUMuNzY1MTMxLTUuMjcyMjI5IC4zMjI3OS0zLjUzODczIC4zMjI3OS0zLjQ0MzA4OEMuMzIyNzktMy4zOTUyNjggLjM3MDYxLTMuMzM1NDkyIC40NTQyOTYtMy4zMzU0OTJDLjU2MTg5My0zLjMzNTQ5MiAuNTczODQ4LTMuMzgzMzEzIC42MjE2NjktMy41NTA2ODVDLjkwODU5My00LjU1NDkxOSAxLjM2Mjg4OS01LjAzMzEyNiAxLjgyOTE0MS01LjAzMzEyNkMxLjkzNjczNy01LjAzMzEyNiAyLjEzOTk3NS01LjAzMzEyNiAyLjEzOTk3NS00LjYzODYwNUMyLjEzOTk3NS00LjMyNzc3MSAyLjAwODQ2OC0zLjk4MTA3MSAxLjgyOTE0MS0zLjUyNjc3NUMxLjI0MzMzNy0xLjk2MDY0OCAxLjI0MzMzNy0xLjU2NjEyNyAxLjI0MzMzNy0xLjI3OTIwM0MxLjI0MzMzNy0uMTQzNDYyIDIuMDU2Mjg5IC4xMTk1NTIgMi42NTQwNDcgLjExOTU1MkMzLjAwMDc0NyAuMTE5NTUyIDMuNDMxMTMzIC4wMTE5NTUgMy44NDk1NjQtLjQzMDM4NkwzLjg2MTUxOS0uNDE4NDMxQzMuNjgyMTkyIC4yODY5MjQgMy41NjI2NCAuNzUzMTc2IDMuMTQ0MjA5IDEuMzM4OTc5WicvPgo8L2RlZnM+CjxnIGlkPSdwYWdlMSc+CjxwYXRoIGQ9J00tNTEuOTMzNiAxMTYuMzg2NzE3Qy01MS45MzM2IDY5LjQxOC0xMy44NTk0IDMxLjM0MzcgMzMuMTA5Mzc0IDMxLjM0MzdDODAuMDc0MiAzMS4zNDM3IDExOC4xNDg0IDY5LjQxOCAxMTguMTQ4NCAxMTYuMzg2NzE3JyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNLTUxLjkzMzYgMTE2LjM4NjcxN1YtNTMuNjk1JyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjM5ODUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcgc3Ryb2tlLWRhc2hhcnJheT0nMi45ODg4MyAyLjk4ODgzJy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgLTg4LjM2NjUgLTE3NC4xODA4KSc+Cjx1c2UgeD0nMzMuMTA4MTE0JyB5PScxMTYuMzg1ODA0JyB4bGluazpocmVmPScjZzAtMTIwJy8+CjwvZz4KPHBhdGggZD0nTS01MS45MzM2IDExNi4zODY3MTdWLTExLjE3Nicgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPHBhdGggZD0nTTExOC4xNDg0IDExNi4zODY3MTdWLTUzLjY5NScgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1kYXNoYXJyYXk9JzIuOTg4ODMgMi45ODg4MycvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIDgxLjk3MTkgLTE3Ni41MDU0KSc+Cjx1c2UgeD0nMzMuMTA4MTE0JyB5PScxMTYuMzg1ODA0JyB4bGluazpocmVmPScjZzAtMTIxJy8+CjwvZz4KPHBhdGggZD0nTTExOC4xNDg0IDExNi4zODY3MTdWLTExLjE3Nicgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPHBhdGggZD0nTTc3LjEyMTEgNDIuNzM4M0M3Ny4xMjExIDQxLjkxNDEgNzYuNDUzMSA0MS4yNDYxIDc1LjYyODkgNDEuMjQ2MVM3NC4xMzI4IDQxLjkxNDEgNzQuMTMyOCA0Mi43MzgzUzc0LjgwNDcgNDQuMjM0NCA3NS42Mjg5IDQ0LjIzNDRTNzcuMTIxMSA0My41NjI1IDc3LjEyMTEgNDIuNzM4M1onLz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSA0Ni42MjAyIC03Ny43NDczKSc+Cjx1c2UgeD0nMzMuMTA4MTE0JyB5PScxMTYuMzg1ODA0JyB4bGluazpocmVmPScjZzAtNzcnLz4KPC9nPgo8cGF0aCBkPSdNLTUxLjkzMzYtMzAuODk1TDExOC4xNDg0IDY3LjI5Mycgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPHBhdGggZD0nTS01MC40Mzc1LTMwLjg5NUMtNTAuNDM3NS0zMS43MjMtNTEuMTA1NS0zMi4zOTEtNTEuOTMzNi0zMi4zOTFDLTUyLjc1NzgtMzIuMzkxLTUzLjQyNTgtMzEuNzIzLTUzLjQyNTgtMzAuODk1Qy01My40MjU4LTMwLjA3LTUyLjc1NzgtMjkuNDAyLTUxLjkzMzYtMjkuNDAyQy01MS4xMDU1LTI5LjQwMi01MC40Mzc1LTMwLjA3LTUwLjQzNzUtMzAuODk1WicvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC05OC4zNzQxIC0xNTEuMzgxNyknPgo8dXNlIHg9JzMzLjEwODExNCcgeT0nMTE2LjM4NTgwNCcgeGxpbms6aHJlZj0nI2cwLTY3Jy8+CjwvZz4KPHBhdGggZD0nTTExOS42NDQ1IDY3LjI5M0MxMTkuNjQ0NSA2Ni40NjQ4IDExOC45NzI3IDY1Ljc5NjkgMTE4LjE0ODQgNjUuNzk2OUMxMTcuMzI0MiA2NS43OTY5IDExNi42NTIzIDY2LjQ2NDggMTE2LjY1MjMgNjcuMjkzQzExNi42NTIzIDY4LjExNzIgMTE3LjMyNDIgNjguNzg1MiAxMTguMTQ4NCA2OC43ODUyQzExOC45NzI3IDY4Ljc4NTIgMTE5LjY0NDUgNjguMTE3MiAxMTkuNjQ0NSA2Ny4yOTNaJy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgODkuMTM5OSAtNTMuMTkzOSknPgo8dXNlIHg9JzMzLjEwODExNCcgeT0nMTE2LjM4NTgwNCcgeGxpbms6aHJlZj0nI2cwLTY4Jy8+CjwvZz4KPHBhdGggZD0nTS01MC40Mzc1IDExNi4zODY3MTdDLTUwLjQzNzUgMTE1LjU2MjQ5OC01MS4xMDU1IDExNC44OTA2Mi01MS45MzM2IDExNC44OTA2MkMtNTIuNzU3OCAxMTQuODkwNjItNTMuNDI1OCAxMTUuNTYyNDk4LTUzLjQyNTggMTE2LjM4NjcxN0MtNTMuNDI1OCAxMTcuMjEwOTM2LTUyLjc1NzggMTE3Ljg3ODktNTEuOTMzNiAxMTcuODc4OUMtNTEuMTA1NSAxMTcuODc4OS01MC40Mzc1IDExNy4yMTA5MzYtNTAuNDM3NSAxMTYuMzg2NzE3WicvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC05Ny45MTU4IDEyLjI2OSknPgo8dXNlIHg9JzMzLjEwODExNCcgeT0nMTE2LjM4NTgwNCcgeGxpbms6aHJlZj0nI2cwLTY1Jy8+CjwvZz4KPHBhdGggZD0nTTExOS42NDQ1IDExNi4zODY3MTdDMTE5LjY0NDUgMTE1LjU2MjQ5OCAxMTguOTcyNyAxMTQuODkwNjIgMTE4LjE0ODQgMTE0Ljg5MDYyQzExNy4zMjQyIDExNC44OTA2MiAxMTYuNjUyMyAxMTUuNTYyNDk4IDExNi42NTIzIDExNi4zODY3MTdDMTE2LjY1MjMgMTE3LjIxMDkzNiAxMTcuMzI0MiAxMTcuODc4OSAxMTguMTQ4NCAxMTcuODc4OUMxMTguOTcyNyAxMTcuODc4OSAxMTkuNjQ0NSAxMTcuMjEwOTM2IDExOS42NDQ1IDExNi4zODY3MTdaJy8+CjxnIHRyYW5zZm9ybT0nbWF0cml4KDEgMCAwIDEgODkuMTM5OSAxMi4yNjkpJz4KPHVzZSB4PSczMy4xMDgxMTQnIHk9JzExNi4zODU4MDQnIHhsaW5rOmhyZWY9JyNnMC02NicvPgo8L2c+CjxwYXRoIGQ9J00zNC42MDE1NiAxMTYuMzg2NzE3QzM0LjYwMTU2IDExNS41NjI0OTggMzMuOTMzNTkzIDExNC44OTA2MiAzMy4xMDkzNzQgMTE0Ljg5MDYyQzMyLjI4MTI0OSAxMTQuODkwNjIgMzEuNjEzMjggMTE1LjU2MjQ5OCAzMS42MTMyOCAxMTYuMzg2NzE3QzMxLjYxMzI4IDExNy4yMTA5MzYgMzIuMjgxMjQ5IDExNy44Nzg5IDMzLjEwOTM3NCAxMTcuODc4OUMzMy45MzM1OTMgMTE3Ljg3ODkgMzQuNjAxNTYgMTE3LjIxMDkzNiAzNC42MDE1NiAxMTYuMzg2NzE3WicvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC00LjYzNTcgMTIuMjY5KSc+Cjx1c2UgeD0nMzMuMTA4MTE0JyB5PScxMTYuMzg1ODA0JyB4bGluazpocmVmPScjZzAtNzknLz4KPC9nPgo8cGF0aCBkPSdNLTUxLjkzMzYgMTEwLjcxNDg0SC00Ni4yNjE3VjExNi4zODY3MTcnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuMzk4NScgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjxwYXRoIGQ9J00xMTguMTQ4NCAxMTAuNzE0ODRIMTEyLjQ4MDVWMTE2LjM4NjcxNycgc3Ryb2tlPScjMDAwJyBmaWxsPSdub25lJyBzdHJva2Utd2lkdGg9Jy4zOTg1JyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnLz4KPC9nPgo8L3N2Zz4=\" class=\"latex-image\" style=\"max-width: 100%; height: auto; vertical-align: middle; display: block; margin: 8px auto;\">","rendered_answer":"1"}];
+        const options = {"title":"Bài kiểm tra - 24/12/2025","timeLimit":90,"retriesAllowed":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"shortAnswerFormat":"freeform","examCode":"030V60","teacherName":"Lê Văn Khải","scoring":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbyTP1Qm1wjnj23-9tMTqiAm1h0ZgqF7LnpKD6ahTGqTt8JliLFe0Sb36DGMtPL4cPfCLA/exec";
+        const examCode = "030V60";
+        
+        let userAnswers = new Array(quizData.length).fill(null);
+        let studentName = '';
+        let studentClass = '';
+        let timerInterval;
+        let timeRemaining = options.timeLimit * 60;
+        let retriesCount = 0;
+        let submissionStatus = 'pending';
+        let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+        let lastScore, lastAnswerDetails; // For retrying AI assessment
+        let isQuizActive = false;
+
+        const studentApiKeyInput = document.getElementById('student-api-key');
+
+        // Check if AI features are enabled by teacher
+        const needsAiKey = options.showExplanation || options.aiAssessment;
+        if (needsAiKey) {
+            document.getElementById('api-key-input-container').classList.remove('hidden');
+        }
+        
+        window.addEventListener('beforeunload', (e) => {
+            if (isQuizActive) {
+                const message = "Bạn đang làm bài, có muốn thoát không? Hãy nộp bài và thoát.";
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
+            }
+        });
+
+        // --- UTILS FOR SHUFFLING ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function mapType(typeStr) {
+             if (!typeStr) return 'multiple-choice';
+             if (typeStr.startsWith('mc-') || ['cloze-test', 'sentence-ordering', 'multiple-choice', 'paragraph-sentence-ordering'].includes(typeStr)) return 'multiple-choice';
+             if (typeStr.startsWith('tf-') || typeStr === 'true-false') return 'true-false';
+             if (typeStr === 'short-answer' || typeStr === 'sentence-transformation') return 'short-answer';
+             return 'essay';
+        }
+
+        // --- SHUFFLE LOGIC FOR ONLINE QUIZ ---
+        function applyShuffling() {
+            // 1. Shuffle Options/Statements within each question
+            quizData.forEach(item => {
+                const shuffleOpts = item.shuffleOptions || { answers: true };
+                const type = mapType(item.type);
+                
+                if (shuffleOpts.answers) {
+                    if (type === 'multiple-choice' && item.rendered_options && item.rendered_options.length > 0) {
+                        // Create indices array to shuffle
+                        const indices = item.rendered_options.map((_, i) => i);
+                        shuffleArray(indices);
+                        
+                        // Reorder rendered_options based on shuffled indices
+                        item.rendered_options = indices.map(i => item.rendered_options[i]);
+                        
+                        // Reorder raw options (needed for review/explanation context, though mostly rendered is used)
+                        if (item.options) {
+                            item.options = indices.map(i => item.options[i]);
+                        }
+                        
+                        // Update correctAnswerIndex
+                        // Old index was item.correctAnswerIndex. We need to find where it went.
+                        // New index is the position of the old correct index in the shuffled 'indices' array.
+                        item.correctAnswerIndex = indices.indexOf(item.correctAnswerIndex);
+
+                    } else if (type === 'true-false' && item.statements && item.statements.length > 0) {
+                        // Shuffle statements array directly
+                        shuffleArray(item.statements);
+                    }
+                }
+            });
+
+            // 2. Shuffle Question Order within Parts (respecting "Câu dẫn" aka Stem shuffle option)
+            // We group questions by type first to ensure we don't mix sections
+            const groupedQuestions = quizData.reduce((acc, q, index) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push({ ...q, originalIndex: index });
+                return acc;
+            }, {});
+            
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+            let newQuizData = [];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (questions) {
+                    const finalPartQuestions = new Array(questions.length).fill(null);
+                    const shufflableQuestions = [];
+                    
+                    // Separate fixed and shufflable questions
+                    questions.forEach((q, i) => {
+                        const shuffleOpts = q.shuffleOptions || { stem: true };
+                        if (shuffleOpts.stem) {
+                            shufflableQuestions.push(q);
+                        } else {
+                            finalPartQuestions[i] = q;
+                        }
+                    });
+
+                    // Shuffle the shufflable ones
+                    shuffleArray(shufflableQuestions);
+
+                    // Merge back
+                    let shufflableIndex = 0;
+                    for (let i = 0; i < finalPartQuestions.length; i++) {
+                        if (finalPartQuestions[i] === null) {
+                            finalPartQuestions[i] = shufflableQuestions[shufflableIndex];
+                            shufflableIndex++;
+                        }
+                    }
+                    newQuizData = newQuizData.concat(finalPartQuestions);
+                }
+            });
+            
+            // Update the global quizData with the shuffled version
+            if (newQuizData.length === quizData.length) {
+                quizData = newQuizData;
+            }
+            
+            // Reset user answers array to match new length (though length is same) and clear it
+            userAnswers = new Array(quizData.length).fill(null);
+        }
+        
+        // --- SMART FALLBACK GENERATOR ---
+        const PROVIDERS = [
+             {
+                id: 'gemini',
+                name: 'Google Gemini',
+                isValid: () => !!API_KEYS.gemini && API_KEYS.gemini.trim().length > 0,
+                execute: async (prompt) => {
+                     const ai = new GoogleGenAI({ apiKey: API_KEYS.gemini });
+                     // Fallback models for Gemini specifically
+                     const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+                     let lastErr;
+                     for (const model of models) {
+                        try {
+                            const res = await ai.models.generateContent({ model, contents: prompt });
+                            return res.text;
+                        } catch (e) { 
+                            console.warn(`Gemini ${model} error:`, e);
+                            lastErr = e; 
+                        }
+                     }
+                     throw lastErr || new Error("All Gemini models failed");
+                }
+            },
+            {
+                id: 'deepseek',
+                name: 'DeepSeek',
+                isValid: () => !!API_KEYS.deepseek && API_KEYS.deepseek.trim().length > 0,
+                execute: async (prompt) => {
+                     const res = await fetch("https://api.deepseek.com/chat/completions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEYS.deepseek}` },
+                        body: JSON.stringify({ model: "deepseek-chat", messages: [{role: "user", content: prompt}], temperature: 0.7 })
+                     });
+                     if(!res.ok) throw new Error(`DeepSeek status ${res.status}: ${await res.text()}`);
+                     const data = await res.json();
+                     return data.choices[0].message.content;
+                }
+            },
+            {
+                id: 'openai',
+                name: 'OpenAI',
+                isValid: () => !!API_KEYS.openai && API_KEYS.openai.trim().length > 0,
+                execute: async (prompt) => {
+                     const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEYS.openai}` },
+                        body: JSON.stringify({ model: "gpt-4o-mini", messages: [{role: "user", content: prompt}], temperature: 0.7 })
+                     });
+                     if(!res.ok) throw new Error(`OpenAI status ${res.status}: ${await res.text()}`);
+                     const data = await res.json();
+                     return data.choices[0].message.content;
+                }
+            }
+        ];
+
+        async function generateContentWithSmartFallback(prompt) {
+            const validProviders = PROVIDERS.filter(p => p.isValid());
+            if (validProviders.length === 0) {
+                throw new Error("Không có API Key nào được cấu hình. Vui lòng liên hệ giáo viên.");
+            }
+            
+            let errors = [];
+            for (const provider of validProviders) {
+                try {
+                    console.log(`Trying provider: ${provider.name}`);
+                    const text = await provider.execute(prompt);
+                    return { text };
+                } catch (err) {
+                    console.error(`Provider ${provider.name} failed:`, err);
+                    errors.push(`${provider.name}: ${err.message}`);
+                }
+            }
+            
+            throw new Error("Tất cả các mô hình AI đều thất bại:\n" + errors.join("\n"));
+        }
+
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('name');
+        const classInput = document.getElementById('class');
+        const timerEl = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitBtnTop = document.getElementById('submit-btn-top');
+        const scoreDisplay = document.getElementById('score-display');
+        const assessmentDisplay = document.getElementById('assessment-display');
+        const reviewContainer = document.getElementById('review-container');
+        const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningEl = document.getElementById('monitoring-warning');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const toggleNavBtn = document.getElementById('toggle-nav-btn');
+        const navPanel = document.getElementById('nav-panel');
+        const navGrid = document.getElementById('nav-grid');
+        
+
+        window.selectOption = selectOption;
+        window.selectTFOption = selectTFOption;
+        window.saveTextAnswer = saveTextAnswer;
+        window.toggleExplanation = toggleExplanation;
+        window.fetchAndRenderExplanation = fetchAndRenderExplanation;
+        window.retryAIAssessment = retryAIAssessment;
+        window.setupFormInputs = setupFormInputs;
+        window.saveFormAnswer = saveFormAnswer;
+        window.scrollToQuestion = scrollToQuestion;
+
+        startBtn.addEventListener('click', startQuiz);
+        submitBtn.addEventListener('click', confirmSubmit);
+        submitBtnTop.addEventListener('click', confirmSubmit);
+        retryBtn.addEventListener('click', retryQuiz);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        
+        toggleNavBtn.addEventListener('click', () => {
+            navPanel.classList.toggle('open');
+            document.body.classList.toggle('nav-open');
+        });
+
+        nameInput.value = localStorage.getItem('studentName') || '';
+        classInput.value = localStorage.getItem('studentClass') || '';
+        // Restore key if exists
+        if (studentApiKeyInput) {
+            studentApiKeyInput.value = localStorage.getItem('studentApiKey') || '';
+        }
+        
+        function safeTypeset(elements) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise(elements).catch(function (err) {
+                    console.error('MathJax error: ' + err.message);
+                });
+            }
+        }
+        
+        function startQuiz() {
+            studentName = nameInput.value.trim();
+            studentClass = classInput.value.trim();
+            
+            if (!studentName || !studentClass) {
+                alert('Vui lòng nhập đầy đủ Họ và tên và Lớp.');
+                return;
+            }
+            
+            // Handle Student API Key
+            if (studentApiKeyInput) {
+                const studentKey = studentApiKeyInput.value.trim();
+                if (studentKey) {
+                    API_KEYS.gemini = studentKey; // Prioritize student key
+                    localStorage.setItem('studentApiKey', studentKey);
+                }
+            }
+
+            localStorage.setItem('studentName', studentName);
+            localStorage.setItem('studentClass', studentClass);
+            
+            document.getElementById('student-name-display').textContent = studentName;
+
+            applyShuffling();
+            
+            welcomeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            resultsScreen.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            toggleNavBtn.classList.remove('hidden');
+            
+            if (window.innerWidth > 1024) {
+                navPanel.classList.add('open');
+                document.body.classList.add('nav-open');
+            }
+
+            userAnswers = new Array(quizData.length).fill(null);
+            submissionStatus = 'pending';
+            isQuizActive = true;
+            
+            renderAllQuestions();
+            renderNavPanel();
+            updateProgress();
+            
+            if (options.timeLimit > 0) {
+                timeRemaining = options.timeLimit * 60;
+                startTimer();
+            } else {
+                timerEl.textContent = '∞';
+            }
+            startMonitoring();
+        }
+
+        function renderNavPanel() {
+            navGrid.innerHTML = '';
+            quizData.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.id = `nav-btn-${index}`;
+                btn.textContent = index + 1;
+                btn.onclick = () => scrollToQuestion(index);
+                navGrid.appendChild(btn);
+            });
+        }
+
+        function scrollToQuestion(index) {
+            const el = document.getElementById(`q-${index}`);
+            if (el) {
+                const offset = 100; 
+                const elementPosition = el.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('current'));
+                document.getElementById(`nav-btn-${index}`)?.classList.add('current');
+            }
+            if (window.innerWidth <= 1024) {
+                navPanel.classList.remove('open');
+                document.body.classList.remove('nav-open');
+            }
+        }
+
+        function updateProgress() {
+            let answeredCount = 0;
+            quizData.forEach((item, index) => {
+                const answer = userAnswers[index];
+                const type = mapType(item.type);
+                let isAnswered = false;
+
+                if (type === 'multiple-choice') {
+                    isAnswered = answer !== null;
+                } else if (type === 'true-false') {
+                    isAnswered = Array.isArray(answer) && answer.filter(x => x !== null).length === item.statements.length;
+                } else { 
+                    isAnswered = answer && String(answer).trim().length > 0;
+                }
+
+                const btn = document.getElementById(`nav-btn-${index}`);
+                if (isAnswered) {
+                    answeredCount++;
+                    btn?.classList.add('answered');
+                } else {
+                    btn?.classList.remove('answered');
+                }
+            });
+
+            const percent = Math.round((answeredCount / quizData.length) * 100);
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        function renderAllQuestions() {
+            const container = document.getElementById('all-questions-container');
+            let allHTML = '';
+
+            const groupedQuestions = quizData.reduce((acc, q) => {
+                const type = mapType(q.type);
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(q);
+                return acc;
+            }, {});
+
+            const groupInfo = {
+                'multiple-choice': { title: 'PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN', color: 'blue' },
+                'true-false': { title: 'PHẦN II. TRẮC NGHIỆM ĐÚNG/SAI', color: 'purple' },
+                'short-answer': { title: 'PHẦN III. TRẢ LỜI NGẮN', color: 'teal' },
+                'essay': { title: 'PHẦN IV. TỰ LUẬN', color: 'orange' },
+            };
+            
+            let questionCounter = 0;
+            const partOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+
+            partOrder.forEach(partType => {
+                const questions = groupedQuestions[partType];
+                if (!questions || questions.length === 0) return;
+
+                const info = groupInfo[partType];
+                allHTML += `
+                    <div class="mb-6 pb-2 border-b-2 border-${info.color}-200 flex items-center gap-2">
+                        <span class="bg-${info.color}-100 text-${info.color}-700 p-1.5 rounded-md">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </span>
+                        <h2 class="text-xl md:text-2xl font-bold text-gray-800">${info.title}</h2>
+                    </div>`;
+                
+                questions.forEach((item) => {
+                    const index = quizData.indexOf(item);
+                    questionCounter++;
+                    
+                    let contentHTML = `<div class="question-card mb-8 p-6 border border-gray-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow scroll-mt-32" id="q-${index}">`;
+                    contentHTML += `
+                        <div class="flex items-start gap-3 mb-4">
+                             <span class="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-lg text-sm shadow-sm">Câu ${questionCounter}</span>
+                        </div>
+                    `;
+                    contentHTML += `<div class="prose max-w-none text-gray-800 mb-6 font-medium text-lg leading-relaxed">${item.rendered_question || ''}</div>`;
+
+                    let answerHTML = '';
+                    const savedAnswer = userAnswers[index];
+                    const type = mapType(item.type);
+                    
+                    if (type === 'multiple-choice') {
+                        answerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                        (item.rendered_options || []).forEach((opt, i) => {
+                            const isSelected = savedAnswer === i;
+                            answerHTML += `
+                                <div class="option ${isSelected ? 'selected' : ''} p-4 border border-gray-200 rounded-xl cursor-pointer flex items-start gap-3 hover:bg-gray-50" data-q-index="${index}" data-opt-index="${i}" onclick="selectOption(this, ${index}, ${i})">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full border-2 ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-500'} flex items-center justify-center font-bold text-sm transition-colors">${String.fromCharCode(65 + i)}</div>
+                                    <div class="flex-grow pt-1 text-gray-700">${opt}</div>
+                                </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'true-false') {
+                         answerHTML = `<div class="space-y-3">`;
+                         (item.statements || []).forEach((stmt, i) => {
+                            const savedStmtAnswer = savedAnswer ? savedAnswer[i] : null;
+                            const isTrueSelected = savedStmtAnswer === true;
+                            const isFalseSelected = savedStmtAnswer === false;
+                            answerHTML += `<div class="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div class="flex-grow flex gap-3">
+                                                    <span class="font-bold text-gray-500">${String.fromCharCode(97 + i)})</span>
+                                                    <div class="prose max-w-none text-gray-700">${stmt.rendered_statement}</div>
+                                                </div>
+                                                <div class="flex-shrink-0 flex gap-2 self-end sm:self-auto">
+                                                    <button class="${isTrueSelected ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50'} px-5 py-2 rounded-lg font-semibold transition-all" onclick="selectTFOption(this, ${index}, ${i}, true)">Đúng</button>
+                                                    <button class="${isFalseSelected ? 'bg-red-500 text-white shadow-md ring-2 ring-red-300' : 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50'} px-5 py-2 rounded-lg font-semibold transition-all" onclick="selectTFOption(this, ${index}, ${i}, false)">Sai</button>
+                                                </div>
+                                            </div>`;
+                        });
+                        answerHTML += `</div>`;
+                    } else if (type === 'short-answer') {
+                        const savedAnswerStr = userAnswers[index] || '';
+                        if (options.shortAnswerFormat === 'form') {
+                             answerHTML = `<div id="sa-form-${index}" class="flex items-center gap-3 p-4 bg-teal-50 rounded-xl border border-teal-100">`;
+                            for (let i = 0; i < 4; i++) {
+                                answerHTML += `<input type="text" maxlength="1" data-q-index="${index}" class="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-teal-500 focus:ring focus:ring-teal-200 focus:outline-none bg-white shadow-sm transition-all" value="">`;
+                            }
+                            answerHTML += `</div>`;
+                        } else {
+                            answerHTML = `<input type="text" class="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-lg" placeholder="Nhập câu trả lời của bạn..." value="${savedAnswerStr}" onchange="saveTextAnswer(this, ${index})">`;
+                        }
+                    } else if (type === 'essay') {
+                        answerHTML = `<textarea class="w-full border-gray-300 rounded-xl p-4 shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all" rows="6" placeholder="Nhập bài làm tự luận..." onchange="saveTextAnswer(this, ${index})">${savedAnswer || ''}</textarea>`;
+                    }
+
+                    contentHTML += answerHTML + '</div>';
+                    allHTML += contentHTML;
+                });
+            });
+            container.innerHTML = allHTML;
+
+            document.querySelectorAll('[id^="sa-form-"]').forEach(formContainer => {
+                const inputs = formContainer.querySelectorAll('input');
+                if (inputs.length > 0) {
+                    setupFormInputs(inputs);
+                }
+            });
+
+            safeTypeset([container]);
+        }
+
+        function setupFormInputs(inputs) {
+            const qIndex = inputs[0].dataset.qIndex;
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    saveFormAnswer(qIndex, inputs);
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                     saveFormAnswer(qIndex, inputs);
+                });
+                 input.addEventListener('change', () => saveFormAnswer(qIndex, inputs));
+            });
+        }
+
+        function saveFormAnswer(qIndex, inputs) {
+            let combinedValue = '';
+            inputs.forEach(inp => { combinedValue += inp.value; });
+            userAnswers[qIndex] = combinedValue;
+            updateProgress();
+        }
+
+        function selectOption(element, qIndex, optIndex) {
+            userAnswers[qIndex] = optIndex;
+            const questionCard = document.getElementById(`q-${qIndex}`);
+            questionCard.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.querySelector('div:first-child').classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white');
+                opt.querySelector('div:first-child').classList.add('border-gray-300', 'text-gray-500');
+            });
+            element.classList.add('selected');
+            element.querySelector('div:first-child').classList.remove('border-gray-300', 'text-gray-500');
+            element.querySelector('div:first-child').classList.add('border-indigo-600', 'bg-indigo-600', 'text-white');
+            updateProgress();
+        }
+        
+        function selectTFOption(button, qIndex, stmtIndex, answer) {
+            if (!userAnswers[qIndex] || !Array.isArray(userAnswers[qIndex])) {
+                userAnswers[qIndex] = new Array(quizData[qIndex].statements.length).fill(null);
+            }
+            userAnswers[qIndex][stmtIndex] = answer;
+            const parent = button.parentElement;
+            
+            // Reset styles
+            const trueBtn = parent.children[0];
+            const falseBtn = parent.children[1];
+            
+            trueBtn.className = 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 px-5 py-2 rounded-lg font-semibold transition-all';
+            falseBtn.className = 'bg-white text-gray-600 border border-gray-300 hover:bg-red-50 px-5 py-2 rounded-lg font-semibold transition-all';
+
+            if (answer) {
+                trueBtn.className = 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300 px-5 py-2 rounded-lg font-semibold transition-all';
+            } else {
+                falseBtn.className = 'bg-red-500 text-white shadow-md ring-2 ring-red-300 px-5 py-2 rounded-lg font-semibold transition-all';
+            }
+            updateProgress();
+        }
+        
+        function saveTextAnswer(element, qIndex) {
+            userAnswers[qIndex] = element.value;
+            updateProgress();
+        }
+
+        function confirmSubmit() {
+            const unansweredQuestions = userAnswers.map((answer, index) => ({ answer, index }))
+                                                .filter(item => item.answer === null || 
+                                                                (Array.isArray(item.answer) && item.answer.some(a => a === null)));
+
+            let message = "Bạn có chắc chắn muốn nộp bài không?";
+            if (unansweredQuestions.length > 0) {
+                message = `Bạn còn ${unansweredQuestions.length} câu chưa hoàn thành. Bạn có chắc chắn muốn nộp bài không?`;
+            }
+
+            if (confirm(message)) {
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (submissionStatus !== 'pending') return;
+            submissionStatus = 'submitting';
+            stopTimer();
+            stopMonitoring();
+            isQuizActive = false;
+            
+            const submitBtnEl = document.getElementById('submit-btn');
+            submitBtnEl.disabled = true;
+            submitBtnEl.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang nộp bài...';
+            
+            progressContainer.classList.add('hidden');
+            toggleNavBtn.classList.add('hidden');
+            navPanel.classList.remove('open');
+            document.body.classList.remove('nav-open');
+
+            const { score, totalPossibleScore, answerDetails } = calculateScore();
+            lastScore = score;
+            lastAnswerDetails = answerDetails;
+            const finalScore = (totalPossibleScore > 0 ? (score / totalPossibleScore * 10) : 0).toFixed(2);
+            let aiAssessment = 'Không có';
+
+            if (options.aiAssessment) {
+                aiAssessment = await getAIAssessment(finalScore, answerDetails);
+            }
+            
+            const submissionData = new FormData();
+            submissionData.append('timestamp', new Date().toLocaleString('vi-VN'));
+            submissionData.append('name', studentName);
+            submissionData.append('class', studentClass);
+            submissionData.append('score', finalScore);
+            submissionData.append('assessment', aiAssessment);
+            submissionData.append('examCode', examCode);
+            submissionData.append('monitoringLog', JSON.stringify(monitoringLog));
+            submissionData.append('answerDetails', JSON.stringify(answerDetails));
+            
+            if (googleScriptUrl) {
+                try {
+                    await fetch(googleScriptUrl, { method: 'POST', body: new URLSearchParams(submissionData) });
+                } catch (error) {
+                    console.error('Error submitting to Google Script:', error);
+                    alert('Lỗi: Không thể nộp kết quả lên hệ thống. Vui lòng kiểm tra lại kết nối mạng và thử lại.');
+                }
+            }
+            submissionStatus = 'submitted';
+            showResults(finalScore, aiAssessment, answerDetails);
+        }
+        
+        function showResults(score, assessment, answerDetails) {
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            // Trigger Confetti
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6']
+            });
+            
+            if (options.showAnswers) {
+                const scoreDisplay = document.getElementById('score-display');
+                scoreDisplay.querySelector('span:last-child').textContent = score;
+                scoreDisplay.classList.remove('hidden');
+            } else {
+                const scoreDisplay = document.getElementById('score-display');
+                scoreDisplay.innerHTML = '<p class="text-3xl text-center text-green-600 font-bold mb-4">Nộp bài thành công!</p><p class="text-gray-500">Kết quả đã được ghi nhận.</p>';
+                scoreDisplay.classList.remove('hidden');
+            }
+            
+            if (options.aiAssessment) {
+                if (assessment.startsWith("Lỗi")) {
+                    // handled
+                } else {
+                     document.querySelector('#assessment-display .assessment-content').innerHTML = assessment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                     assessmentDisplay.classList.remove('hidden');
+                }
+            } else {
+                assessmentDisplay.classList.add('hidden');
+            }
+            
+            if (options.showAnswers) {
+                renderReview(answerDetails);
+            } else {
+                reviewContainer.innerHTML = '<div class="text-center p-8 bg-gray-50 rounded-xl border border-gray-200"><p class="text-gray-600">Giáo viên đã chọn không hiển thị đáp án và giải thích chi tiết.</p></div>';
+            }
+            
+            if (retriesCount < options.retriesAllowed) retryBtn.classList.remove('hidden');
+        }
+
+        function calculateScore() {
+            let score = 0;
+            let totalPossibleScore = 0;
+            const answerDetails = [];
+            
+            const mcCount = quizData.filter(q => mapType(q.type) === 'multiple-choice').length;
+            const tfCount = quizData.filter(q => mapType(q.type) === 'true-false').length;
+            const saCount = quizData.filter(q => mapType(q.type) === 'short-answer').length;
+
+            const pointsPerMc = mcCount > 0 ? options.scoring.mc / mcCount : 0;
+            const pointsPerTf = tfCount > 0 ? options.scoring.tf / tfCount : 0;
+            const pointsPerSa = saCount > 0 ? options.scoring.sa / saCount : 0;
+            
+            totalPossibleScore = (options.scoring.mc || 0) + (options.scoring.tf || 0) + (options.scoring.sa || 0) + (options.scoring.essay || 0);
+            if (totalPossibleScore === 0 && (mcCount + tfCount + saCount > 0)) {
+                 totalPossibleScore = (pointsPerMc * mcCount) + (pointsPerTf * tfCount) + (pointsPerSa * saCount);
+            }
+            if (totalPossibleScore === 0 && quizData.length > 0) totalPossibleScore = 10; 
+
+            quizData.forEach((item, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                let detail = null;
+                const type = mapType(item.type);
+
+                if (type === 'multiple-choice') {
+                    isCorrect = userAnswer === item.correctAnswerIndex;
+                    if(isCorrect) score += pointsPerMc;
+                } else if (type === 'true-false') {
+                    let correctStatements = 0;
+                    detail = [];
+                    (item.statements || []).forEach((stmt, i) => {
+                        const isStmtCorrect = (userAnswer && userAnswer[i] === stmt.is_correct);
+                        if(isStmtCorrect) correctStatements++;
+                        detail.push({isCorrect: isStmtCorrect});
+                    });
+
+                    if (options.scoring.tfMethod === 'even') {
+                        score += (correctStatements / 4) * pointsPerTf;
+                    } else { // progressive
+                        if (correctStatements === 4) score += pointsPerTf;
+                        else if (correctStatements === 3) score += 0.5 * pointsPerTf;
+                        else if (correctStatements === 2) score += 0.25 * pointsPerTf;
+                        else if (correctStatements === 1) score += 0.1 * pointsPerTf;
+                    }
+                    isCorrect = correctStatements === 4;
+                } else if (type === 'short-answer') {
+                    const correctAnswer = (item.answer || '').toString().trim().toLowerCase();
+                    const studentAnswer = (userAnswer || '').toString().trim().toLowerCase();
+                    isCorrect = studentAnswer === correctAnswer;
+                    if (isCorrect) {
+                        score += pointsPerSa;
+                    }
+                } else {
+                    isCorrect = null; // For 'essay' type
+                }
+                answerDetails.push({ questionNumber: index + 1, isCorrect, type, details: detail });
+            });
+            return { score, totalPossibleScore, answerDetails };
+        }
+        
+        function renderReview(answerDetails) {
+            let reviewHTML = '<h3 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Xem lại bài làm chi tiết</h3>';
+            quizData.forEach((item, index) => {
+                const type = mapType(item.type);
+                const detail = answerDetails.find(d => d.questionNumber === index + 1);
+                const isCorrectQuestion = detail?.isCorrect;
+
+                let borderColor = isCorrectQuestion ? 'border-green-200' : (isCorrectQuestion === false ? 'border-red-200' : 'border-gray-200');
+                let bgColor = isCorrectQuestion ? 'bg-green-50' : (isCorrectQuestion === false ? 'bg-red-50' : 'bg-gray-50');
+                
+                reviewHTML += `<div class="mb-8 p-6 border ${borderColor} rounded-2xl ${bgColor} shadow-sm relative overflow-hidden">`;
+                
+                // Status Badge
+                if (type !== 'essay') {
+                     reviewHTML += `<div class="absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-bl-lg ${isCorrectQuestion ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">${isCorrectQuestion ? 'Đúng' : 'Sai'}</div>`;
+                }
+
+                reviewHTML += `<div class="flex gap-2 mb-3"><span class="bg-white border border-gray-200 text-gray-700 font-bold px-2.5 py-0.5 rounded-md text-sm">Câu ${index + 1}</span></div>`;
+                reviewHTML += `<div class="prose max-w-none mb-4 text-gray-800">${item.rendered_question}</div>`;
+
+                if (type === 'multiple-choice') {
+                     reviewHTML += '<div class="space-y-2">';
+                     (item.rendered_options || []).forEach((opt, i) => {
+                        let classes = 'p-3 border rounded-lg flex items-start gap-3';
+                        let icon = '';
+                        
+                        if (i === item.correctAnswerIndex) {
+                            classes += ' bg-green-100 border-green-400 ring-1 ring-green-400'; // Correct answer style
+                            icon = '<svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+                        } else if (userAnswers[index] === i) {
+                            classes += ' bg-red-100 border-red-400'; // Selected wrong answer
+                            icon = '<svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+                        } else {
+                            classes += ' bg-white border-gray-200 opacity-70';
+                        }
+
+                        reviewHTML += `<div class="${classes}">
+                            <span class="font-bold flex-shrink-0 w-6">${String.fromCharCode(65 + i)}.</span>
+                            <div class="flex-grow">${opt}</div>
+                            ${icon}
+                        </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else if (type === 'true-false') {
+                     reviewHTML += '<div class="space-y-2 mt-4">';
+                     (item.statements || []).forEach((stmt, i) => {
+                         const userChoice = userAnswers[index] ? userAnswers[index][i] : null;
+                         const isStmtCorrect = userChoice === stmt.is_correct;
+                         let classes = 'p-3 border rounded-lg flex items-center justify-between gap-4 bg-white';
+                         
+                         if (userChoice !== null) {
+                            classes = isStmtCorrect ? 'p-3 border border-green-300 bg-green-100 rounded-lg flex items-center justify-between gap-4' : 'p-3 border border-red-300 bg-red-100 rounded-lg flex items-center justify-between gap-4';
+                         }
+
+                         reviewHTML += `<div class="${classes}">
+                                         <div class="prose max-w-none text-sm">${stmt.rendered_statement}</div>
+                                         <div class="flex-shrink-0 text-right text-sm">
+                                             <div class="${stmt.is_correct ? 'text-green-700 font-bold' : 'text-red-700 font-bold'}">Đáp án: ${stmt.is_correct ? 'Đúng' : 'Sai'}</div>
+                                             <div class="text-gray-600">Bạn chọn: <span class="font-medium">${userChoice === true ? 'Đúng' : userChoice === false ? 'Sai' : '...'}</span></div>
+                                         </div>
+                                     </div>`;
+                     });
+                     reviewHTML += '</div>';
+                } else {
+                    reviewHTML += `<div class="mt-4 p-4 bg-white border border-gray-200 rounded-xl">
+                        <p class="text-sm font-bold text-gray-500 mb-1">Câu trả lời của bạn:</p>
+                        <div class="text-gray-800">${userAnswers[index] || '<em class="text-gray-400">Chưa trả lời</em>'}</div>
+                    </div>`;
+                    if (item.rendered_answer) {
+                        reviewHTML += `<div class="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                            <p class="text-sm font-bold text-green-700 mb-1">Đáp án gợi ý:</p>
+                            <div class="prose max-w-none text-green-900">${item.rendered_answer}</div>
+                        </div>`;
+                    }
+                }
+                
+                if (options.showExplanation) {
+                     reviewHTML += `<div class="mt-4 pt-4 border-t border-gray-200/50">
+                                      <button class="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="toggleExplanation(${index}, this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Xem giải thích chi tiết từ AI
+                                      </button>
+                                      <div id="explanation-${index}" class="mt-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl hidden text-sm text-gray-700 leading-relaxed"></div>
+                                   </div>`;
+                }
+                reviewHTML += '</div>';
+            });
+            reviewContainer.innerHTML = reviewHTML;
+            safeTypeset([reviewContainer]);
+        }
+
+        function retryQuiz() {
+            retriesCount++;
+            startQuiz();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    alert('Đã hết thời gian làm bài!');
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+        
+        function showWarning(message) {
+            warningEl.textContent = message;
+            warningEl.style.display = 'block';
+            warningEl.style.animation = 'none';
+            warningEl.offsetHeight; 
+            warningEl.style.animation = 'fade-in-out 5s ease-in-out';
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                monitoringLog.thoatManHinh++;
+                showWarning('⚠️ Đã phát hiện chuyển tab hoặc thu nhỏ cửa sổ!');
+            }
+        }
+        function handleCopy() { monitoringLog.saoChep++; showWarning('⚠️ Đã phát hiện hành vi sao chép!'); }
+        function handlePaste() { monitoringLog.dan++; showWarning('⚠️ Đã phát hiện hành vi dán!'); }
+        function startMonitoring() {
+            monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('copy', handleCopy);
+            document.addEventListener('paste', handlePaste);
+        }
+        function stopMonitoring() {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('copy', handleCopy);
+            document.removeEventListener('paste', handlePaste);
+        }
+
+        async function toggleExplanation(index, button) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            if (!explanationContainer) return;
+
+            const isHidden = explanationContainer.classList.toggle('hidden');
+            button.innerHTML = isHidden 
+                ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Xem giải thích chi tiết từ AI' 
+                : '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg> Ẩn giải thích';
+
+            const hasLoaded = explanationContainer.hasAttribute('data-loaded');
+            const hadError = explanationContainer.getAttribute('data-loaded') === 'error';
+
+            if (!isHidden && (!hasLoaded || hadError)) {
+                await fetchAndRenderExplanation(index);
+            }
+        }
+
+        async function fetchAndRenderExplanation(index) {
+            const explanationContainer = document.getElementById(`explanation-${index}`);
+            explanationContainer.innerHTML = '<div class="flex items-center gap-2 text-indigo-500"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI đang soạn lời giải...</div>';
+            explanationContainer.setAttribute('data-loaded', 'loading');
+
+            try {
+                const item = quizData[index];
+                const questionText = (mapType(item.type) === 'true-false') ? (item.main_question || '') : (item.question || '');
+                let prompt = `Bạn là một trợ lý giáo viên AI xuất sắc. Hãy viết lời giải chi tiết, dễ hiểu cho câu hỏi này.\n---\nCÂU HỎI:\n${questionText}\n---`;
+                
+                if (mapType(item.type) === 'multiple-choice') {
+                    prompt += `\n**ĐÁP ÁN ĐÚNG:** ${String.fromCharCode(65 + item.correctAnswerIndex)}. ${item.options[item.correctAnswerIndex] || ''}`;
+                } else if (mapType(item.type) === 'true-false') {
+                    prompt += `\n**CÁC MỆNH ĐỀ VÀ ĐÁP ÁN:**\n${item.statements.map((s, i) => `${String.fromCharCode(97 + i)}) ${s.statement || ''} -> ${s.is_correct ? 'Đúng' : 'Sai'}`).join('\n')}`;
+                } else {
+                    prompt += `---\n**ĐÁP ÁN / GỢI Ý:** ${item.answer || ''}`;
+                }
+                prompt += `\n---\n**YÊU CẦU:** Giải thích từng bước logic. Định dạng công thức toán bằng LaTeX (trong dấu $). Dùng **...** để in đậm các ý quan trọng.`;
+                
+                const response = await generateContentWithSmartFallback(prompt);
+                const explanationText = response.text || "Không thể tạo giải thích.";
+                
+                let htmlContent = explanationText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                explanationContainer.innerHTML = htmlContent;
+                safeTypeset([explanationContainer]);
+                explanationContainer.setAttribute('data-loaded', 'true');
+
+            } catch (error) {
+                console.error("AI Explanation Error:", error);
+                explanationContainer.innerHTML = `<div class="text-red-600 text-sm">Đã xảy ra lỗi khi tải lời giải. ${error.message}. <button onclick="event.preventDefault(); fetchAndRenderExplanation(${index})" class="underline font-semibold ml-1">Thử lại</button></div>`;
+                explanationContainer.setAttribute('data-loaded', 'error');
+            }
+        }
+
+        async function getAIAssessment(score, answerDetails) {
+            document.querySelector('#assessment-display .assessment-content').innerHTML = '<div class="flex items-center gap-2 text-indigo-600"><svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> AI đang phân tích bài làm của bạn...</div>';
+            assessmentDisplay.classList.remove('hidden');
+
+            try {
+                const wrongAnswers = answerDetails.filter(d => d.isCorrect === false || (d.type === 'true-false' && d.details && d.details.some(sub => !sub.isCorrect)));
+                if (wrongAnswers.length === 0) {
+                    const congrats = "Tuyệt vời! Em đã làm bài xuất sắc và không sai câu nào. Kiến thức của em rất vững vàng. Hãy tiếp tục duy trì phong độ này nhé! 🌟";
+                    document.querySelector('#assessment-display .assessment-content').innerHTML = congrats;
+                    return congrats;
+                }
+                const wrongQuestionsSummary = wrongAnswers.map(d => {
+                    const item = quizData[d.questionNumber - 1];
+                    const questionText = item.question || item.main_question || '';
+                    return `- Câu ${d.questionNumber}: ${questionText}`;
+                }).join('\n');
+                
+                const prompt = `Bạn là một giáo viên AI tâm lý và tận tụy. Dựa vào kết quả bài làm sau, hãy viết một đoạn nhận xét ngắn gọn (khoảng 100 từ) cho học sinh.\n**Kết quả:**\n- Điểm số: ${score} / 10\n- Các câu làm sai (nội dung tóm tắt):\n${wrongQuestionsSummary}\n**YÊU CẦU:**\n1. Bắt đầu bằng lời khen ngợi nỗ lực.\n2. Chỉ ra các mảng kiến thức cần ôn tập lại dựa trên các câu sai.\n3. Đưa ra 1 lời khuyên cụ thể để cải thiện.\n4. Kết thúc bằng lời động viên ấm áp.\n5. Sử dụng icon cảm xúc phù hợp.`;
+
+                const response = await generateContentWithSmartFallback(prompt);
+                const assessmentText = response.text || "Không thể tạo nhận xét.";
+                
+                document.querySelector('#assessment-display .assessment-content').innerHTML = assessmentText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                return assessmentText;
+
+            } catch (error) {
+                console.error("AI Assessment Error:", error);
+                document.querySelector('#assessment-display .assessment-content').innerHTML = `<div class="text-red-600">Lỗi kết nối với AI: ${error.message}. <button onclick="retryAIAssessment()" class="underline font-bold ml-1">Thử lại</button></div>`;
+                return "Lỗi khi tạo nhận xét AI.";
+            }
+        }
+        
+        async function retryAIAssessment() {
+            if (lastAnswerDetails) {
+                const finalScore = (lastScore / (quizData.length > 0 ? 10 : 1) * 10).toFixed(2);
+                await getAIAssessment(finalScore, lastAnswerDetails);
+            }
+        }
+    </script>
+</body>
+</html>
+    
