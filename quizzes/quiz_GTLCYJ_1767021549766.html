@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài Thi: Lớp 6 - Unit 1: My New School</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel để biên dịch JSX ngay trong trình duyệt -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <style>
+      body { font-family: 'Quicksand', sans-serif; }
+      .animate-bounce-slow { animation: bounce 3s infinite; }
+      @keyframes bounce { 0%, 100% { transform: translateY(-5%); } 50% { transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 bg-[radial-gradient(at_top_left,_var(--tw-gradient-stops))] from-indigo-100 via-purple-50 to-pink-100 min-h-screen text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- NHÚNG DỮ LIỆU CÂU HỎI ---
+        const quizData = {"questions":[{"id":"ENG6_U1_001","type":"multiple_choice","questionText":"What school tool do students use to draw circles in their geometry class?","explanation":"Dụng cụ học tập dùng để vẽ hình tròn trong môn hình học là cái com-pa (compass). Các từ còn lại: calculator (máy tính), rubber (cục tẩy), pencil sharpener (gọt bút chì).","skill":"Từ vựng (Vocabulary)","context":"","correctAnswer":"a compass","options":["a compass","a calculator","a rubber","a pencil sharpener"],"score":1}],"config":{"teacherName":"","language":"English","programMode":"school","grade":"Lớp 6","unit":"Unit 1: My New School","proficiencyLevel":"A1 (Beginner)","difficulty":"Trung bình","skills":[],"skillConfig":{"Từ vựng (Vocabulary)":{"multiple_choice":{"selected":true,"count":1,"topic":"","score":1,"level":"Nhận biết"}}},"googleScriptUrl":"","timeLimit":0,"githubUsername":"Phdungvt","githubRepo":"bai-tap-luyen-tap","topic":"","questionCount":0,"skillQuestionMapping":{},"questionTypes":[]},"scoreConfig":{"mc":1,"tf":1,"match":2,"ci":1,"writing":2},"examCode":"GTLCYJ"};
+        const { questions, config, scoreConfig, examCode } = quizData;
+
+        // --- COMPONENTS ---
+
+        const Button = ({ children, onClick, disabled, className, variant = 'primary' }) => {
+            const base = "font-bold rounded-xl transition-all duration-200 shadow-lg px-6 py-3 ";
+            const vars = {
+                primary: "bg-blue-600 text-white hover:bg-blue-500 disabled:bg-slate-300",
+                secondary: "bg-teal-500 text-white hover:bg-teal-400 disabled:bg-slate-300",
+                outline: "border-2 border-slate-300 bg-white text-slate-500 hover:border-blue-400"
+            };
+            return <button onClick={onClick} disabled={disabled} className={base + vars[variant] + " " + className}>{children}</button>;
+        };
+
+        const AudioPlayer = ({ text }) => {
+            const play = () => {
+                if(!window.speechSynthesis) return;
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US'; 
+                window.speechSynthesis.speak(u);
+            };
+            return (
+                <button onClick={play} className="mb-4 bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-blue-200 transition">
+                    🔊 Nghe đoạn văn
+                </button>
+            );
+        };
+
+        // --- MAIN APP COMPONENT ---
+        const QuizApp = () => {
+            const [view, setView] = React.useState('info'); // info, game, result
+            const [student, setStudent] = React.useState({ name: '', class: '' });
+            const [currentIdx, setCurrentIdx] = React.useState(0);
+            const [score, setScore] = React.useState(0);
+            const [selected, setSelected] = React.useState(null); // String for MC, Object/Array for Matching
+            const [isAnswered, setIsAnswered] = React.useState(false);
+            const [feedback, setFeedback] = React.useState(null);
+            
+            // Matching State
+            const [matches, setMatches] = React.useState({}); 
+
+            // Timer
+            const [timeLeft, setTimeLeft] = React.useState((config.timeLimit || 0) * 60);
+            
+            React.useEffect(() => {
+                if (view === 'game' && config.timeLimit > 0) {
+                    const t = setInterval(() => {
+                        setTimeLeft(p => {
+                            if (p <= 1) { clearInterval(t); finishGame(); return 0; }
+                            return p - 1;
+                        });
+                    }, 1000);
+                    return () => clearInterval(t);
+                }
+            }, [view]);
+
+            const formatTime = (s) => Math.floor(s/60) + ':' + (s%60 < 10 ? '0' : '') + (s%60);
+
+            const startExam = (e) => {
+                e.preventDefault();
+                if(student.name && student.class) setView('game');
+            };
+
+            const finishGame = () => {
+                setView('result');
+                // Gửi điểm về Google Sheet nếu có
+                if (config.googleScriptUrl) {
+                    const formData = new URLSearchParams();
+                    formData.append('name', student.name);
+                    formData.append('class', student.class);
+                    formData.append('score', score + '/' + questions.reduce((a,b)=>a+b.score,0));
+                    formData.append('examCode', examCode);
+                    formData.append('assessment', 'Nộp từ file HTML Offline');
+                    // Gửi request dạng no-cors để tránh lỗi chặn từ trình duyệt
+                    fetch(config.googleScriptUrl, {
+                        method: 'POST', mode: 'no-cors', body: formData,
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                    }).catch(e => console.log('Log send error', e));
+                }
+            };
+
+            const handleAnswer = () => {
+                const q = questions[currentIdx];
+                let correct = false;
+                
+                if (q.type === 'matching') {
+                     // Simple check: count correct pairs
+                     let correctCount = 0;
+                     q.pairs.forEach((p, i) => {
+                         if (matches[i] === i) correctCount++; // Assuming logic maps index to index
+                     });
+                     correct = correctCount === q.pairs.length;
+                } else if (q.type === 'writing') {
+                    const norm = s => s.toLowerCase().trim().replace(/[^a-z0-9]/g,'');
+                    correct = norm(selected || '') === norm(q.correctAnswer || '');
+                } else {
+                    correct = selected === q.correctAnswer;
+                }
+
+                if (correct) {
+                    setScore(s => s + q.score);
+                    setFeedback({correct: true, text: "Chính xác!"});
+                } else {
+                    setFeedback({correct: false, text: "Sai rồi. Đáp án đúng: " + (q.correctAnswer || 'Xem giải thích')});
+                }
+                setIsAnswered(true);
+            };
+
+            const nextQ = () => {
+                if (currentIdx < questions.length - 1) {
+                    setCurrentIdx(c => c + 1);
+                    setSelected(null);
+                    setMatches({});
+                    setIsAnswered(false);
+                    setFeedback(null);
+                } else {
+                    finishGame();
+                }
+            };
+
+            // --- RENDER VIEWS ---
+
+            if (view === 'info') return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-8 md:p-10 shadow-2xl max-w-md w-full border-4 border-indigo-200">
+                        <div className="text-center mb-8">
+                            <h1 className="text-2xl font-black text-indigo-900 mb-2 uppercase">BÀI THI TRỰC TUYẾN</h1>
+                            <div className="text-slate-500 font-bold">{config.grade} - {config.unit}</div>
+                            {config.timeLimit > 0 && <div className="mt-2 text-red-500 font-bold text-sm">⏱ Thời gian: {config.timeLimit} phút</div>}
+                        </div>
+                        <form onSubmit={startExam} className="space-y-4">
+                            <input required className="w-full p-4 border-2 rounded-xl font-bold outline-none focus:border-indigo-500" placeholder="Họ và tên..." value={student.name} onChange={e => setStudent({...student, name: e.target.value})} />
+                            <input required className="w-full p-4 border-2 rounded-xl font-bold outline-none focus:border-indigo-500" placeholder="Lớp..." value={student.class} onChange={e => setStudent({...student, class: e.target.value})} />
+                            <Button className="w-full" type="submit">BẮT ĐẦU LÀM BÀI</Button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            if (view === 'result') {
+                const max = questions.reduce((a,b)=>a+b.score,0);
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="bg-white rounded-[3rem] p-12 shadow-2xl text-center border-4 border-yellow-400 animate-bounce-slow max-w-lg w-full">
+                            <h2 className="text-3xl font-black text-slate-800 mb-6">KẾT QUẢ</h2>
+                            <div className="bg-yellow-50 p-8 rounded-3xl border-2 border-yellow-200 mb-6">
+                                <div className="text-6xl font-black text-yellow-600 mb-2">{score}/{max}</div>
+                                <p className="font-bold text-yellow-800 uppercase">Điểm số</p>
+                            </div>
+                            <p className="font-bold text-slate-500 mb-6">Bạn đã hoàn thành bài thi!</p>
+                            <Button onClick={()=>window.location.reload()} variant="outline">Làm lại</Button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // GAME VIEW
+            const q = questions[currentIdx];
+
+            return (
+                <div className="max-w-4xl mx-auto p-4 md:p-6 min-h-screen flex flex-col justify-center">
+                    <div className="bg-white/95 backdrop-blur rounded-3xl shadow-xl p-6 md:p-10 border-4 border-indigo-200 relative">
+                        {config.timeLimit > 0 && <div className="absolute top-4 right-6 font-mono font-bold text-red-500 text-xl">{formatTime(timeLeft)}</div>}
+                        
+                        <div className="mb-6 border-b pb-4 flex justify-between items-end">
+                            <div>
+                                <div className="font-bold text-indigo-900 text-lg">{student.name}</div>
+                                <div className="text-sm text-slate-500">{student.class}</div>
+                            </div>
+                            <div className="font-black text-indigo-600 text-xl">{currentIdx+1}/{questions.length}</div>
+                        </div>
+
+                        {q.audioScript && <AudioPlayer text={q.audioScript} />}
+                        {q.context && <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-slate-700 whitespace-pre-wrap text-lg">{q.context}</div>}
+                        
+                        {q.imageUrl && (
+                            <div className="flex justify-center mb-6">
+                                <img src={q.imageUrl} className="max-h-60 rounded-lg shadow-md object-contain border" />
+                            </div>
+                        )}
+                        
+                        {q.type !== 'matching' && (
+                            <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-8 whitespace-pre-line text-center">{q.questionText}</h3>
+                        )}
+
+                        {!isAnswered ? (
+                            <div className="space-y-4">
+                                {q.type === 'writing' ? (
+                                    <input className="w-full p-4 border-2 rounded-xl text-lg outline-none focus:border-indigo-500" placeholder="Nhập câu trả lời..." value={selected||''} onChange={e=>setSelected(e.target.value)} />
+                                ) : q.type === 'matching' ? (
+                                    <div className="text-center p-10 bg-slate-100 rounded-xl">
+                                        <h3 className="font-bold text-lg mb-4">{q.questionText}</h3>
+                                        <p className="italic text-slate-500">Dạng câu hỏi ghép nối này được hỗ trợ tốt nhất trên phiên bản App đầy đủ. Trên bản HTML rút gọn này, câu hỏi này sẽ được tính điểm tự động khi bạn nhấn "Chốt đáp án".</p>
+                                        <div className="mt-4"><button onClick={()=>setSelected('done')} className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded font-bold">Đã hoàn thành ghép nối (giả lập)</button></div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {(q.options || ['True', 'False']).map((opt, i) => (
+                                            <button key={i} onClick={()=>setSelected(opt)} className={"p-4 rounded-xl border-2 text-left font-medium transition-all flex gap-3 " + (selected===opt ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" : "border-slate-200 hover:border-indigo-300")}>
+                                                <span className={"w-6 h-6 rounded-full border flex items-center justify-center text-xs " + (selected===opt ? "bg-indigo-500 text-white" : "bg-slate-100")}>{String.fromCharCode(65+i)}</span>
+                                                <span>{opt}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="mt-8 flex justify-center">
+                                    <Button onClick={handleAnswer} disabled={!selected} className="w-full md:w-1/2">Chốt Đáp Án</Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-6 p-6 bg-slate-50 rounded-2xl border border-slate-200 animate-fade-in">
+                                <div className={"text-xl font-bold mb-2 flex items-center gap-2 " + (feedback.correct ? "text-green-600" : "text-red-500")}>
+                                    <span className="text-2xl">{feedback.correct ? '🎉' : '🤔'}</span> {feedback.text}
+                                </div>
+                                <div className="text-slate-700 mb-6"><span className="font-bold text-indigo-600">Giải thích:</span> {q.explanation}</div>
+                                <div className="flex justify-end">
+                                    <Button onClick={nextQ} variant="secondary">Tiếp theo ➜</Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<QuizApp />);
+    </script>
+</body>
+</html>
