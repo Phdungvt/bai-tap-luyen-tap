@@ -1,0 +1,257 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài tập (su)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); min-height: 100vh; }
+        .option { transition: all 0.2s ease; }
+        .option:hover { background-color: #f3f4f6; }
+        .option.selected { border-color: #4f46e5; background-color: #eef2ff; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; display: none; font-weight: bold; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #4f46e5; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 280px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 16px; }
+        .nav-btn {
+            width: 40px; height: 40px; border-radius: 8px; border: 1px solid #e5e7eb;
+            background: white; color: #4b5563; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-btn.answered { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; background-color: #fffbeb; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.nav-open #app { margin-right: 280px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .question-card { transition: box-shadow 0.3s; }
+        .question-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { 
+        "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+        "canvas-confetti": "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm"
+    } }
+    </script>
+</head>
+<body class="p-4 md:p-6">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden" title="Danh sách câu hỏi">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+            <h3 class="font-bold text-gray-800 text-lg">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-indigo-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid pb-20"></div>
+    </div>
+
+    <div id="app" class="max-w-5xl mx-auto transition-all duration-300">
+        
+        <div id="welcome-screen" class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto mt-10">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-center text-white relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 relative z-10">Bài tập (su)</h1>
+                <p class="text-indigo-100 text-sm md:text-base relative z-10">Mã đề: <span class="font-mono font-bold bg-white/20 px-2 py-1 rounded text-white">0UD4XE</span></p>
+                 <div class="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Giáo viên: <span class="font-bold text-yellow-300">Giáo viên bộ môn</span></span>
+                </div>
+            </div>
+            <div class="p-8">
+                <div class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên học sinh</label>
+                        <input type="text" id="name" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Nhập họ tên của bạn...">
+                    </div>
+                    <div>
+                        <label for="class" class="block text-sm font-semibold text-gray-700 mb-1">Lớp</label>
+                        <input type="text" id="class" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Ví dụ: 12A1">
+                    </div>
+                    
+                    <!-- API Key Input for Students -->
+                    <div id="api-key-input-container" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label class="block text-sm font-semibold text-blue-800 mb-2">
+                            Gemini API Key <span class="font-normal text-gray-600">(Yêu cầu để xem lời giải/nhận xét AI)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="password" id="student-api-key" class="flex-grow border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" placeholder="Nhập API Key của bạn (bắt đầu bằng AIza...)">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="flex-shrink-0 bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 font-semibold py-2 px-4 rounded-lg text-sm flex items-center transition-colors whitespace-nowrap">
+                                Lấy Key miễn phí
+                            </a>
+                        </div>
+                         <p class="text-xs text-gray-500 mt-2">
+                            * Sử dụng Key cá nhân giúp bạn trải nghiệm đầy đủ các tính năng AI mà không bị gián đoạn.
+                        </p>
+                    </div>
+                </div>
+                 <div class="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-amber-700">
+                                <span class="font-bold">Lưu ý:</span> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <button id="start-btn" class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 px-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2">
+                    <span>Bắt đầu làm bài</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="sticky top-0 z-30 -mx-4 md:-mx-6 mb-6">
+                 <div class="bg-white/90 backdrop-blur-md shadow-md border-b border-gray-200 py-3 px-4 md:px-8 flex justify-between items-center">
+                    <div>
+                         <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate max-w-[200px] md:max-w-md">Bài tập (su)</h2>
+                         <p class="text-xs text-gray-500 hidden md:block">Thí sinh: <span id="student-name-display" class="font-semibold"></span></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="timer" class="text-lg md:text-xl font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 shadow-sm flex items-center">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>00:00</span>
+                        </div>
+                        <button id="submit-btn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm md:text-base">Nộp bài</button>
+                    </div>
+                 </div>
+             </div>
+            
+            <div id="questions-container" class="space-y-6 md:space-y-8 pb-20"></div>
+        </div>
+
+        <div id="result-screen" class="hidden max-w-3xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+                 <div class="bg-gradient-to-r from-emerald-500 to-green-600 p-6 text-white text-center">
+                    <h2 class="text-3xl font-bold mb-2">Kết Quả Bài Thi</h2>
+                    <p class="text-emerald-100">Cảm ơn bạn đã hoàn thành bài kiểm tra!</p>
+                </div>
+                <div class="p-8 text-center">
+                     <div class="inline-flex items-center justify-center w-32 h-32 rounded-full border-8 border-emerald-100 bg-white mb-6">
+                        <span id="score-display" class="text-4xl font-black text-emerald-600">0.0</span>
+                    </div>
+                     <p class="text-gray-500 mb-6">Điểm số trên thang điểm 10</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8 text-left">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Họ và tên</p>
+                            <p id="result-name" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Lớp</p>
+                            <p id="result-class" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Thời gian làm bài</p>
+                            <p id="result-time" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                         <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Số câu đúng</p>
+                            <p id="result-correct-count" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-assessment-container" class="hidden mb-8 text-left bg-indigo-50 border border-indigo-100 rounded-xl p-6">
+                         <h3 class="flex items-center text-lg font-bold text-indigo-800 mb-3">
+                            <svg class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Nhận xét từ AI
+                        </h3>
+                        <div id="ai-assessment-content" class="prose prose-sm text-gray-700 max-w-none">Đang phân tích...</div>
+                    </div>
+                    
+                    <button id="view-answers-btn" class="w-full bg-white border-2 border-indigo-600 text-indigo-600 font-bold py-3 px-6 rounded-xl hover:bg-indigo-50 transition-colors mb-3 hidden">
+                        Xem đáp án chi tiết
+                    </button>
+                </div>
+            </div>
+            
+             <div id="detailed-answers" class="space-y-6 hidden"></div>
+        </div>
+    </div>
+    <script>
+        // Make variables global so quiz-client.js can access them
+        window.quizData = [{"question":"Sự kiện nào đánh dấu thực dân Pháp bắt đầu trở lại xâm lược Việt Nam sau Cách mạng tháng Tám năm 1945?","options":["Quân Pháp đổ bộ lên Đà Nẵng","Quân Pháp nổ súng đánh chiếm Sài Gòn","Quân Pháp tấn công vào Hải Phòng","Quân Pháp gây hấn ở Hà Nội"],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Sự kiện nào đánh dấu thực dân Pháp bắt đầu trở lại xâm lược Việt Nam sau Cách mạng tháng Tám năm 1945?","rendered_options":["Quân Pháp đổ bộ lên Đà Nẵng","Quân Pháp nổ súng đánh chiếm Sài Gòn","Quân Pháp tấn công vào Hải Phòng","Quân Pháp gây hấn ở Hà Nội"]},{"question":"Giai đoạn đầu của cuộc kháng chiến chống thực dân Pháp (từ cuối năm 1946 đến cuối năm 1947) có đặc điểm nổi bật là gì?","options":["Ta chuyển sang tổng phản công trên toàn quốc.","Ta tập trung xây dựng và củng cố lực lượng kháng chiến.","Ta thực hiện chiến lược \"đánh nhanh thắng nhanh\".","Ta tiến hành chiến tranh tổng lực."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Giai đoạn đầu của cuộc kháng chiến chống thực dân Pháp (từ cuối năm 1946 đến cuối năm 1947) có đặc điểm nổi bật là gì?","rendered_options":["Ta chuyển sang tổng phản công trên toàn quốc.","Ta tập trung xây dựng và củng cố lực lượng kháng chiến.","Ta thực hiện chiến lược \"đánh nhanh thắng nhanh\".","Ta tiến hành chiến tranh tổng lực."]},{"question":"Nguyên nhân quan trọng hàng đầu quyết định thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) là gì?","options":["Sự đoàn kết, đồng lòng của toàn dân tộc Việt Nam.","Sự lãnh đạo đúng đắn của Đảng Cộng sản Đông Dương (sau này là Đảng Lao động Việt Nam) và Chủ tịch Hồ Chí Minh.","Có hậu phương vững chắc và sự chi viện từ các nước xã hội chủ nghĩa.","Được sự ủng hộ và giúp đỡ của cộng đồng quốc tế."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Nguyên nhân quan trọng hàng đầu quyết định thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) là gì?","rendered_options":["Sự đoàn kết, đồng lòng của toàn dân tộc Việt Nam.","Sự lãnh đạo đúng đắn của Đảng Cộng sản Đông Dương (sau này là Đảng Lao động Việt Nam) và Chủ tịch Hồ Chí Minh.","Có hậu phương vững chắc và sự chi viện từ các nước xã hội chủ nghĩa.","Được sự ủng hộ và giúp đỡ của cộng đồng quốc tế."]},{"question":"Thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) đã buộc Pháp phải công nhận điều gì đối với Việt Nam?","options":["Quyền dân tộc tự quyết của các nước Đông Dương.","Độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ của Việt Nam.","Việt Nam là một quốc gia có chủ quyền độc lập trong khối Liên hiệp Pháp.","Quyền được tham gia vào các tổ chức quốc tế của Việt Nam."],"correctAnswerIndex":1,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) đã buộc Pháp phải công nhận điều gì đối với Việt Nam?","rendered_options":["Quyền dân tộc tự quyết của các nước Đông Dương.","Độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ của Việt Nam.","Việt Nam là một quốc gia có chủ quyền độc lập trong khối Liên hiệp Pháp.","Quyền được tham gia vào các tổ chức quốc tế của Việt Nam."]},{"question":"Lời kêu gọi toàn quốc kháng chiến của Chủ tịch Hồ Chí Minh được phát ra vào thời gian nào?","options":["Ngày 19 tháng 12 năm 1946.","Ngày 23 tháng 9 năm 1945.","Ngày 20 tháng 7 năm 1954.","Ngày 7 tháng 5 năm 1954."],"correctAnswerIndex":0,"type":"multiple-choice","isDirty":false,"explanation":null,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"Lời kêu gọi toàn quốc kháng chiến của Chủ tịch Hồ Chí Minh được phát ra vào thời gian nào?","rendered_options":["Ngày 19 tháng 12 năm 1946.","Ngày 23 tháng 9 năm 1945.","Ngày 20 tháng 7 năm 1954.","Ngày 7 tháng 5 năm 1954."]}];
+        window.options = {"title":"Bài tập (su)","timeLimit":45,"retries":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"teacherName":"","pointsConfig":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"},"startTime":null,"endTime":null};
+        window.googleScriptUrl = "https://script.google.com/macros/s/AKfycbyELBBy-4RvcyxAE-_vDjHY4-IVSSGtViF0c5rWIDUugtdmMzmIZyPZtVgSQ1mkCqjgpg/exec";
+        window.encodedApiKeys = {"gemini":"QUl6YVN5RGZMOWM4Y0ZsTUlMajBZdTU5d0FINmJOZmlldEU0UHBv","openai":"","deepseek":""};
+    </script>
+    <script type="module">
+        import { initQuiz } from './quiz-client.js';
+        if (typeof initQuiz === 'function') {
+            initQuiz();
+        }
+    </script>
+</body>
+</html>
