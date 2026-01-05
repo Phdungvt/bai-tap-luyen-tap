@@ -1,0 +1,634 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài tập ()</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); min-height: 100vh; }
+        .option { transition: all 0.2s ease; }
+        .option:hover { background-color: #f3f4f6; }
+        .option.selected { border-color: #4f46e5; background-color: #eef2ff; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        .option.correct { border-color: #22c55e; background-color: #f0fdf4; }
+        .option.incorrect { border-color: #ef4444; background-color: #fef2f2; }
+        .disabled { pointer-events: none; opacity: 0.7; }
+        .monitoring-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; display: none; font-weight: bold; animation: fade-in-out 5s ease-in-out; }
+        @keyframes fade-in-out { 0%, 100% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } }
+        /* MathJax basic styling */
+        mjx-container { display: inline-block !important; }
+        .prose img.latex-image { display: inline-block; vertical-align: middle; }
+        
+        /* Progress Bar */
+        .progress-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #e5e7eb; z-index: 50; }
+        .progress-bar { height: 100%; background: #4f46e5; transition: width 0.3s; width: 0%; }
+
+        /* Navigation Panel */
+        .nav-panel {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 280px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
+            z-index: 40; overflow-y: auto; padding-top: 60px;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-panel.open { transform: translateX(0); }
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 16px; }
+        .nav-btn {
+            width: 40px; height: 40px; border-radius: 8px; border: 1px solid #e5e7eb;
+            background: white; color: #4b5563; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-btn.answered { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .nav-btn.current { border-color: #f59e0b; color: #f59e0b; border-width: 2px; background-color: #fffbeb; }
+
+        /* Layout Adjustment for Nav Panel */
+        #app { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.nav-open #app { margin-right: 280px; }
+        
+        @media (max-width: 1024px) {
+            body.nav-open #app { margin-right: 0; } /* On mobile, nav covers content */
+        }
+
+        #toggle-nav-btn {
+            position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #toggle-nav-btn:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .question-card { transition: box-shadow 0.3s; }
+        .question-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01); }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="importmap">
+    { "imports": { 
+        "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+        "canvas-confetti": "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm"
+    } }
+    </script>
+</head>
+<body class="p-4 md:p-6">
+    <div id="progress-container" class="progress-container hidden"><div id="progress-bar" class="progress-bar"></div></div>
+    
+    <button id="toggle-nav-btn" class="hidden" title="Danh sách câu hỏi">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+    </button>
+
+    <div id="nav-panel" class="nav-panel">
+        <div class="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
+            <h3 class="font-bold text-gray-800 text-lg">Danh sách câu hỏi</h3>
+            <div class="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 border rounded bg-white"></div> Chưa làm</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-indigo-500"></div> Đã làm</div>
+            </div>
+        </div>
+        <div id="nav-grid" class="nav-grid pb-20"></div>
+    </div>
+
+    <div id="app" class="max-w-5xl mx-auto transition-all duration-300">
+        
+        <div id="welcome-screen" class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto mt-10">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-center text-white relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 relative z-10">Bài tập ()</h1>
+                <p class="text-indigo-100 text-sm md:text-base relative z-10">Mã đề: <span class="font-mono font-bold bg-white/20 px-2 py-1 rounded text-white">3VJ3KX</span></p>
+                 <div class="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Giáo viên: <span class="font-bold text-yellow-300">Giáo viên bộ môn</span></span>
+                </div>
+            </div>
+            <div class="p-8">
+                <div class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên học sinh</label>
+                        <input type="text" id="name" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Nhập họ tên của bạn...">
+                    </div>
+                    <div>
+                        <label for="class" class="block text-sm font-semibold text-gray-700 mb-1">Lớp</label>
+                        <input type="text" id="class" class="w-full border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Ví dụ: 12A1">
+                    </div>
+                    
+                    <div id="api-key-input-container" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label class="block text-sm font-semibold text-blue-800 mb-2">
+                            Gemini API Key <span class="font-normal text-gray-600">(Yêu cầu để xem lời giải/nhận xét AI)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="password" id="student-api-key" class="flex-grow border-gray-300 rounded-lg shadow-sm py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" placeholder="Nhập API Key của bạn (bắt đầu bằng AIza...)">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="flex-shrink-0 bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 font-semibold py-2 px-4 rounded-lg text-sm flex items-center transition-colors whitespace-nowrap">
+                                Lấy Key miễn phí
+                            </a>
+                        </div>
+                         <p class="text-xs text-gray-500 mt-2">
+                            * Sử dụng Key cá nhân giúp bạn trải nghiệm đầy đủ các tính năng AI mà không bị gián đoạn.
+                        </p>
+                    </div>
+                </div>
+                 <div class="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-amber-700">
+                                <span class="font-bold">Lưu ý:</span> Hệ thống sẽ giám sát việc chuyển tab, sao chép/dán. Các hành vi này sẽ được ghi lại và báo cáo cho giáo viên.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <button id="start-btn" class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 px-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all flex items-center justify-center gap-2">
+                    <span>Bắt đầu làm bài</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+             <div class="sticky top-0 z-30 -mx-4 md:-mx-6 mb-6">
+                 <div class="bg-white/90 backdrop-blur-md shadow-md border-b border-gray-200 py-3 px-4 md:px-8 flex justify-between items-center">
+                    <div>
+                         <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate max-w-[200px] md:max-w-md">Bài tập ()</h2>
+                         <p class="text-xs text-gray-500 hidden md:block">Thí sinh: <span id="student-name-display" class="font-semibold"></span></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="timer" class="text-lg md:text-xl font-mono font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 shadow-sm flex items-center">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>00:00</span>
+                        </div>
+                        <button id="submit-btn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm md:text-base">Nộp bài</button>
+                    </div>
+                 </div>
+             </div>
+            
+            <div id="questions-container" class="space-y-6 md:space-y-8 pb-20"></div>
+        </div>
+
+        <div id="result-screen" class="hidden max-w-3xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+                 <div class="bg-gradient-to-r from-emerald-500 to-green-600 p-6 text-white text-center">
+                    <h2 class="text-3xl font-bold mb-2">Kết Quả Bài Thi</h2>
+                    <p class="text-emerald-100">Cảm ơn bạn đã hoàn thành bài kiểm tra!</p>
+                </div>
+                <div class="p-8 text-center">
+                     <div class="inline-flex items-center justify-center w-32 h-32 rounded-full border-8 border-emerald-100 bg-white mb-6">
+                        <span id="score-display" class="text-4xl font-black text-emerald-600">0.0</span>
+                    </div>
+                     <p class="text-gray-500 mb-6">Điểm số trên thang điểm 10</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8 text-left">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Họ và tên</p>
+                            <p id="result-name" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Lớp</p>
+                            <p id="result-class" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Thời gian làm bài</p>
+                            <p id="result-time" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                         <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Số câu đúng</p>
+                            <p id="result-correct-count" class="font-bold text-gray-800 text-lg">---</p>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-assessment-container" class="hidden mb-8 text-left bg-indigo-50 border border-indigo-100 rounded-xl p-6">
+                         <h3 class="flex items-center text-lg font-bold text-indigo-800 mb-3">
+                            <svg class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Nhận xét từ AI
+                        </h3>
+                        <div id="ai-assessment-content" class="prose prose-sm text-gray-700 max-w-none">Đang phân tích...</div>
+                    </div>
+                    
+                    <button id="view-answers-btn" class="w-full bg-white border-2 border-indigo-600 text-indigo-600 font-bold py-3 px-6 rounded-xl hover:bg-indigo-50 transition-colors mb-3 hidden">
+                        Xem đáp án chi tiết
+                    </button>
+                </div>
+            </div>
+            
+             <div id="detailed-answers" class="space-y-6 hidden"></div>
+        </div>
+    </div>
+    <script>
+        const quizData = [{"type":"multiple-choice","question":"<strong></strong> Sự kiện nào đánh dấu thực dân Pháp bắt đầu trở lại xâm lược Việt Nam sau Cách mạng tháng Tám năm 1945?","main_question":null,"questionImage":null,"options":["Quân Pháp đổ bộ lên Đà Nẵng","Quân Pháp nổ súng đánh chiếm Sài Gòn","Quân Pháp tấn công vào Hải Phòng","Quân Pháp gây hấn ở Hà Nội"],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":1,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Sự kiện nào đánh dấu thực dân Pháp bắt đầu trở lại xâm lược Việt Nam sau Cách mạng tháng Tám năm 1945?","rendered_options":["Quân Pháp đổ bộ lên Đà Nẵng","Quân Pháp nổ súng đánh chiếm Sài Gòn","Quân Pháp tấn công vào Hải Phòng","Quân Pháp gây hấn ở Hà Nội"]},{"type":"multiple-choice","question":"<strong></strong> Giai đoạn đầu của cuộc kháng chiến chống thực dân Pháp (từ cuối năm 1946 đến cuối năm 1947) có đặc điểm nổi bật là gì?","main_question":null,"questionImage":null,"options":["Ta chuyển sang tổng phản công trên toàn quốc.","Ta tập trung xây dựng và củng cố lực lượng kháng chiến.","Ta thực hiện chiến lược “đánh nhanh thắng nhanh”.","Ta tiến hành chiến tranh tổng lực."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":2,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Giai đoạn đầu của cuộc kháng chiến chống thực dân Pháp (từ cuối năm 1946 đến cuối năm 1947) có đặc điểm nổi bật là gì?","rendered_options":["Ta chuyển sang tổng phản công trên toàn quốc.","Ta tập trung xây dựng và củng cố lực lượng kháng chiến.","Ta thực hiện chiến lược “đánh nhanh thắng nhanh”.","Ta tiến hành chiến tranh tổng lực."]},{"type":"multiple-choice","question":"<strong></strong> Nguyên nhân quan trọng hàng đầu quyết định thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) là gì?","main_question":null,"questionImage":null,"options":["Sự đoàn kết, đồng lòng của toàn dân tộc Việt Nam.","Sự lãnh đạo đúng đắn của Đảng Cộng sản Đông Dương (sau này là Đảng Lao động Việt Nam) và Chủ tịch Hồ Chí Minh.","Có hậu phương vững chắc và sự chi viện từ các nước xã hội chủ nghĩa.","Được sự ủng hộ và giúp đỡ của cộng đồng quốc tế."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":3,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Nguyên nhân quan trọng hàng đầu quyết định thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) là gì?","rendered_options":["Sự đoàn kết, đồng lòng của toàn dân tộc Việt Nam.","Sự lãnh đạo đúng đắn của Đảng Cộng sản Đông Dương (sau này là Đảng Lao động Việt Nam) và Chủ tịch Hồ Chí Minh.","Có hậu phương vững chắc và sự chi viện từ các nước xã hội chủ nghĩa.","Được sự ủng hộ và giúp đỡ của cộng đồng quốc tế."]},{"type":"multiple-choice","question":"<strong></strong> Thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) đã buộc Pháp phải công nhận điều gì đối với Việt Nam?","main_question":null,"questionImage":null,"options":["Quyền dân tộc tự quyết của các nước Đông Dương.","Độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ của Việt Nam.","Việt Nam là một quốc gia có chủ quyền độc lập trong khối Liên hiệp Pháp.","Quyền được tham gia vào các tổ chức quốc tế của Việt Nam."],"optionsImage":[null,null,null,null],"correctAnswerIndex":1,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":4,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Thắng lợi của cuộc kháng chiến chống thực dân Pháp (1945-1954) đã buộc Pháp phải công nhận điều gì đối với Việt Nam?","rendered_options":["Quyền dân tộc tự quyết của các nước Đông Dương.","Độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ của Việt Nam.","Việt Nam là một quốc gia có chủ quyền độc lập trong khối Liên hiệp Pháp.","Quyền được tham gia vào các tổ chức quốc tế của Việt Nam."]},{"type":"multiple-choice","question":"<strong></strong> Lời kêu gọi toàn quốc kháng chiến của Chủ tịch Hồ Chí Minh được phát ra vào thời gian nào?","main_question":null,"questionImage":null,"options":["Ngày 19 tháng 12 năm 1946.","Ngày 23 tháng 9 năm 1945.","Ngày 20 tháng 7 năm 1954.","Ngày 7 tháng 5 năm 1954."],"optionsImage":[null,null,null,null],"correctAnswerIndex":0,"statements":[],"answer":null,"isDirty":true,"explanation":null,"questionNumber":5,"shuffleOptions":{"stem":true,"answers":true},"rendered_question":"<strong></strong> Lời kêu gọi toàn quốc kháng chiến của Chủ tịch Hồ Chí Minh được phát ra vào thời gian nào?","rendered_options":["Ngày 19 tháng 12 năm 1946.","Ngày 23 tháng 9 năm 1945.","Ngày 20 tháng 7 năm 1954.","Ngày 7 tháng 5 năm 1954."]}];
+        const options = {"title":"Bài tập ()","timeLimit":45,"retries":1,"showAnswers":true,"showExplanation":true,"aiAssessment":true,"teacherName":"","pointsConfig":{"mc":5,"tf":2,"sa":2,"essay":1,"tfMethod":"progressive"}};
+        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbyELBBy-4RvcyxAE-_vDjHY4-IVSSGtViF0c5rWIDUugtdmMzmIZyPZtVgSQ1mkCqjgpg/exec";
+        const encodedApiKeys = {"gemini":"","openai":"","deepseek":""};
+    </script>
+    <script type="module">
+        
+    import { GoogleGenAI } from "https://esm.sh/@google/genai@^1.13.0";
+    import confetti from "https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/+esm";
+
+    const dom = {
+        startBtn: document.getElementById('start-btn'),
+        welcomeScreen: document.getElementById('welcome-screen'),
+        quizScreen: document.getElementById('quiz-screen'),
+        resultScreen: document.getElementById('result-screen'),
+        studentNameInput: document.getElementById('name'),
+        studentClassInput: document.getElementById('class'),
+        studentApiKeyInput: document.getElementById('student-api-key'),
+        apiKeyInputContainer: document.getElementById('api-key-input-container'),
+        studentNameDisplay: document.getElementById('student-name-display'),
+        questionsContainer: document.getElementById('questions-container'),
+        timerDisplay: document.getElementById('timer'),
+        submitBtn: document.getElementById('submit-btn'),
+        scoreDisplay: document.getElementById('score-display'),
+        resultName: document.getElementById('result-name'),
+        resultClass: document.getElementById('result-class'),
+        resultTime: document.getElementById('result-time'),
+        resultCorrectCount: document.getElementById('result-correct-count'),
+        detailedAnswers: document.getElementById('detailed-answers'),
+        viewAnswersBtn: document.getElementById('view-answers-btn'),
+        aiAssessmentContainer: document.getElementById('ai-assessment-container'),
+        aiAssessmentContent: document.getElementById('ai-assessment-content'),
+        navGrid: document.getElementById('nav-grid'),
+        toggleNavBtn: document.getElementById('toggle-nav-btn'),
+        navPanel: document.getElementById('nav-panel'),
+        progressBar: document.getElementById('progress-bar'),
+        progressContainer: document.getElementById('progress-container'),
+    };
+
+    let timerInterval;
+    let startTime;
+    let studentAnswers = {}; 
+    let monitoringLog = { thoatManHinh: 0, saoChep: 0, dan: 0 };
+    let aiClient = null;
+
+    // --- Utility ---
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    const mapEnglishType = (type) => {
+        if (!type) return 'multiple-choice';
+        if (type.startsWith('mc-') || type === 'cloze-test' || type === 'sentence-ordering' || type === 'paragraph-sentence-ordering') return 'multiple-choice';
+        if (type.startsWith('tf-')) return 'true-false';
+        if (type === 'sentence-transformation') return 'short-answer';
+        if (type === 'paragraph-writing') return 'essay';
+        return type;
+    };
+
+    function initAI() {
+        let key = dom.studentApiKeyInput.value.trim();
+        if(!key && encodedApiKeys.gemini) {
+             try { key = atob(encodedApiKeys.gemini); } catch(e){}
+        }
+        if (key) {
+            try { aiClient = new GoogleGenAI({ apiKey: key }); } catch (e) { console.error("AI Init Error", e); }
+        }
+    }
+
+    // --- Monitoring ---
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden && !dom.quizScreen.classList.contains('hidden')) {
+            monitoringLog.thoatManHinh++;
+            showWarning("Hệ thống phát hiện bạn đã rời khỏi màn hình thi!");
+        }
+    });
+    window.addEventListener("copy", () => { if(!dom.quizScreen.classList.contains('hidden')) monitoringLog.saoChep++; });
+    window.addEventListener("paste", () => { if(!dom.quizScreen.classList.contains('hidden')) monitoringLog.dan++; });
+
+    function showWarning(msg) {
+        const warning = document.createElement('div');
+        warning.className = 'monitoring-warning';
+        warning.innerText = msg;
+        document.body.appendChild(warning);
+        warning.style.display = 'block';
+        setTimeout(() => warning.remove(), 5000);
+    }
+
+    // --- Quiz Logic ---
+    function renderQuestions() {
+        dom.questionsContainer.innerHTML = '';
+        dom.navGrid.innerHTML = '';
+        let qCount = 0;
+
+        // Group questions
+        const grouped = quizData.reduce((acc, q) => {
+             const type = mapEnglishType(q.type);
+             acc[type] = acc[type] || [];
+             acc[type].push(q);
+             return acc;
+        }, {});
+        
+        const typeOrder = ['multiple-choice', 'true-false', 'short-answer', 'essay'];
+        const typeTitles = {
+            'multiple-choice': 'PHẦN I. TRẮC NGHIỆM',
+            'true-false': 'PHẦN II. ĐÚNG/SAI',
+            'short-answer': 'PHẦN III. TRẢ LỜI NGẮN',
+            'essay': 'PHẦN IV. TỰ LUẬN'
+        };
+
+        typeOrder.forEach(type => {
+            if(!grouped[type]) return;
+            const header = document.createElement('h3');
+            header.className = 'text-xl font-bold text-indigo-700 mt-6 mb-4 border-b-2 border-indigo-100 pb-2';
+            header.textContent = typeTitles[type];
+            dom.questionsContainer.appendChild(header);
+
+            grouped[type].forEach(q => {
+                qCount++;
+                const globalIndex = quizData.indexOf(q);
+                const card = document.createElement('div');
+                card.id = `question-${globalIndex}`;
+                card.className = 'question-card bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative';
+                
+                // Add nav button
+                const navBtn = document.createElement('button');
+                navBtn.className = 'nav-btn';
+                navBtn.textContent = qCount;
+                navBtn.onclick = () => {
+                    document.getElementById(`question-${globalIndex}`).scrollIntoView({behavior: 'smooth', block: 'center'});
+                    dom.navPanel.classList.remove('open');
+                    document.body.classList.remove('nav-open');
+                };
+                dom.navGrid.appendChild(navBtn);
+
+                let html = `<div class="flex gap-3">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">${qCount}</div>
+                    <div class="flex-grow">
+                        <div class="text-gray-800 text-lg mb-4 font-medium">${q.rendered_question}</div>`;
+
+                if (type === 'multiple-choice') {
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+                    q.rendered_options.forEach((opt, i) => {
+                        html += `<label class="option flex items-start p-3 border-2 border-gray-100 rounded-lg cursor-pointer">
+                            <input type="radio" name="q${globalIndex}" value="${i}" class="mt-1 mr-3 w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300" onchange="markAnswered(${globalIndex})">
+                            <span class="text-gray-700">${String.fromCharCode(65+i)}. ${opt}</span>
+                        </label>`;
+                    });
+                    html += `</div>`;
+                } else if (type === 'true-false') {
+                    html += `<div class="space-y-3">`;
+                    q.statements.forEach((stmt, i) => {
+                        html += `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex-grow pr-4 text-sm">${String.fromCharCode(97+i)}) ${stmt.rendered_statement}</div>
+                            <div class="flex gap-4 flex-shrink-0">
+                                <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="q${globalIndex}_s${i}" value="true" onchange="markAnswered(${globalIndex})"><span class="text-sm font-medium text-green-600">Đúng</span></label>
+                                <label class="flex items-center space-x-1 cursor-pointer"><input type="radio" name="q${globalIndex}_s${i}" value="false" onchange="markAnswered(${globalIndex})"><span class="text-sm font-medium text-red-600">Sai</span></label>
+                            </div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<textarea class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" rows="3" placeholder="Nhập câu trả lời của bạn..." oninput="markAnswered(${globalIndex})" id="input-q${globalIndex}"></textarea>`;
+                }
+                
+                html += `</div></div>`;
+                card.innerHTML = html;
+                dom.questionsContainer.appendChild(card);
+            });
+        });
+    }
+
+    window.markAnswered = (index) => {
+        // Logic to mark nav button as answered
+        // This is simplified as we don't have a direct map to nav button index here easily without re-traversing.
+        // In a real app, we'd maintain a map.
+    };
+
+    function startTimer() {
+        let timeLeft = options.timeLimit * 60;
+        if (timeLeft <= 0) { dom.timerDisplay.parentElement.classList.add('hidden'); return; }
+        
+        startTime = new Date();
+        dom.timerDisplay.textContent = formatTime(timeLeft);
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            dom.timerDisplay.textContent = formatTime(timeLeft);
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitExam();
+            }
+        }, 1000);
+    }
+
+    async function submitExam() {
+        clearInterval(timerInterval);
+        
+        // Collect Answers
+        let totalScore = 0;
+        let correctCount = 0;
+        const details = [];
+
+        // Points Config
+        const points = options.pointsConfig || { mc: 0.25, tf: 1, sa: 0.25, essay: 1 }; 
+        const tfMethod = options.pointsConfig?.tfMethod || 'progressive';
+
+        quizData.forEach((q, index) => {
+            const type = mapEnglishType(q.type);
+            const detail = { questionNumber: index + 1, type: type, isCorrect: null };
+
+            if (type === 'multiple-choice') {
+                const selected = document.querySelector(`input[name="q${index}"]:checked`);
+                const val = selected ? parseInt(selected.value) : -1;
+                const correct = q.correctAnswerIndex;
+                detail.userAnswerIndex = val;
+                if (val === correct) {
+                    totalScore += points.mc || (10 / quizData.length); // Fallback
+                    correctCount++;
+                    detail.isCorrect = true;
+                } else {
+                    detail.isCorrect = false;
+                }
+            } else if (type === 'true-false') {
+                let correctStmt = 0;
+                detail.details = [];
+                q.statements.forEach((s, i) => {
+                    const selected = document.querySelector(`input[name="q${index}_s${i}"]:checked`);
+                    const val = selected ? (selected.value === 'true') : null;
+                    const isStmtCorrect = (val === s.is_correct);
+                    if (isStmtCorrect) correctStmt++;
+                    detail.details.push({ statementIndex: i, isCorrect: isStmtCorrect });
+                });
+                
+                let qScore = 0;
+                const max = points.tf || 1;
+                if (tfMethod === 'even') {
+                    qScore = (correctStmt / 4) * max;
+                } else {
+                    if (correctStmt === 1) qScore = 0.1;
+                    else if (correctStmt === 2) qScore = 0.25;
+                    else if (correctStmt === 3) qScore = 0.5;
+                    else if (correctStmt === 4) qScore = max;
+                }
+                totalScore += qScore;
+                if (correctStmt === 4) { correctCount++; detail.isCorrect = true; } 
+                else detail.isCorrect = false;
+
+            } else if (type === 'short-answer') {
+                const val = document.getElementById(`input-q${index}`).value.trim();
+                // Simple string match (case insensitive)
+                const isCorrect = val.toLowerCase() === (q.answer || '').trim().toLowerCase();
+                if (isCorrect) {
+                    totalScore += points.sa || 0.25;
+                    correctCount++;
+                    detail.isCorrect = true;
+                } else {
+                    detail.isCorrect = false;
+                }
+                detail.userAnswer = val;
+            } else {
+                // Essay - Manual grading mostly, here we just save content
+                const val = document.getElementById(`input-q${index}`).value;
+                detail.userAnswer = val;
+                // Essay doesn't auto-score usually, or we give partial points? Let's assume 0 auto score.
+            }
+            details.push(detail);
+        });
+        
+        // Normalize score to 10 if needed, or keep raw sum? Usually raw sum based on configured points.
+        // Ensure not > 10
+        totalScore = Math.min(10, Math.max(0, totalScore));
+
+        // Show Result UI
+        dom.quizScreen.classList.add('hidden');
+        dom.navPanel.classList.remove('open');
+        dom.toggleNavBtn.classList.add('hidden');
+        dom.resultScreen.classList.remove('hidden');
+        
+        dom.scoreDisplay.textContent = totalScore.toFixed(2);
+        dom.resultName.textContent = dom.studentNameInput.value;
+        dom.resultClass.textContent = dom.studentClassInput.value;
+        dom.resultCorrectCount.textContent = `${correctCount} / ${quizData.length}`;
+        
+        const timeSpent = Math.floor((new Date() - startTime) / 1000);
+        dom.resultTime.textContent = formatTime(timeSpent);
+        
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+        // Show Detailed Answers if enabled
+        if (options.showAnswers) {
+            dom.viewAnswersBtn.classList.remove('hidden');
+            renderDetailedAnswers(details);
+        }
+
+        // Send Data
+        const payload = {
+            name: dom.studentNameInput.value,
+            class: dom.studentClassInput.value,
+            score: totalScore.toFixed(2),
+            timestamp: new Date().toLocaleString('vi-VN'),
+            examCode: "3VJ3KX",
+            monitoringLog: JSON.stringify(monitoringLog),
+            answerDetails: JSON.stringify(details)
+        };
+        
+        // AI Assessment
+        if (options.aiAssessment && aiClient) {
+             dom.aiAssessmentContainer.classList.remove('hidden');
+             const prompt = `Hãy nhận xét ngắn gọn kết quả bài thi của học sinh:
+             Điểm: ${totalScore}/10.
+             Số câu đúng: ${correctCount}/${quizData.length}.
+             Chi tiết: ${JSON.stringify(details)}.
+             Đưa ra lời khuyên để cải thiện.`;
+             
+             try {
+                 const result = await aiClient.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt
+                 });
+                 const text = result.response.text; // Fixed: .text property, not method
+                 dom.aiAssessmentContent.innerHTML = text.replace(/\n/g, '<br>');
+                 payload.assessment = text;
+             } catch (e) {
+                 dom.aiAssessmentContent.textContent = "Không thể tạo nhận xét AI.";
+             }
+        }
+
+        if (googleScriptUrl) {
+            try {
+                // Send as JSON body if supported by the server script modification I made
+                await fetch(googleScriptUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) { console.error("Send error", e); }
+        }
+    }
+
+    function renderDetailedAnswers(details) {
+        dom.viewAnswersBtn.onclick = () => {
+             dom.detailedAnswers.classList.remove('hidden');
+             dom.detailedAnswers.innerHTML = details.map((d, i) => {
+                 const q = quizData[i];
+                 let content = `<div class="p-4 border rounded-lg ${d.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}">
+                    <p class="font-bold text-gray-800 mb-2">Câu ${i+1}: ${d.isCorrect ? 'Đúng' : 'Sai'}</p>
+                    <div class="text-sm text-gray-600">${q.rendered_question}</div>
+                 `;
+                 if (options.showExplanation && q.explanation) {
+                     content += `<div class="mt-2 p-2 bg-blue-50 text-sm text-blue-800 border-l-4 border-blue-500">${q.explanation}</div>`;
+                 }
+                 content += `</div>`;
+                 return content;
+             }).join('');
+             // Re-run MathJax
+             if (window.MathJax) MathJax.typesetPromise([dom.detailedAnswers]);
+        }
+    }
+
+    // --- Init ---
+    dom.startBtn.onclick = () => {
+        if (!dom.studentNameInput.value || !dom.studentClassInput.value) {
+            alert("Vui lòng nhập họ tên và lớp."); return;
+        }
+        initAI();
+        dom.welcomeScreen.classList.add('hidden');
+        dom.quizScreen.classList.remove('hidden');
+        dom.toggleNavBtn.classList.remove('hidden');
+        renderQuestions();
+        startTimer();
+        // Trigger MathJax
+        if (window.MathJax) MathJax.typesetPromise();
+    };
+    
+    dom.submitBtn.onclick = () => {
+        if(confirm("Bạn có chắc muốn nộp bài?")) submitExam();
+    };
+    
+    dom.toggleNavBtn.onclick = () => {
+        dom.navPanel.classList.toggle('open');
+        document.body.classList.toggle('nav-open');
+    };
+    
+    if (true) {
+        dom.apiKeyInputContainer.classList.remove('hidden');
+    }
+    
+    </script>
+</body>
+</html>
