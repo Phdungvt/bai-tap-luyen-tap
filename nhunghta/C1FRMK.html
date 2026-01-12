@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài kiểm tra KHTN</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif; background-color: #f3f4f6; }
+        .prose img { border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <!-- WELCOME SCREEN -->
+    <div id="welcome-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-indigo-100">
+            <div class="text-center mb-8">
+                <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Bài kiểm tra KHTN</h1>
+                <p class="text-gray-500 text-sm">Giáo viên: Hồ Thị An Nhung</p>
+                <p id="time-status-msg" class="text-red-500 font-semibold mt-2 hidden"></p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                    <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow" placeholder="Nhập họ tên của bạn">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+                    <input type="text" id="class" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow" placeholder="Nhập lớp (VD: 12A1)">
+                </div>
+                
+                <button id="start-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-[1.02] shadow-md mt-4">
+                    BẮT ĐẦU LÀM BÀI
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz-screen" class="hidden flex-grow flex flex-col h-screen overflow-hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="font-bold text-gray-800 text-lg truncate max-w-[150px] sm:max-w-xs" id="student-name-display"></div>
+                    <div class="hidden sm:block text-sm text-gray-500 border-l pl-4 border-gray-300">Bài kiểm tra KHTN</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-end">
+                        <span class="text-xs text-gray-500 uppercase font-semibold tracking-wider">Thời gian</span>
+                        <span id="timer" class="text-xl font-mono font-bold text-indigo-600">00:00</span>
+                    </div>
+                    <button id="toggle-nav-btn" class="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="h-1 w-full bg-gray-100" id="progress-container">
+                <div class="h-1 bg-green-500 transition-all duration-300" style="width: 0%" id="progress-bar"></div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow flex overflow-hidden relative">
+            <!-- Questions List -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth" id="main-scroll-area">
+                <div class="max-w-3xl mx-auto pb-24" id="questions-container">
+                    <!-- Questions injected here by JS -->
+                </div>
+            </main>
+
+            <!-- Navigation Panel (Desktop: Sidebar / Mobile: Drawer) -->
+            <aside id="nav-panel" class="absolute inset-y-0 right-0 w-72 bg-white border-l border-gray-200 transform translate-x-full md:relative md:translate-x-0 transition-transform duration-300 z-20 flex flex-col shadow-xl md:shadow-none">
+                <div class="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700">Danh sách câu hỏi</h3>
+                    <button class="md:hidden text-gray-500" onclick="document.getElementById('nav-panel').classList.add('translate-x-full')">✕</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div class="grid grid-cols-5 gap-2" id="nav-grid">
+                        <!-- Nav buttons injected here -->
+                    </div>
+                </div>
+                <div class="p-4 border-t border-gray-200 bg-gray-50">
+                    <button id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        NỘP BÀI
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" class="hidden flex-grow bg-gray-50 overflow-y-auto p-4">
+        <div class="max-w-4xl mx-auto space-y-6">
+            <!-- Score Card -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden text-center p-8 border border-gray-200 relative">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-blue-500"></div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Kết Quả Bài Làm</h2>
+                <div class="text-6xl font-black text-indigo-600 my-6 tracking-tighter" id="score-display">--</div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Họ tên</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-name">--</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Lớp</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-class">--</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Thời gian</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-time">--</p>
+                    </div>
+                </div>
+
+                <div id="ai-assessment-container" class="mt-8 hidden text-left bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                    <h3 class="flex items-center gap-2 font-bold text-indigo-800 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        Nhận xét từ AI
+                    </h3>
+                    <div id="ai-assessment-content" class="prose prose-sm prose-indigo max-w-none text-gray-700"></div>
+                </div>
+
+                <div class="mt-8">
+                     <button id="view-answers-btn" class="hidden inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Xem đáp án chi tiết
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detailed Answers -->
+            <div id="detailed-answers" class="hidden bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CLIENT LOGIC SCRIPT -->
+    <script type="module">
+        
+    import { GoogleGenAI } from "https://esm.sh/@google/genai@^1.13.0";
+
+    // --- 1. DECODE DATA ---
+    const quizData = JSON.parse(decodeURIComponent(escape(atob("W3sicXVlc3Rpb24iOiLDgXAgc3XhuqV0IGNo4bqldCBs4buPbmcga2jDtG5nIHBo4bulIHRodeG7mWMgdsOgbyB54bq/dSB04buRIG7DoG8gc2F1IMSRw6J5PyIsIm9wdGlvbnMiOlsixJDhu5kgc8OidSBj4bunYSBjaOG6pXQgbOG7j25nLiIsIkLhuqNuIGNo4bqldCBj4bunYSBjaOG6pXQgbOG7j25nIChraOG7kWkgbMaw4bujbmcgcmnDqm5nKS4iLCJEaeG7h24gdMOtY2ggbeG6t3QgdGhvw6FuZyBj4bunYSBjaOG6pXQgbOG7j25nLiIsIkdpYSB04buRYyB0cuG7jW5nIHRyxrDhu51uZyB04bqhaSBuxqFpIMSR4bq3dCBiw6xuaC4iXSwiY29ycmVjdEFuc3dlckluZGV4IjoyLCJ0eXBlIjoibXVsdGlwbGUtY2hvaWNlIiwiaXNEaXJ0eSI6ZmFsc2UsImV4cGxhbmF0aW9uIjpudWxsLCJzaHVmZmxlT3B0aW9ucyI6eyJzdGVtIjp0cnVlLCJhbnN3ZXJzIjp0cnVlfSwicXVlc3Rpb25OdW1iZXIiOjEsImlkIjoicV8xNTc1ODc1NTQyIiwicXVlc3Rpb25TbmlwcGV0Ijoiw4FwIHN14bqldCBjaOG6pXQgbOG7j25nIGtow7RuZyBwaOG7pSB0aHXhu5ljIHbDoG8geeG6v3UgdOG7kSBuw6BvIHNhdSDEkcOieT8iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IsOBcCBzdeG6pXQgY2jhuqV0IGzhu49uZyBraMO0bmcgcGjhu6UgdGh14buZYyB2w6BvIHnhur91IHThu5EgbsOgbyBzYXUgxJHDonk/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyLEkOG7mSBzw6J1IGPhu6dhIGNo4bqldCBs4buPbmcuIiwiQuG6o24gY2jhuqV0IGPhu6dhIGNo4bqldCBs4buPbmcgKGto4buRaSBsxrDhu6NuZyByacOqbmcpLiIsIkRp4buHbiB0w61jaCBt4bq3dCB0aG/DoW5nIGPhu6dhIGNo4bqldCBs4buPbmcuIiwiR2lhIHThu5FjIHRy4buNbmcgdHLGsOG7nW5nIHThuqFpIG7GoWkgxJHhurd0IGLDrG5oLiJdfSx7InF1ZXN0aW9uIjoiVGjDrSBuZ2hp4buHbSBuw6BvIHNhdSDEkcOieSBraMO0bmcgdGjhu4MgaGnhu4duIHPhu7EgdOG7k24gdOG6oWkgY+G7p2Egw6FwIHN14bqldCBraMOtIHF1eeG7g24/Iiwib3B0aW9ucyI6WyJEw7luZyBnacOhYyBtw7p0IGfhuq9uIGNo4bq3dCB2w6BvIG3hu5l0IG3hurd0IHBo4bqzbmcgbmjhurVuLiIsIkjDunQgbsaw4bubYyB04burIGPhu5FjIGLhurFuZyDhu5FuZyBow7p0LiIsIsOacCBuZ8aw4bujYyBj4buRYyBuxrDhu5tjIMSR4bqneSBjw7MgdOG6pW0gYsOsYSBjaGUgbWnhu4duZyBj4buRYyBtw6Agbsaw4bubYyBraMO0bmcgY2jhuqN5IHJhIG5nb8OgaS4iLCJUaOG6oyBt4buZdCBj4bulYyDEkcOhIHbDoG8gbsaw4bubYyB2w6AgY+G7pWMgxJHDoSBu4buVaSBsw6puLiJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjMsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6MiwiaWQiOiJxXzY1NjM5OTE2MSIsInF1ZXN0aW9uU25pcHBldCI6IlRow60gbmdoaeG7h20gbsOgbyBzYXUgxJHDonkga2jDtG5nIHRo4buDIGhp4buHbiBz4buxIHThu5NuIHThuqFpIGPhu6dhIMOhcCBzdeG6pXQga2jDrSBxdXnhu4NuLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJUaMOtIG5naGnhu4dtIG7DoG8gc2F1IMSRw6J5IGtow7RuZyB0aOG7gyBoaeG7h24gc+G7sSB04buTbiB04bqhaSBj4bunYSDDoXAgc3XhuqV0IGtow60gcXV54buDbj8iLCJyZW5kZXJlZF9vcHRpb25zIjpbIkTDuW5nIGdpw6FjIG3DunQgZ+G6r24gY2jhurd0IHbDoG8gbeG7mXQgbeG6t3QgcGjhurNuZyBuaOG6tW4uIiwiSMO6dCBuxrDhu5tjIHThu6sgY+G7kWMgYuG6sW5nIOG7kW5nIGjDunQuIiwiw5pwIG5nxrDhu6NjIGPhu5FjIG7GsOG7m2MgxJHhuqd5IGPDsyB04bqlbSBiw6xhIGNoZSBtaeG7h25nIGPhu5FjIG3DoCBuxrDhu5tjIGtow7RuZyBjaOG6o3kgcmEgbmdvw6BpLiIsIlRo4bqjIG3hu5l0IGPhu6VjIMSRw6EgdsOgbyBuxrDhu5tjIHbDoCBj4bulYyDEkcOhIG7hu5VpIGzDqm4uIl19LHsicXVlc3Rpb24iOiJIaeG7h24gdMaw4bujbmcgaG/hurdjIGThu6VuZyBj4bulIG7DoG8gc2F1IMSRw6J5IGhv4bqhdCDEkeG7mW5nIGNo4bunIHnhur91IGThu7FhIHbDoG8gbmd1ecOqbiBsw60gw6FwIHN14bqldCBraMOtIHF1eeG7g24gxJHhu4MgdGjhu7FjIGhp4buHbiBjaOG7qWMgbsSDbmcgY+G7p2EgbsOzPyIsIm9wdGlvbnMiOlsiVMOgdSBuZ+G6p20gbOG6t24geHXhu5FuZyDEkcOheSBiaeG7g24uIiwiQsOsbmggeOG7i3QgY8O0biB0csO5bmcuIiwi4buQbmcgaMO6dCBkw7luZyDEkeG7gyB14buRbmcgbsaw4bubYyBnaeG6o2kga2jDoXQuIiwixJDhu5NuZyBo4buTIMSRbyDDoXAgc3XhuqV0IGThuqd1LiJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjIsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJxdWVzdGlvbk51bWJlciI6Mywic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sImlkIjoicV8yMDg1NzM2NDciLCJxdWVzdGlvblNuaXBwZXQiOiJIaeG7h24gdMaw4bujbmcgaG/hurdjIGThu6VuZyBj4bulIG7DoG8gc2F1IMSRw6J5IGhv4bqhdCDEkeG7mW5nIGNo4bunIHnhur91IGThu7FhIHbDoG8gbmd1ecOqbiBsLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJIaeG7h24gdMaw4bujbmcgaG/hurdjIGThu6VuZyBj4bulIG7DoG8gc2F1IMSRw6J5IGhv4bqhdCDEkeG7mW5nIGNo4bunIHnhur91IGThu7FhIHbDoG8gbmd1ecOqbiBsw60gw6FwIHN14bqldCBraMOtIHF1eeG7g24gxJHhu4MgdGjhu7FjIGhp4buHbiBjaOG7qWMgbsSDbmcgY+G7p2EgbsOzPyIsInJlbmRlcmVkX29wdGlvbnMiOlsiVMOgdSBuZ+G6p20gbOG6t24geHXhu5FuZyDEkcOheSBiaeG7g24uIiwiQsOsbmggeOG7i3QgY8O0biB0csO5bmcuIiwi4buQbmcgaMO6dCBkw7luZyDEkeG7gyB14buRbmcgbsaw4bubYyBnaeG6o2kga2jDoXQuIiwixJDhu5NuZyBo4buTIMSRbyDDoXAgc3XhuqV0IGThuqd1LiJdfSx7InF1ZXN0aW9uIjoiVOG6oWkgc2FvIGtoaSBs4bq3biB4deG7kW5nIHPDonUgdHJvbmcgbsaw4bubYywgbmfGsOG7nWkgdGjhu6MgbOG6t24gbOG6oWkgY+G6o20gdGjhuqV5IHThu6ljIG5n4buxYz8iLCJvcHRpb25zIjpbIkRvIHRy4buNbmcgbMaw4bujbmcgY+G7p2Egbsaw4bubYyBwaMOtYSB0csOqbiBnw6J5IHJhIMOhcCBzdeG6pXQgbOG7m24uIiwiRG8gbmhp4buHdCDEkeG7mSBj4bunYSBuxrDhu5tjIHRoYXkgxJHhu5VpLiIsIkRvIHRoaeG6v3Ugb3hpLiIsIkRvIGTDsm5nIGNo4bqjeSBj4bunYSBuxrDhu5tjLiJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjAsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6NCwiaWQiOiJxXzE3MjI4MjkwIiwicXVlc3Rpb25TbmlwcGV0IjoiVOG6oWkgc2FvIGtoaSBs4bq3biB4deG7kW5nIHPDonUgdHJvbmcgbsaw4bubYywgbmfGsOG7nWkgdGjhu6MgbOG6t24gbOG6oWkgY+G6o20gdGjhuqV5IHThu6ljIG4uLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IlThuqFpIHNhbyBraGkgbOG6t24geHXhu5FuZyBzw6J1IHRyb25nIG7GsOG7m2MsIG5nxrDhu51pIHRo4bujIGzhurduIGzhuqFpIGPhuqNtIHRo4bqleSB04bupYyBuZ+G7sWM/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyJEbyB0cuG7jW5nIGzGsOG7o25nIGPhu6dhIG7GsOG7m2MgcGjDrWEgdHLDqm4gZ8OieSByYSDDoXAgc3XhuqV0IGzhu5tuLiIsIkRvIG5oaeG7h3QgxJHhu5kgY+G7p2Egbsaw4bubYyB0aGF5IMSR4buVaS4iLCJEbyB0aGnhur91IG94aS4iLCJEbyBkw7JuZyBjaOG6o3kgY+G7p2Egbsaw4bubYy4iXX0seyJxdWVzdGlvbiI6IlBow6F0IGJp4buDdSBuw6BvIHNhdSDEkcOieSB0aOG7gyBoaeG7h24gxJHDum5nIHTDrW5oIGNo4bqldCB0cnV54buBbiDDoXAgc3XhuqV0IGPhu6dhIGNo4bqldCBs4buPbmcga2hpIGLhu4sgbsOpbj8iLCJvcHRpb25zIjpbIsOBcCBzdeG6pXQgdMOhYyBk4bulbmcgdsOgbyBjaOG6pXQgbOG7j25nIGNo4buJIMSRxrDhu6NjIHRydXnhu4FuIMSRaSB0aGVvIG3hu5l0IGjGsOG7m25nIG5o4bqldCDEkeG7i25oLiIsIsOBcCBzdeG6pXQgdMOhYyBk4bulbmcgdsOgbyBjaOG6pXQgbOG7j25nIMSRxrDhu6NjIHRydXnhu4FuIMSRaSBuZ3V5w6puIHbhurluIHRoZW8gbeG7jWkgaMaw4bubbmcuIiwiw4FwIHN14bqldCB0w6FjIGThu6VuZyB2w6BvIGNo4bqldCBs4buPbmcgYuG7iyBnaeG6o20gxJFpIGtoaSB0cnV54buBbiDEkWkuIiwiw4FwIHN14bqldCB0w6FjIGThu6VuZyB2w6BvIGNo4bqldCBs4buPbmcgY2jhu4kgdHJ1eeG7gW4gxJFpIHRoZW8gcGjGsMahbmcgdGjhurNuZyDEkeG7qW5nLiJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjEsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6NSwiaWQiOiJxXzkxMDIyOTIyNiIsInF1ZXN0aW9uU25pcHBldCI6IlBow6F0IGJp4buDdSBuw6BvIHNhdSDEkcOieSB0aOG7gyBoaeG7h24gxJHDum5nIHTDrW5oIGNo4bqldCB0cnV54buBbiDDoXAgc3XhuqV0IGPhu6dhIGNo4bqldCAuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IlBow6F0IGJp4buDdSBuw6BvIHNhdSDEkcOieSB0aOG7gyBoaeG7h24gxJHDum5nIHTDrW5oIGNo4bqldCB0cnV54buBbiDDoXAgc3XhuqV0IGPhu6dhIGNo4bqldCBs4buPbmcga2hpIGLhu4sgbsOpbj8iLCJyZW5kZXJlZF9vcHRpb25zIjpbIsOBcCBzdeG6pXQgdMOhYyBk4bulbmcgdsOgbyBjaOG6pXQgbOG7j25nIGNo4buJIMSRxrDhu6NjIHRydXnhu4FuIMSRaSB0aGVvIG3hu5l0IGjGsOG7m25nIG5o4bqldCDEkeG7i25oLiIsIsOBcCBzdeG6pXQgdMOhYyBk4bulbmcgdsOgbyBjaOG6pXQgbOG7j25nIMSRxrDhu6NjIHRydXnhu4FuIMSRaSBuZ3V5w6puIHbhurluIHRoZW8gbeG7jWkgaMaw4bubbmcuIiwiw4FwIHN14bqldCB0w6FjIGThu6VuZyB2w6BvIGNo4bqldCBs4buPbmcgYuG7iyBnaeG6o20gxJFpIGtoaSB0cnV54buBbiDEkWkuIiwiw4FwIHN14bqldCB0w6FjIGThu6VuZyB2w6BvIGNo4bqldCBs4buPbmcgY2jhu4kgdHJ1eeG7gW4gxJFpIHRoZW8gcGjGsMahbmcgdGjhurNuZyDEkeG7qW5nLiJdfSx7InF1ZXN0aW9uIjoiVGjDrSBuZ2hp4buHbSDDunAgbmfGsOG7o2MgY+G7kWMgbsaw4bubYyBjw7MgbeG6o25oIGLDrGEgY2hlIG1p4buHbmcgY+G7kWMgeHXhu5FuZyBtw6Agbsaw4bubYyBraMO0bmcgY2jhuqN5IHJhIGNobyB0aOG6pXkgxJFp4buBdSBnw6w/Iiwib3B0aW9ucyI6WyJM4buxYyBkw61uaCBj4bunYSBuxrDhu5tjIHbDoCBiw6xhIHLhuqV0IGzhu5tuLiIsIsOBcCBzdeG6pXQga2jDrSBxdXnhu4NuIHTDoWMgZOG7pW5nIHThu6sgZMaw4bubaSBsw6puIGzhu5tuIGjGoW4gw6FwIHN14bqldCBj4bunYSBj4buZdCBuxrDhu5tjLiIsIk7GsOG7m2MgY8OzIHPhu6ljIGPEg25nIGLhu4EgbeG6t3QuIiwiTeG6o25oIGLDrGEgcuG6pXQgbmjhurkuIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MSwidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo2LCJpZCI6InFfMjEzOTU2NTQ4OSIsInF1ZXN0aW9uU25pcHBldCI6IlRow60gbmdoaeG7h20gw7pwIG5nxrDhu6NjIGPhu5FjIG7GsOG7m2MgY8OzIG3huqNuaCBiw6xhIGNoZSBtaeG7h25nIGPhu5FjIHh14buRbmcgbcOgIG7GsOG7m2Mgay4uLiIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiVGjDrSBuZ2hp4buHbSDDunAgbmfGsOG7o2MgY+G7kWMgbsaw4bubYyBjw7MgbeG6o25oIGLDrGEgY2hlIG1p4buHbmcgY+G7kWMgeHXhu5FuZyBtw6Agbsaw4bubYyBraMO0bmcgY2jhuqN5IHJhIGNobyB0aOG6pXkgxJFp4buBdSBnw6w/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyJM4buxYyBkw61uaCBj4bunYSBuxrDhu5tjIHbDoCBiw6xhIHLhuqV0IGzhu5tuLiIsIsOBcCBzdeG6pXQga2jDrSBxdXnhu4NuIHTDoWMgZOG7pW5nIHThu6sgZMaw4bubaSBsw6puIGzhu5tuIGjGoW4gw6FwIHN14bqldCBj4bunYSBj4buZdCBuxrDhu5tjLiIsIk7GsOG7m2MgY8OzIHPhu6ljIGPEg25nIGLhu4EgbeG6t3QuIiwiTeG6o25oIGLDrGEgcuG6pXQgbmjhurkuIl19LHsicXVlc3Rpb24iOiJLaGkgxJFpIG3DoXkgYmF5IGhv4bq3YyBsw6puIHbDuW5nIG7DumkgY2FvLCBuaGnhu4F1IG5nxrDhu51pIGPhuqNtIHRo4bqleSDDuSB0YWkgdsOgIMSRw7RpIGtoaSBjw7MgdGnhur9uZyBcInTDoWNoXCIgdHJvbmcgdGFpLiBIaeG7h24gdMaw4bujbmcgbsOgeSB44bqjeSByYSBsw6AgZG86Iiwib3B0aW9ucyI6WyJT4buxIHRoYXkgxJHhu5VpIMSR4buZdCBuZ+G7mXQgY+G7p2Egbmhp4buHdCDEkeG7mSBraMO0bmcga2jDrS4iLCJT4buxIHRoYXkgxJHhu5VpIMSR4buZdCBuZ+G7mXQgY+G7p2EgxJHhu5kg4bqpbSBraMO0bmcga2jDrS4iLCJT4buxIHRoYXkgxJHhu5VpIMSR4buZdCBuZ+G7mXQgY+G7p2Egw6FwIHN14bqldCBraMO0bmcga2jDrSBiw6puIG5nb8OgaSB0w6FjIGThu6VuZyBsw6puIG3DoG5nIG5oxKkuIiwiU+G7sSBydW5nIMSR4buZbmcgY+G7p2EgxJHhu5luZyBjxqEgbcOheSBiYXkuIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MiwidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo3LCJpZCI6InFfMjEzMjE3NTQzNCIsInF1ZXN0aW9uU25pcHBldCI6IktoaSDEkWkgbcOheSBiYXkgaG/hurdjIGzDqm4gdsO5bmcgbsO6aSBjYW8sIG5oaeG7gXUgbmfGsOG7nWkgY+G6o20gdGjhuqV5IMO5IHRhaSB2w6AgxJHDtC4uLiIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiS2hpIMSRaSBtw6F5IGJheSBob+G6t2MgbMOqbiB2w7luZyBuw7ppIGNhbywgbmhp4buBdSBuZ8aw4budaSBj4bqjbSB0aOG6pXkgw7kgdGFpIHbDoCDEkcO0aSBraGkgY8OzIHRp4bq/bmcgXCJ0w6FjaFwiIHRyb25nIHRhaS4gSGnhu4duIHTGsOG7o25nIG7DoHkgeOG6o3kgcmEgbMOgIGRvOiIsInJlbmRlcmVkX29wdGlvbnMiOlsiU+G7sSB0aGF5IMSR4buVaSDEkeG7mXQgbmfhu5l0IGPhu6dhIG5oaeG7h3QgxJHhu5kga2jDtG5nIGtow60uIiwiU+G7sSB0aGF5IMSR4buVaSDEkeG7mXQgbmfhu5l0IGPhu6dhIMSR4buZIOG6qW0ga2jDtG5nIGtow60uIiwiU+G7sSB0aGF5IMSR4buVaSDEkeG7mXQgbmfhu5l0IGPhu6dhIMOhcCBzdeG6pXQga2jDtG5nIGtow60gYsOqbiBuZ2/DoGkgdMOhYyBk4bulbmcgbMOqbiBtw6BuZyBuaMSpLiIsIlPhu7EgcnVuZyDEkeG7mW5nIGPhu6dhIMSR4buZbmcgY8ahIG3DoXkgYmF5LiJdfSx7InF1ZXN0aW9uIjoiR2nDoWMgbcO6dCAoduG6rXQgaMOtdCBjaMOibiBraMO0bmcpIGPDsyB0aOG7gyBiw6FtIGNo4bq3dCB2w6BvIGLhu4EgbeG6t3QgbmjhurVuIGzDoCBuaOG7nSB54bq/dSB04buRIG7DoG8gc2F1IMSRw6J5PyIsIm9wdGlvbnMiOlsiTOG7sWMgaMO6dCB0xKluaCDEkWnhu4duIGdp4buvYSBnacOhYyBtw7p0IHbDoCBi4buBIG3hurd0LiIsIkzhu7FjIG1hIHPDoXQgcuG6pXQgbOG7m24gZ2nhu69hIGdpw6FjIG3DunQgdsOgIGLhu4EgbeG6t3QuIiwiQ2jDqm5oIGzhu4djaCDDoXAgc3XhuqV0IGdp4buvYSBiw6puIHRyb25nIHbDoCBiw6puIG5nb8OgaSBnacOhYyBtw7p0IGRvIMOhcCBzdeG6pXQga2jDrSBxdXnhu4NuLiIsIkto4buRaSBsxrDhu6NuZyBj4bunYSBnacOhYyBtw7p0LiJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjIsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6OCwiaWQiOiJxXzEwMjI4ODM4NDMiLCJxdWVzdGlvblNuaXBwZXQiOiJHacOhYyBtw7p0ICh24bqtdCBow610IGNow6JuIGtow7RuZykgY8OzIHRo4buDIGLDoW0gY2jhurd0IHbDoG8gYuG7gSBt4bq3dCBuaOG6tW4gbMOgIG5o4budIHkuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6Ikdpw6FjIG3DunQgKHbhuq10IGjDrXQgY2jDom4ga2jDtG5nKSBjw7MgdGjhu4MgYsOhbSBjaOG6t3QgdsOgbyBi4buBIG3hurd0IG5o4bq1biBsw6Agbmjhu50geeG6v3UgdOG7kSBuw6BvIHNhdSDEkcOieT8iLCJyZW5kZXJlZF9vcHRpb25zIjpbIkzhu7FjIGjDunQgdMSpbmggxJFp4buHbiBnaeG7r2EgZ2nDoWMgbcO6dCB2w6AgYuG7gSBt4bq3dC4iLCJM4buxYyBtYSBzw6F0IHLhuqV0IGzhu5tuIGdp4buvYSBnacOhYyBtw7p0IHbDoCBi4buBIG3hurd0LiIsIkNow6puaCBs4buHY2ggw6FwIHN14bqldCBnaeG7r2EgYsOqbiB0cm9uZyB2w6AgYsOqbiBuZ2/DoGkgZ2nDoWMgbcO6dCBkbyDDoXAgc3XhuqV0IGtow60gcXV54buDbi4iLCJLaOG7kWkgbMaw4bujbmcgY+G7p2EgZ2nDoWMgbcO6dC4iXX0seyJxdWVzdGlvbiI6Ik3hu5l0IHRo4bujIGzhurduIGNodXnDqm4gbmdoaeG7h3Agc+G7rSBk4bulbmcgYuG7mSDEkeG7kyBs4bq3biDEkeG6t2MgYmnhu4d0IGPDsyB0aOG7gyBjaOG7i3UgxJHGsOG7o2Mgw6FwIHN14bqldCB04buRaSDEkWEgbMOgICQ0MTIwMDAgXFx0ZXh0eyBQYX0kIGRvIG7GsOG7m2MgYmnhu4NuIGfDonkgcmEuIEJp4bq/dCBraOG7kWkgbMaw4bujbmcgcmnDqm5nIGPhu6dhIG7GsOG7m2MgYmnhu4NuIGzDoCAkMTAzMCBcXHRleHR7IGtnL219XjMkIHbDoCBnaWEgdOG7kWMgdHLhu41uZyB0csaw4budbmcgbMOgICQxMCBcXHRleHR7IG0vc31eMiQuIEjhu49pIG5nxrDhu51pIHRo4bujIGzhurduIG7DoHkgY8OzIHRo4buDIGzhurduIGFuIHRvw6BuIMSR4bq/biDEkeG7mSBzw6J1IHThu5FpIMSRYSB44bqlcCB44buJIGJhbyBuaGnDqnUgbcOpdD8gKELhu48gcXVhIMOhcCBzdeG6pXQga2jDrSBxdXnhu4NuIHTDoWMgZOG7pW5nIGzDqm4gbeG6t3Qgbsaw4bubYykuIiwib3B0aW9ucyI6WyIzMCBtIiwiMzUgbSIsIjQwIG0iLCI0NSBtIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MiwidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6IkNow6BvIGVtLFxuXG7EkMOieSBsw6AgbeG7mXQgYsOgaSB0b8OhbiBy4bqldCB0aOG7sWMgdOG6vyB24buBIMOhcCBzdeG6pXQgY2jhuqV0IGzhu49uZywgZ2nDunAgY2jDum5nIHRhIGhp4buDdSBoxqFuIHbhu4Eg4bupbmcgZOG7pW5nIGPhu6dhIHbhuq10IGzDvSB0cm9uZyBjdeG7mWMgc+G7kW5nLiDEkOG7gyBnaeG6o2kgcXV54bq/dCBiw6BpIHRvw6FuIG7DoHksIGNow7puZyB0YSBz4bq9IMOhcCBk4bulbmcgY8O0bmcgdGjhu6ljIHTDrW5oIMOhcCBzdeG6pXQgY2jhuqV0IGzhu49uZyB2w6AgdGjhu7FjIGhp4buHbiBjw6FjIGLGsOG7m2MgdMOtbmggdG/DoW4gY+G6qW4gdGjhuq1uLlxuXG4jIyMgTOG7nWkgZ2nhuqNpIGNoaSB0aeG6v3Q6XG5cbiMjIyMgMS4gUGjDom4gdMOtY2ggdsOgIHTDs20gdOG6r3QgxJHhu4EgYsOgaTpcblxuQ2jDum5nIHRhIGPhuqduIHjDoWMgxJHhu4tuaCDEkeG7mSBzw6J1IHThu5FpIMSRYSBtw6AgbmfGsOG7nWkgdGjhu6MgbOG6t24gY8OzIHRo4buDIMSR4bqhdCDEkcaw4bujYyBt4buZdCBjw6FjaCBhbiB0b8Ogbi4gQ8OhYyB0aMO0bmcgc+G7kSDEkcOjIGNobyBiYW8gZ+G7k206XG4qICAgw4FwIHN14bqldCB04buRaSDEkWEgbcOgIGLhu5kgxJHhu5MgbOG6t24gY8OzIHRo4buDIGNo4buLdSDEkcaw4bujYzogJFAgPSA0MTIwMDAgXFx0ZXh0eyBQYX0kLlxuKiAgIEto4buRaSBsxrDhu6NuZyByacOqbmcgY+G7p2Egbsaw4bubYyBiaeG7g246ICREID0gMTAzMCBcXHRleHR7IGtnL219XjMkLlxuKiAgIEdpYSB04buRYyB0cuG7jW5nIHRyxrDhu51uZzogJGcgPSAxMCBcXHRleHR7IG0vc31eMiQuXG4qICAgxJDhu5kgc8OidSB04buRaSDEkWEgY+G6p24gdMOsbSAoa8O9IGhp4buHdSBsw6AgJGgkLCBob+G6t2MgJHgkIG5oxrAgdHJvbmcgY8OidSBo4buPaSkuXG4qICAgQuG7jyBxdWEgw6FwIHN14bqldCBraMOtIHF1eeG7g24gdMOhYyBk4bulbmcgbMOqbiBt4bq3dCBuxrDhu5tjLiDEkGnhu4F1IG7DoHkgY8OzIG5naMSpYSBsw6Agw6FwIHN14bqldCB04bqhaSDEkeG7mSBzw6J1ICRoJCBob8OgbiB0b8OgbiBkbyBj4buZdCBuxrDhu5tjIGfDonkgcmEuXG5cbiMjIyMgMi4gWMOhYyDEkeG7i25oIGPDtG5nIHRo4bupYyB24bqtdCBsw70gw6FwIGThu6VuZzpcblxuw4FwIHN14bqldCBjaOG6pXQgbOG7j25nIOG7nyDEkeG7mSBzw6J1ICRoJCDEkcaw4bujYyB0w61uaCBi4bqxbmcgY8O0bmcgdGjhu6ljOlxuJCRQID0gRCBcXGNkb3QgZyBcXGNkb3QgaCQkXG5Ucm9uZyDEkcOzOlxuKiAgICRQJCBsw6Agw6FwIHN14bqldCBjaOG6pXQgbOG7j25nIHThuqFpIMSR4buZIHPDonUgJGgkICjEkcahbiB24buLOiBQYXNjYWwsICRcXHRleHR7UGF9JCkuXG4qICAgJEQkIGzDoCBraOG7kWkgbMaw4bujbmcgcmnDqm5nIGPhu6dhIGNo4bqldCBs4buPbmcgKMSRxqFuIHbhu4s6IGtpbMO0Z2FtIHRyw6puIG3DqXQga2jhu5FpLCAkXFx0ZXh0e2tnL219XjMkKS5cbiogICAkZyQgbMOgIGdpYSB04buRYyB0cuG7jW5nIHRyxrDhu51uZyAoxJHGoW4gduG7izogbcOpdCB0csOqbiBnacOieSBiw6xuaCBwaMawxqFuZywgJFxcdGV4dHttL3N9XjIkKS5cbiogICAkaCQgbMOgIMSR4buZIHPDonUgKMSRxqFuIHbhu4s6IG3DqXQsICRcXHRleHR7bX0kKS5cblxuIyMjIyAzLiBUaGnhur90IGzhuq1wIHBoxrDGoW5nIHRyw6xuaCB2w6AgZ2nhuqNpOlxuXG7EkOG7gyBuZ8aw4budaSB0aOG7oyBs4bq3biBjw7MgdGjhu4MgbOG6t24gYW4gdG/DoG4sIMOhcCBzdeG6pXQgZG8gbsaw4bubYyBiaeG7g24gZ8OieSByYSB04bqhaSDEkeG7mSBzw6J1IHThu5FpIMSRYSAkaCQgcGjhuqNpIGLhurFuZyBob+G6t2Mgbmjhu48gaMahbiDDoXAgc3XhuqV0IHThu5FpIMSRYSBtw6AgYuG7mSDEkeG7kyBs4bq3biBjaOG7i3UgxJHGsOG7o2MuIFRyb25nIHRyxrDhu51uZyBo4bujcCBuw6B5LCBjaMO6bmcgdGEgY+G6p24gdMOsbSDEkeG7mSBzw6J1IHThu5FpIMSRYSwgbsOqbiDDoXAgc3XhuqV0IGRvIG7GsOG7m2MgYmnhu4NuIGfDonkgcmEgc+G6vSBi4bqxbmcgduG7m2kgw6FwIHN14bqldCB04buRaSDEkWEgbcOgIGLhu5kgxJHhu5MgbOG6t24gY2jhu4t1IMSRxrDhu6NjOlxuJCRQX3ttYXh9ID0gRCBcXGNkb3QgZyBcXGNkb3QgaF97bWF4fSQkXG5U4burIGPDtG5nIHRo4bupYyBuw6B5LCBjaMO6bmcgdGEgY8OzIHRo4buDIHN1eSByYSBiaeG7g3UgdGjhu6ljIMSR4buDIHTDrW5oIMSR4buZIHPDonUgdOG7kWkgxJFhICRoX3ttYXh9JDpcbiQkaF97bWF4fSA9IFxcZGZyYWN7UF97bWF4fX17RCBcXGNkb3QgZ30kJFxuXG4jIyMjIDQuIFRoYXkgc+G7kSB2w6AgdMOtbmggdG/DoW46XG5cbkLDonkgZ2nhu50sIGNow7puZyB0YSBz4bq9IHRoYXkgY8OhYyBnacOhIHRy4buLIMSRw6MgYmnhur90IHbDoG8gY8O0bmcgdGjhu6ljOlxuKiAgICRQX3ttYXh9ID0gNDEyMDAwIFxcdGV4dHsgUGF9JFxuKiAgICREID0gMTAzMCBcXHRleHR7IGtnL219XjMkXG4qICAgJGcgPSAxMCBcXHRleHR7IG0vc31eMiRcblxuJCRoX3ttYXh9ID0gXFxkZnJhY3s0MTIwMDB9ezEwMzAgXFx0aW1lcyAxMH0kJFxuJCRoX3ttYXh9ID0gXFxkZnJhY3s0MTIwMDB9ezEwMzAwfSQkXG4kJGhfe21heH0gPSA0MCBcXHRleHR7IG19JCRcblxuIyMjIyA1LiBL4bq/dCBsdeG6rW46XG5cblbhuq15LCBuZ8aw4budaSB0aOG7oyBs4bq3biBuw6B5IGPDsyB0aOG7gyBs4bq3biBhbiB0b8OgbiDEkeG6v24gxJHhu5kgc8OidSB04buRaSDEkWEgeOG6pXAgeOG7iSAkNDAgXFx0ZXh0eyBtfSQuXG5cbsSQw6J5IGzDoCBt4buZdCBiw6BpIHRvw6FuIGPGoSBi4bqjbiBuaMawbmcgcuG6pXQgcXVhbiB0cuG7jW5nLCBnacO6cCBjaMO6bmcgdGEgw6FwIGThu6VuZyBraeG6v24gdGjhu6ljIHbhu4Egw6FwIHN14bqldCBjaOG6pXQgbOG7j25nIHbDoG8gdGjhu7FjIHThur8uXG5cbioqxJDDoXAgw6FuIMSRw7puZyBsw6AgQy4gNDAgbS4qKiIsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6OSwiaWQiOiJxXzk2MjUxNTkwMiIsInF1ZXN0aW9uU25pcHBldCI6Ik3hu5l0IHRo4bujIGzhurduIGNodXnDqm4gbmdoaeG7h3Agc+G7rSBk4bulbmcgYuG7mSDEkeG7kyBs4bq3biDEkeG6t2MgYmnhu4d0IGPDsyB0aOG7gyBjaOG7i3UgxJHGsOG7o2MgLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJN4buZdCB0aOG7oyBs4bq3biBjaHV5w6puIG5naGnhu4dwIHPhu60gZOG7pW5nIGLhu5kgxJHhu5MgbOG6t24gxJHhurdjIGJp4buHdCBjw7MgdGjhu4MgY2jhu4t1IMSRxrDhu6NjIMOhcCBzdeG6pXQgdOG7kWkgxJFhIGzDoCAkNDEyMDAwIFxcdGV4dHsgUGF9JCBkbyBuxrDhu5tjIGJp4buDbiBnw6J5IHJhLiBCaeG6v3Qga2jhu5FpIGzGsOG7o25nIHJpw6puZyBj4bunYSBuxrDhu5tjIGJp4buDbiBsw6AgJDEwMzAgXFx0ZXh0eyBrZy9tfV4zJCB2w6AgZ2lhIHThu5FjIHRy4buNbmcgdHLGsOG7nW5nIGzDoCAkMTAgXFx0ZXh0eyBtL3N9XjIkLiBI4buPaSBuZ8aw4budaSB0aOG7oyBs4bq3biBuw6B5IGPDsyB0aOG7gyBs4bq3biBhbiB0b8OgbiDEkeG6v24gxJHhu5kgc8OidSB04buRaSDEkWEgeOG6pXAgeOG7iSBiYW8gbmhpw6p1IG3DqXQ/IChC4buPIHF1YSDDoXAgc3XhuqV0IGtow60gcXV54buDbiB0w6FjIGThu6VuZyBsw6puIG3hurd0IG7GsOG7m2MpLiIsInJlbmRlcmVkX29wdGlvbnMiOlsiMzAgbSIsIjM1IG0iLCI0MCBtIiwiNDUgbSJdfSx7InF1ZXN0aW9uIjoixJDhu4MgbsOibmcgbeG7mXQgw7QgdMO0IGPDsyB0cuG7jW5nIGzGsOG7o25nICQ0MDAwIFxcdGV4dHsgTn0kIGLhurFuZyBt4buZdCBtw6F5IG7DqW4gdGjhu6d5IGzhu7FjLCBuZ8aw4budaSB0YSB0w6FjIGThu6VuZyBt4buZdCBs4buxYyBsw6puIHDDrXQtdMO0bmcgbmjhu48uIEJp4bq/dCBkaeG7h24gdMOtY2ggY+G7p2EgcMOtdC10w7RuZyBuaOG7jyBsw6AgJDUgXFx0ZXh0eyBjbX1eMiQgdsOgIGRp4buHbiB0w61jaCBj4bunYSBww610LXTDtG5nIGzhu5tuIGzDoCAkMjAwIFxcdGV4dHsgY219XjIkLiBC4buPIHF1YSBtYSBzw6F0LiBM4buxYyB04buRaSB0aGnhu4N1IGPhuqduIHTDoWMgZOG7pW5nIGzDqm4gcMOtdC10w7RuZyBuaOG7jyBsw6AgYmFvIG5oacOqdT8iLCJvcHRpb25zIjpbIiQ1MCBcXHRleHR7IE59JCIsIiQxMDAgXFx0ZXh0eyBOfSQiLCIkMjAwIFxcdGV4dHsgTn0kIiwiJDQwMCBcXHRleHR7IE59JCJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjEsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJxdWVzdGlvbk51bWJlciI6MTAsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sImlkIjoicV8xODIzMTYwMTc4IiwicXVlc3Rpb25TbmlwcGV0IjoixJDhu4MgbsOibmcgbeG7mXQgw7QgdMO0IGPDsyB0cuG7jW5nIGzGsOG7o25nICQ0MDAwIFxcdGV4dHsgTn0kIGLhurFuZyBt4buZdCBtw6F5IG7DqW4gdGjhu6d5Li4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiLEkOG7gyBuw6JuZyBt4buZdCDDtCB0w7QgY8OzIHRy4buNbmcgbMaw4bujbmcgJDQwMDAgXFx0ZXh0eyBOfSQgYuG6sW5nIG3hu5l0IG3DoXkgbsOpbiB0aOG7p3kgbOG7sWMsIG5nxrDhu51pIHRhIHTDoWMgZOG7pW5nIG3hu5l0IGzhu7FjIGzDqm4gcMOtdC10w7RuZyBuaOG7jy4gQmnhur90IGRp4buHbiB0w61jaCBj4bunYSBww610LXTDtG5nIG5o4buPIGzDoCAkNSBcXHRleHR7IGNtfV4yJCB2w6AgZGnhu4duIHTDrWNoIGPhu6dhIHDDrXQtdMO0bmcgbOG7m24gbMOgICQyMDAgXFx0ZXh0eyBjbX1eMiQuIELhu48gcXVhIG1hIHPDoXQuIEzhu7FjIHThu5FpIHRoaeG7g3UgY+G6p24gdMOhYyBk4bulbmcgbMOqbiBww610LXTDtG5nIG5o4buPIGzDoCBiYW8gbmhpw6p1PyIsInJlbmRlcmVkX29wdGlvbnMiOlsiJDUwIFxcdGV4dHsgTn0kIiwiJDEwMCBcXHRleHR7IE59JCIsIiQyMDAgXFx0ZXh0eyBOfSQiLCIkNDAwIFxcdGV4dHsgTn0kIl19XQ=="))));
+    const options = JSON.parse(decodeURIComponent(escape(atob("eyJ0aW1lTGltaXQiOjUsInJldHJpZXMiOjEsInN0YXJ0VGltZSI6bnVsbCwiZW5kVGltZSI6bnVsbCwic2hvcnRBbnN3ZXJGb3JtYXQiOiJmcmVlZm9ybSIsInBvaW50c01DIjoxMCwicG9pbnRzVEYiOjAsInBvaW50c1NBIjowLCJwb2ludHNFc3NheSI6MCwicG9pbnRzVEZNZXRob2QiOiJwcm9ncmVzc2l2ZSIsInNob3dBbnN3ZXJzIjp0cnVlLCJzaG93RXhwbGFuYXRpb24iOnRydWUsImFpQXNzZXNzbWVudCI6dHJ1ZSwidGVhY2hlck5hbWUiOiJI4buTIFRo4buLIEFuIE5odW5nIn0="))));
+    const apiKeysEncoded = JSON.parse(decodeURIComponent(escape(atob("eyJnZW1pbmkiOiJRVWw2WVZONVEyTlRlVkkyWldvNVFXZHRXRkJCUTNock1tTlBiVXcxZFdSSk1WTXdRbXh2Iiwib3BlbmFpIjoiIiwiZGVlcHNlZWsiOiIifQ=="))));
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbyoZQm-3oRmHqvbqWxlyQLgzN2VK0ZhghHQPDHKQIB8DFqn3M_sRKMjoL156PJQnBpE3w/exec";
+    const examCode = "C1FRMK";
+    const teacherName = "Hồ Thị An Nhung";
+
+    const apiKeys = {
+        gemini: atob(apiKeysEncoded.gemini),
+    };
+
+    // --- 2. STATE ---
+    let userAnswers = {};
+    let timeLeft = options.timeLimit * 60;
+    let timerInterval;
+    let isSubmitted = false;
+    let startTime = new Date();
+    let monitorLog = {
+        thoatManHinh: 0,
+        saoChep: 0,
+        dan: 0
+    };
+
+    // --- 3. DOM ELEMENTS ---
+    const dom = {
+        welcomeScreen: document.getElementById('welcome-screen'),
+        quizScreen: document.getElementById('quiz-screen'),
+        resultScreen: document.getElementById('result-screen'),
+        nameInput: document.getElementById('name'),
+        classInput: document.getElementById('class'),
+        studentApiKeyInput: document.getElementById('student-api-key'),
+        startBtn: document.getElementById('start-btn'),
+        studentNameDisplay: document.getElementById('student-name-display'),
+        timerDisplay: document.getElementById('timer'),
+        questionsContainer: document.getElementById('questions-container'),
+        navGrid: document.getElementById('nav-grid'),
+        submitBtn: document.getElementById('submit-btn'),
+        scoreDisplay: document.getElementById('score-display'),
+        resultName: document.getElementById('result-name'),
+        resultClass: document.getElementById('result-class'),
+        resultTime: document.getElementById('result-time'),
+        detailedAnswers: document.getElementById('detailed-answers'),
+        viewAnswersBtn: document.getElementById('view-answers-btn'),
+        aiAssessmentContainer: document.getElementById('ai-assessment-container'),
+        aiAssessmentContent: document.getElementById('ai-assessment-content'),
+        progressBar: document.getElementById('progress-bar')
+    };
+
+    // --- 4. INIT ---
+    dom.startBtn.addEventListener('click', startQuiz);
+    
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && !isSubmitted && dom.quizScreen.style.display !== 'none') {
+            monitorLog.thoatManHinh++;
+        }
+    });
+    
+    document.addEventListener('copy', () => { if(!isSubmitted) monitorLog.saoChep++; });
+    document.addEventListener('paste', () => { if(!isSubmitted) monitorLog.dan++; });
+
+    function startQuiz() {
+        const name = dom.nameInput.value.trim();
+        const className = dom.classInput.value.trim();
+        if (!name || !className) {
+            alert('Vui lòng nhập đầy đủ Họ tên và Lớp!');
+            return;
+        }
+        
+        if (dom.studentApiKeyInput && dom.studentApiKeyInput.value.trim()) {
+            apiKeys.gemini = dom.studentApiKeyInput.value.trim();
+        }
+
+        dom.studentNameDisplay.textContent = name;
+        dom.welcomeScreen.classList.add('hidden');
+        dom.quizScreen.classList.remove('hidden');
+        
+        renderQuestions();
+        renderNav();
+        
+        if (options.timeLimit > 0) {
+            startTimer();
+        } else {
+            dom.timerDisplay.textContent = "--:--";
+        }
+        
+        window.scrollTo(0, 0);
+    }
+
+    function startTimer() {
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitQuiz(true);
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        dom.timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        
+        const totalTime = options.timeLimit * 60;
+        const percent = ((totalTime - timeLeft) / totalTime) * 100;
+        dom.progressBar.style.width = `${percent}%`;
+    }
+
+    // --- 5. RENDER ---
+    function renderQuestions() {
+        dom.questionsContainer.innerHTML = '';
+        quizData.forEach((item, index) => {
+            const qDiv = document.createElement('div');
+            qDiv.id = `q-${index}`;
+            qDiv.className = "bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6";
+            
+            let html = `<div class="mb-4">
+                <span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded mr-2">Câu ${index + 1}</span>
+                <span class="font-medium text-gray-800 text-lg">${item.rendered_question || item.question}</span>
+            </div>`;
+
+            if (item.type === 'multiple-choice' || item.type.startsWith('mc-')) {
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+                item.rendered_options.forEach((opt, i) => {
+                    html += `
+                    <label class="cursor-pointer">
+                        <div class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 transition-colors">
+                            <input type="radio" name="q-${index}" value="${i}" class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300" onchange="selectAnswer(${index}, ${i})">
+                            <span class="ml-3 text-gray-700">${String.fromCharCode(65+i)}. ${opt}</span>
+                        </div>
+                    </label>`;
+                });
+                html += `</div>`;
+            } else if (item.type === 'true-false' || item.type.startsWith('tf-')) {
+                 html += `<table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                    <thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mệnh đề</th><th class="px-4 py-2 text-center text-xs font-medium text-gray-500 w-20">Đúng</th><th class="px-4 py-2 text-center text-xs font-medium text-gray-500 w-20">Sai</th></tr></thead>
+                    <tbody class="bg-white divide-y divide-gray-200">`;
+                 item.statements.forEach((stmt, i) => {
+                     html += `<tr>
+                        <td class="px-4 py-2 text-sm">${stmt.rendered_statement || stmt.statement}</td>
+                        <td class="px-4 py-2 text-center"><input type="radio" name="q-${index}-${i}" value="true" onchange="selectTFAnswer(${index}, ${i}, true)"></td>
+                        <td class="px-4 py-2 text-center"><input type="radio" name="q-${index}-${i}" value="false" onchange="selectTFAnswer(${index}, ${i}, false)"></td>
+                     </tr>`;
+                 });
+                 html += `</tbody></table>`;
+            } else {
+                 html += `<textarea class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" rows="3" placeholder="Nhập câu trả lời của bạn..." oninput="inputAnswer(${index}, this.value)"></textarea>`;
+            }
+
+            qDiv.innerHTML = html;
+            dom.questionsContainer.appendChild(qDiv);
+        });
+        
+        if (window.MathJax) {
+            window.MathJax.typesetPromise();
+        }
+    }
+
+    function renderNav() {
+        dom.navGrid.innerHTML = '';
+        quizData.forEach((_, index) => {
+            const btn = document.createElement('button');
+            btn.id = `nav-${index}`;
+            btn.className = "w-full aspect-square flex items-center justify-center rounded-md bg-gray-100 text-gray-600 text-xs font-bold hover:bg-gray-200 transition-colors";
+            btn.textContent = index + 1;
+            btn.onclick = () => {
+                document.getElementById(`q-${index}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+            dom.navGrid.appendChild(btn);
+        });
+    }
+
+    window.selectAnswer = (qIndex, oIndex) => {
+        userAnswers[qIndex] = oIndex;
+        updateNavStatus(qIndex);
+    };
+
+    window.selectTFAnswer = (qIndex, sIndex, val) => {
+        if (!userAnswers[qIndex]) userAnswers[qIndex] = {};
+        userAnswers[qIndex][sIndex] = val;
+        if (Object.keys(userAnswers[qIndex]).length === quizData[qIndex].statements.length) {
+            updateNavStatus(qIndex);
+        }
+    };
+
+    window.inputAnswer = (qIndex, val) => {
+        userAnswers[qIndex] = val.trim();
+        if (val.trim()) updateNavStatus(qIndex);
+        else document.getElementById(`nav-${qIndex}`).classList.remove('bg-indigo-600', 'text-white');
+    };
+
+    function updateNavStatus(index) {
+        const btn = document.getElementById(`nav-${index}`);
+        btn.classList.remove('bg-gray-100', 'text-gray-600');
+        btn.classList.add('bg-indigo-600', 'text-white');
+    }
+
+    dom.submitBtn.addEventListener('click', () => {
+        if (confirm('Bạn có chắc chắn muốn nộp bài?')) {
+            submitQuiz();
+        }
+    });
+
+    async function submitQuiz(autoSubmit = false) {
+        if (isSubmitted) return;
+        isSubmitted = true;
+        clearInterval(timerInterval);
+
+        let score = 0;
+        let detailResults = [];
+
+        quizData.forEach((item, index) => {
+            let isCorrect = false;
+            let detail = {};
+            
+            if (item.type === 'multiple-choice' || item.type.startsWith('mc-')) {
+                if (userAnswers[index] === item.correctAnswerIndex) {
+                    isCorrect = true;
+                    score += (10 / quizData.length); 
+                }
+                detail = { userAnswer: userAnswers[index], correctAnswer: item.correctAnswerIndex };
+            } else if (item.type === 'true-false' || item.type.startsWith('tf-')) {
+                let correctStmtCount = 0;
+                let stmtResults = [];
+                item.statements.forEach((stmt, i) => {
+                    const userVal = userAnswers[index] ? userAnswers[index][i] : null;
+                    const stmtCorrect = userVal === stmt.is_correct;
+                    if (stmtCorrect) correctStmtCount++;
+                    stmtResults.push({ statement: i, user: userVal, correct: stmt.is_correct, isCorrect: stmtCorrect });
+                });
+                
+                const itemScoreMax = 10 / quizData.length;
+                let itemScore = 0;
+                if(correctStmtCount === 1) itemScore = itemScoreMax * 0.1;
+                if(correctStmtCount === 2) itemScore = itemScoreMax * 0.25;
+                if(correctStmtCount === 3) itemScore = itemScoreMax * 0.5;
+                if(correctStmtCount === 4) { itemScore = itemScoreMax; isCorrect = true; }
+                
+                score += itemScore;
+                detail = { statements: stmtResults };
+            }
+            
+            detailResults.push({
+                id: item.id, // ID để thống kê câu hay sai
+                questionNumber: index + 1,
+                type: item.type,
+                isCorrect: isCorrect,
+                scoreEarned: 0,
+                details: detail
+            });
+        });
+
+        score = Math.min(10, Math.max(0, score));
+
+        dom.quizScreen.classList.add('hidden');
+        dom.resultScreen.classList.remove('hidden');
+        
+        dom.scoreDisplay.textContent = score.toFixed(2);
+        dom.resultName.textContent = dom.nameInput.value;
+        dom.resultClass.textContent = dom.classInput.value;
+        dom.resultTime.textContent = new Date().toLocaleString();
+
+        if (googleScriptUrl) {
+            const payload = {
+                timestamp: new Date().toISOString(),
+                name: dom.nameInput.value,
+                class: dom.classInput.value,
+                score: score.toFixed(2),
+                examCode: examCode,
+                monitoringLog: JSON.stringify(monitorLog),
+                answerDetails: JSON.stringify(detailResults)
+            };
+            
+            fetch(googleScriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.error("Lỗi gửi điểm:", e));
+        }
+
+        if (options.showAnswers) {
+            dom.viewAnswersBtn.classList.remove('hidden');
+            renderDetailedAnswers(detailResults);
+        }
+        
+        if (options.aiAssessment && apiKeys.gemini) {
+            generateAIAssessment(score, detailResults);
+        }
+    }
+
+    function renderDetailedAnswers(results) {
+        let html = '<h3 class="text-xl font-bold mb-4 text-gray-800">Chi tiết đáp án</h3>';
+        
+        quizData.forEach((item, index) => {
+            const result = results[index];
+            const isCorrect = result.isCorrect;
+            const color = isCorrect ? 'text-green-600' : 'text-red-600';
+            
+            html += `<div class="mb-6 p-4 border rounded-lg ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}">
+                <div class="font-bold mb-2 ${color}">Câu ${index + 1}: ${isCorrect ? 'ĐÚNG' : 'SAI'}</div>
+                <div class="mb-2 text-gray-800">${item.rendered_question || item.question}</div>`;
+
+            if (item.type === 'multiple-choice') {
+                const userIdx = userAnswers[index];
+                const correctIdx = item.correctAnswerIndex;
+                html += `<div class="text-sm">
+                    <p>Bạn chọn: ${userIdx !== undefined ? String.fromCharCode(65+userIdx) : 'Không trả lời'}</p>
+                    <p class="font-bold text-green-700">Đáp án đúng: ${String.fromCharCode(65+correctIdx)}. ${item.options[correctIdx]}</p>
+                </div>`;
+            } else if (item.type === 'true-false') {
+                 html += '<ul class="list-disc pl-5 text-sm">';
+                 item.statements.forEach((s, i) => {
+                     const userVal = userAnswers[index] ? userAnswers[index][i] : null;
+                     const isStmtCorrect = userVal === s.is_correct;
+                     html += `<li class="${isStmtCorrect ? 'text-green-700' : 'text-red-700'}">
+                        Ý ${String.fromCharCode(97+i)}: ${s.statement} (Đáp án: ${s.is_correct ? 'Đúng' : 'Sai'} - Bạn chọn: ${userVal === null ? 'Trống' : (userVal ? 'Đúng' : 'Sai')})
+                     </li>`;
+                 });
+                 html += '</ul>';
+            }
+            
+            if (options.showExplanation && item.rendered_answer) {
+                 html += `<div class="mt-3 pt-2 border-t border-gray-200 text-sm text-gray-600">
+                    <strong>Giải thích/Đáp án chi tiết:</strong><br>
+                    ${item.rendered_answer}
+                 </div>`;
+            }
+
+            html += `</div>`;
+        });
+        
+        dom.detailedAnswers.innerHTML = html;
+        if (window.MathJax) window.MathJax.typesetPromise();
+    }
+    
+    dom.viewAnswersBtn.addEventListener('click', () => {
+        dom.detailedAnswers.classList.remove('hidden');
+        dom.viewAnswersBtn.classList.add('hidden');
+    });
+
+    async function generateAIAssessment(score, results) {
+        dom.aiAssessmentContainer.classList.remove('hidden');
+        dom.aiAssessmentContent.textContent = "AI đang phân tích bài làm của bạn...";
+        
+        const summary = results.map(r => `Câu ${r.questionNumber} (${r.type}): ${r.isCorrect ? 'Đúng' : 'Sai'}`).join('; ');
+        
+        try {
+            const genAI = new GoogleGenAI({ apiKey: apiKeys.gemini });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const prompt = `Hãy đóng vai một giáo viên, nhận xét ngắn gọn (khoảng 100 từ) về kết quả bài kiểm tra này của học sinh. 
+            Điểm số: ${score}/10. 
+            Chi tiết: ${summary}. 
+            Hãy đưa ra lời khuyên để học sinh cải thiện, giọng điệu khích lệ.`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            
+            dom.aiAssessmentContent.innerHTML = text.replace(/\n/g, '<br>');
+        } catch (e) {
+            console.error("AI Error:", e);
+            dom.aiAssessmentContent.textContent = "Không thể tải nhận xét từ AI lúc này.";
+        }
+    }
+    
+    </script>
+</body>
+</html>
