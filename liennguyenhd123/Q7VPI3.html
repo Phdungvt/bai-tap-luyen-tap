@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bài kiểm tra toan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif; background-color: #f9fafb; -webkit-tap-highlight-color: transparent; }
+        .prose img { border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 100%; height: auto; }
+        .hidden { display: none !important; }
+        /* Sticky Header Progress */
+        #header-progress { position: sticky; top: 0; z-index: 40; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* Mobile Navigation Bottom Bar */
+        .mobile-bottom-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 1px solid #e5e7eb;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.75rem 1rem; z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Drawer Transition */
+        #nav-panel { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col text-gray-800">
+
+    <!-- WELCOME SCREEN -->
+    <div id="welcome-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md border border-indigo-50">
+            <div class="text-center mb-6">
+                <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-800 mb-1 leading-tight">Bài kiểm tra toan</h1>
+                <p class="text-gray-500 text-sm">Giáo viên: Nguyễn Thị Huỳnh Liên</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                    <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none" placeholder="Nhập họ tên của bạn">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+                    <input type="text" id="class" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none" placeholder="Nhập lớp (VD: 12A1)">
+                </div>
+                 
+                <button id="start-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-transform transform active:scale-95 mt-2 text-base">
+                    BẮT ĐẦU LÀM BÀI
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz-screen" class="hidden flex-grow flex flex-col h-screen overflow-hidden bg-gray-50">
+        <!-- Sticky Header with Info & Progress -->
+        <header id="header-progress" class="flex-shrink-0">
+            <div class="px-4 py-3 flex items-center justify-between border-b border-gray-100">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">HS</div>
+                    <div class="flex flex-col min-w-0">
+                        <div class="font-bold text-gray-800 text-sm truncate" id="student-name-display">--</div>
+                        <div class="text-xs text-gray-500 truncate" id="progress-text">0/45</div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Thời gian</span>
+                    <span id="timer" class="text-lg font-mono font-bold text-indigo-600">00:00</span>
+                </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="h-1 w-full bg-gray-200">
+                <div class="h-1 bg-green-500 transition-all duration-300" style="width: 0%" id="progress-bar"></div>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Area -->
+        <main class="flex-grow overflow-y-auto relative scroll-smooth" id="main-scroll-area">
+            <div class="max-w-3xl mx-auto p-4 pb-24" id="questions-container">
+                <!-- Questions injected here -->
+            </div>
+        </main>
+        
+        <!-- Mobile Bottom Navigation Bar -->
+        <div class="mobile-bottom-bar md:hidden">
+            <button id="mobile-prev-btn" class="p-2 text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            
+            <button id="mobile-menu-btn" class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full font-semibold text-sm hover:bg-indigo-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                <span id="mobile-current-q">Câu 1/45</span>
+            </button>
+            
+            <button id="mobile-next-btn" class="p-2 text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+        </div>
+
+        <!-- Navigation Drawer (Desktop Sidebar / Mobile Drawer) -->
+        <!-- Overlay -->
+        <div id="nav-overlay" class="fixed inset-0 bg-black/30 z-40 hidden md:hidden glass-effect" onclick="document.getElementById('nav-panel').classList.add('translate-x-full'); this.classList.add('hidden');"></div>
+        
+        <!-- Drawer Panel -->
+        <aside id="nav-panel" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl transform translate-x-full md:translate-x-0 transition-transform duration-300 z-50 flex flex-col md:static md:w-80 md:border-l md:shadow-none h-full">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-700 text-lg">Danh sách câu hỏi</h3>
+                <button class="md:hidden p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200" onclick="document.getElementById('nav-panel').classList.add('translate-x-full'); document.getElementById('nav-overlay').classList.add('hidden');">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4">
+                <div class="grid grid-cols-5 gap-3" id="nav-grid">
+                    <!-- Nav buttons injected here -->
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-100 bg-white">
+                 <div class="grid grid-cols-2 gap-2 text-xs text-center mb-4 text-gray-500">
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gray-100 border border-gray-200"></span> Chưa làm</div>
+                    <div class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-indigo-600 border border-indigo-600"></span> Đã làm</div>
+                </div>
+                <button id="submit-btn" class="hidden md:flex w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" /></svg>
+                    NỘP BÀI
+                </button>
+                 <button id="drawer-submit-btn" class="md:hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" /></svg>
+                    NỘP BÀI THI
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" class="hidden flex-grow bg-gray-50 overflow-y-auto p-4">
+        <div class="max-w-4xl mx-auto space-y-6">
+            <!-- Score Card -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden text-center p-8 border border-gray-200 relative">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-blue-500"></div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Kết Quả Bài Làm</h2>
+                <div class="text-6xl font-black text-indigo-600 my-6 tracking-tighter" id="score-display">--</div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Họ tên</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-name">--</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Lớp</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-class">--</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Thời gian</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-time">--</p>
+                    </div>
+                </div>
+
+                <div id="ai-assessment-container" class="mt-8 hidden text-left bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                    <h3 class="flex items-center gap-2 font-bold text-indigo-800 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        Nhận xét từ AI
+                    </h3>
+                    <div id="ai-assessment-content" class="prose prose-sm prose-indigo max-w-none text-gray-700"></div>
+                </div>
+
+                <div class="mt-8">
+                     <button id="view-answers-btn" class="hidden inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Xem đáp án chi tiết
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detailed Answers -->
+            <div id="detailed-answers" class="hidden bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CLIENT LOGIC SCRIPT -->
+    <script type="module">
+        
+    import { GoogleGenAI } from "https://esm.sh/@google/genai@^1.13.0";
+
+    // --- 1. DECODE DATA ---
+    const quizData = JSON.parse(decodeURIComponent(escape(atob("W3sicXVlc3Rpb24iOiJQaMawxqFuZyB0csOsbmggbsOgbyBzYXUgxJHDonkgbMOgIHBoxrDGoW5nIHRyw6xuaCBi4bqtYyBuaOG6pXQgaGFpIOG6qW4/Iiwib3B0aW9ucyI6WyIkMnheMiArIDN5ID0gNSQiLCIkeCAtIDJ5ID0gMCQiLCIkM3ggLSA1ID0gMCQiLCIkeHkgKyB5ID0gMSQiXSwiY29ycmVjdEFuc3dlckluZGV4IjoxLCJ0eXBlIjoibXVsdGlwbGUtY2hvaWNlIiwiaXNEaXJ0eSI6ZmFsc2UsImV4cGxhbmF0aW9uIjpudWxsLCJzaHVmZmxlT3B0aW9ucyI6eyJzdGVtIjp0cnVlLCJhbnN3ZXJzIjp0cnVlfSwicXVlc3Rpb25OdW1iZXIiOjEsImlkIjoicV8xMjkxOTIwNzk4IiwicXVlc3Rpb25TbmlwcGV0IjoiUGjGsMahbmcgdHLDrG5oIG7DoG8gc2F1IMSRw6J5IGzDoCBwaMawxqFuZyB0csOsbmggYuG6rWMgbmjhuqV0IGhhaSDhuqluPyIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiUGjGsMahbmcgdHLDrG5oIG7DoG8gc2F1IMSRw6J5IGzDoCBwaMawxqFuZyB0csOsbmggYuG6rWMgbmjhuqV0IGhhaSDhuqluPyIsInJlbmRlcmVkX29wdGlvbnMiOlsiJDJ4XjIgKyAzeSA9IDUkIiwiJHggLSAyeSA9IDAkIiwiJDN4IC0gNSA9IDAkIiwiJHh5ICsgeSA9IDEkIl19LHsicXVlc3Rpb24iOiJI4buHIHBoxrDGoW5nIHRyw6xuaCBuw6BvIHNhdSDEkcOieSBsw6AgaOG7hyBoYWkgcGjGsMahbmcgdHLDrG5oIGLhuq1jIG5o4bqldCBoYWkg4bqpbj8iLCJvcHRpb25zIjpbIiQkXFxiZWdpbntjYXNlc30gMnggKyB5ID0gMyBcXFxcIHheMiAtIHkgPSAxIFxcZW5ke2Nhc2VzfSQkIiwiJCRcXGJlZ2lue2Nhc2VzfSB4IC0gM3kgPSA1IFxcXFwgMnggLSB5ID0gNyBcXGVuZHtjYXNlc30kJCIsIiQkXFxiZWdpbntjYXNlc30geCArIDIgPSAwIFxcXFwgeSAtIDEgPSAwIFxcZW5ke2Nhc2VzfSQkIiwiJDN4IC0gNHkgPSAyJCJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjEsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6MiwiaWQiOiJxXzYwNzA3Mzc1OCIsInF1ZXN0aW9uU25pcHBldCI6Ikjhu4cgcGjGsMahbmcgdHLDrG5oIG7DoG8gc2F1IMSRw6J5IGzDoCBo4buHIGhhaSBwaMawxqFuZyB0csOsbmggYuG6rWMgbmjhuqV0IGhhaSDhuqluPyIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiSOG7hyBwaMawxqFuZyB0csOsbmggbsOgbyBzYXUgxJHDonkgbMOgIGjhu4cgaGFpIHBoxrDGoW5nIHRyw6xuaCBi4bqtYyBuaOG6pXQgaGFpIOG6qW4/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyIkJFxcYmVnaW57Y2FzZXN9IDJ4ICsgeSA9IDMgXFxcXCB4XjIgLSB5ID0gMSBcXGVuZHtjYXNlc30kJCIsIiQkXFxiZWdpbntjYXNlc30geCAtIDN5ID0gNSBcXFxcIDJ4IC0geSA9IDcgXFxlbmR7Y2FzZXN9JCQiLCIkJFxcYmVnaW57Y2FzZXN9IHggKyAyID0gMCBcXFxcIHkgLSAxID0gMCBcXGVuZHtjYXNlc30kJCIsIiQzeCAtIDR5ID0gMiQiXX0seyJxdWVzdGlvbiI6IkPhurdwIHPhu5EgJCh4OyB5KSA9ICgxOyAtMikkIGzDoCBuZ2hp4buHbSBj4bunYSBwaMawxqFuZyB0csOsbmggbsOgbyBzYXUgxJHDonk/Iiwib3B0aW9ucyI6WyIkeCArIDJ5ID0gLTMkIiwiJDJ4IC0geSA9IDAkIiwiJDN4ICsgeSA9IDQkIiwiJHggLSB5ID0gMSQiXSwiY29ycmVjdEFuc3dlckluZGV4IjowLCJ0eXBlIjoibXVsdGlwbGUtY2hvaWNlIiwiaXNEaXJ0eSI6ZmFsc2UsImV4cGxhbmF0aW9uIjpudWxsLCJzaHVmZmxlT3B0aW9ucyI6eyJzdGVtIjp0cnVlLCJhbnN3ZXJzIjp0cnVlfSwicXVlc3Rpb25OdW1iZXIiOjMsImlkIjoicV82ODI3NDI5MDMiLCJxdWVzdGlvblNuaXBwZXQiOiJD4bq3cCBz4buRICQoeDsgeSkgPSAoMTsgLTIpJCBsw6AgbmdoaeG7h20gY+G7p2EgcGjGsMahbmcgdHLDrG5oIG7DoG8gc2F1IMSRw6J5PyIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiQ+G6t3Agc+G7kSAkKHg7IHkpID0gKDE7IC0yKSQgbMOgIG5naGnhu4dtIGPhu6dhIHBoxrDGoW5nIHRyw6xuaCBuw6BvIHNhdSDEkcOieT8iLCJyZW5kZXJlZF9vcHRpb25zIjpbIiR4ICsgMnkgPSAtMyQiLCIkMnggLSB5ID0gMCQiLCIkM3ggKyB5ID0gNCQiLCIkeCAtIHkgPSAxJCJdfSx7InF1ZXN0aW9uIjoiQ2hvIGjhu4cgcGjGsMahbmcgdHLDrG5oOiQkeCArIG15ID0gNSQkJCQzeCAtIDJ5ID0gMSQkQmnhur90IGjhu4cgcGjGsMahbmcgdHLDrG5oIGPDsyBuZ2hp4buHbSBsw6AgJCh4XzAsIHlfMCkgPSAoMSwgMSkkLiBHacOhIHRy4buLIGPhu6dhICRtJCBsw6A6Iiwib3B0aW9ucyI6WyIkbSA9IDEkIiwiJG0gPSAyJCIsIiRtID0gMyQiLCIkbSA9IDQkIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MywidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo0LCJpZCI6InFfMTI3MzE5ODg0MiIsInF1ZXN0aW9uU25pcHBldCI6IkNobyBo4buHIHBoxrDGoW5nIHRyw6xuaDokJHggKyBteSA9IDUkJCQkM3ggLSAyeSA9IDEkJEJp4bq/dCBo4buHIHBoxrDGoW5nIHRyw6xuaCAuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IkNobyBo4buHIHBoxrDGoW5nIHRyw6xuaDokJHggKyBteSA9IDUkJCQkM3ggLSAyeSA9IDEkJEJp4bq/dCBo4buHIHBoxrDGoW5nIHRyw6xuaCBjw7MgbmdoaeG7h20gbMOgICQoeF8wLCB5XzApID0gKDEsIDEpJC4gR2nDoSB0cuG7iyBj4bunYSAkbSQgbMOgOiIsInJlbmRlcmVkX29wdGlvbnMiOlsiJG0gPSAxJCIsIiRtID0gMiQiLCIkbSA9IDMkIiwiJG0gPSA0JCJdfSx7InF1ZXN0aW9uIjoiQ2hvIGjhu4cgcGjGsMahbmcgdHLDrG5oOiQkbXggKyAzeSA9IDEzJCQkJDJ4IC0gbnkgPSA4JCRCaeG6v3QgaOG7hyBwaMawxqFuZyB0csOsbmggY8OzIG5naGnhu4dtICQoeCwgeSkgPSAoNSwgMSkkLiBHacOhIHRy4buLIGPhu6dhIGJp4buDdSB0aOG7qWMgJG0rbiQgbMOgOiIsIm9wdGlvbnMiOlsiJDEkIiwiJDIkIiwiJDMkIiwiJDQkIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MywidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo1LCJpZCI6InFfMTA3NjIwNzAwMyIsInF1ZXN0aW9uU25pcHBldCI6IkNobyBo4buHIHBoxrDGoW5nIHRyw6xuaDokJG14ICsgM3kgPSAxMyQkJCQyeCAtIG55ID0gOCQkQmnhur90IGjhu4cgcGjGsMahbmcgdHLDrG4uLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IkNobyBo4buHIHBoxrDGoW5nIHRyw6xuaDokJG14ICsgM3kgPSAxMyQkJCQyeCAtIG55ID0gOCQkQmnhur90IGjhu4cgcGjGsMahbmcgdHLDrG5oIGPDsyBuZ2hp4buHbSAkKHgsIHkpID0gKDUsIDEpJC4gR2nDoSB0cuG7iyBj4bunYSBiaeG7g3UgdGjhu6ljICRtK24kIGzDoDoiLCJyZW5kZXJlZF9vcHRpb25zIjpbIiQxJCIsIiQyJCIsIiQzJCIsIiQ0JCJdfSx7Im1haW5fcXVlc3Rpb24iOiJN4buZdCBj4butYSBow6BuZyBiw6FuICQyJCBsb+G6oWkgYsOhbmggQSB2w6AgQi4gTeG7mXQgaOG7mXAgYsOhbmggQSBjw7MgZ2nDoSAkMjUwMDAkIMSR4buTbmcsIG3hu5l0IGjhu5lwIGLDoW5oIEIgY8OzIGdpw6EgJDMwMDAwJCDEkeG7k25nLiBUcm9uZyBt4buZdCBuZ8OgeSwgY+G7rWEgaMOgbmcgYsOhbiDEkcaw4bujYyAkMjAkIGjhu5lwIGLDoW5oIGPDoWMgbG/huqFpIHbDoCB0aHUgduG7gSB04buVbmcgY+G7mW5nICQ1NTAwMDAkIMSR4buTbmcuIiwic3RhdGVtZW50cyI6W3sic3RhdGVtZW50IjoiTuG6v3UgJHgkIGzDoCBz4buRIGjhu5lwIGLDoW5oIGxv4bqhaSBBIHbDoCAkeSQgbMOgIHPhu5EgaOG7mXAgYsOhbmggbG/huqFpIEIgxJHDoyBiw6FuLCB0aMOsICR4JCB2w6AgJHkkIGzDoCBjw6FjIHPhu5EgdOG7sSBuaGnDqm4uIiwiaXNfY29ycmVjdCI6dHJ1ZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiTuG6v3UgJHgkIGzDoCBz4buRIGjhu5lwIGLDoW5oIGxv4bqhaSBBIHbDoCAkeSQgbMOgIHPhu5EgaOG7mXAgYsOhbmggbG/huqFpIEIgxJHDoyBiw6FuLCB0aMOsICR4JCB2w6AgJHkkIGzDoCBjw6FjIHPhu5EgdOG7sSBuaGnDqm4uIn0seyJzdGF0ZW1lbnQiOiJU4buVbmcgc+G7kSBo4buZcCBiw6FuaCDEkcOjIGLDoW4gY8OzIHRo4buDIMSRxrDhu6NjIGJp4buDdSBkaeG7hW4gYuG6sW5nIHBoxrDGoW5nIHRyw6xuaCAkeCt5PTIwJC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJU4buVbmcgc+G7kSBo4buZcCBiw6FuaCDEkcOjIGLDoW4gY8OzIHRo4buDIMSRxrDhu6NjIGJp4buDdSBkaeG7hW4gYuG6sW5nIHBoxrDGoW5nIHRyw6xuaCAkeCt5PTIwJC4ifSx7InN0YXRlbWVudCI6IlBoxrDGoW5nIHRyw6xuaCBiaeG7g3UgdGjhu4sgdOG7lW5nIHPhu5EgdGnhu4FuIHRodSDEkcaw4bujYyBsw6AgJDI1MDAweCszMDAwMHk9NTUwMDAwJC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJQaMawxqFuZyB0csOsbmggYmnhu4N1IHRo4buLIHThu5VuZyBz4buRIHRp4buBbiB0aHUgxJHGsOG7o2MgbMOgICQyNTAwMHgrMzAwMDB5PTU1MDAwMCQuIn0seyJzdGF0ZW1lbnQiOiJD4butYSBow6BuZyDEkcOjIGLDoW4gxJHGsOG7o2Mgc+G7kSBo4buZcCBiw6FuaCBsb+G6oWkgQSBuaGnhu4F1IGjGoW4gc+G7kSBo4buZcCBiw6FuaCBsb+G6oWkgQi4iLCJpc19jb3JyZWN0IjpmYWxzZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiQ+G7rWEgaMOgbmcgxJHDoyBiw6FuIMSRxrDhu6NjIHPhu5EgaOG7mXAgYsOhbmggbG/huqFpIEEgbmhp4buBdSBoxqFuIHPhu5EgaOG7mXAgYsOhbmggbG/huqFpIEIuIn1dLCJ0eXBlIjoidHJ1ZS1mYWxzZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo2LCJpZCI6InFfMTQ5OTgyNzY5MSIsInF1ZXN0aW9uU25pcHBldCI6Ik3hu5l0IGPhu61hIGjDoG5nIGLDoW4gJDIkIGxv4bqhaSBiw6FuaCBBIHbDoCBCLiBN4buZdCBo4buZcCBiw6FuaCBBIGPDsyBnacOhICQyNTAwMCQgxJEuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6Ik3hu5l0IGPhu61hIGjDoG5nIGLDoW4gJDIkIGxv4bqhaSBiw6FuaCBBIHbDoCBCLiBN4buZdCBo4buZcCBiw6FuaCBBIGPDsyBnacOhICQyNTAwMCQgxJHhu5NuZywgbeG7mXQgaOG7mXAgYsOhbmggQiBjw7MgZ2nDoSAkMzAwMDAkIMSR4buTbmcuIFRyb25nIG3hu5l0IG5nw6B5LCBj4butYSBow6BuZyBiw6FuIMSRxrDhu6NjICQyMCQgaOG7mXAgYsOhbmggY8OhYyBsb+G6oWkgdsOgIHRodSB24buBIHThu5VuZyBj4buZbmcgJDU1MDAwMCQgxJHhu5NuZy4ifSx7Im1haW5fcXVlc3Rpb24iOiJU4buVbmcgY+G7p2EgaGFpIHPhu5EgYuG6sW5nICQxNSQuIE7hur91IGzhuqV5IHPhu5EgdGjhu6kgbmjhuqV0IGNoaWEgY2hvIHPhu5EgdGjhu6kgaGFpIHRow6wgxJHGsOG7o2MgdGjGsMahbmcgbMOgICQyJCB2w6Agc+G7kSBkxrAgbMOgICQzJC4iLCJzdGF0ZW1lbnRzIjpbeyJzdGF0ZW1lbnQiOiJDw6FjIHPhu5EgY+G6p24gdMOsbSBsw6Agc+G7kSBuZ3V5w6puLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6IkPDoWMgc+G7kSBj4bqnbiB0w6xtIGzDoCBz4buRIG5ndXnDqm4uIn0seyJzdGF0ZW1lbnQiOiJH4buNaSBz4buRIHRo4bupIG5o4bqldCBsw6AgJHgkIHbDoCBz4buRIHRo4bupIGhhaSBsw6AgJHkkLiDEkGnhu4F1IGtp4buHbiAkeSA+IDMkIGzDoCBj4bqnbiB0aGnhur90IMSR4buDIHBow6lwIGNoaWEgY8OzIGTGsCBsw6AgJDMkLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6Ikfhu41pIHPhu5EgdGjhu6kgbmjhuqV0IGzDoCAkeCQgdsOgIHPhu5EgdGjhu6kgaGFpIGzDoCAkeSQuIMSQaeG7gXUga2nhu4duICR5ID4gMyQgbMOgIGPhuqduIHRoaeG6v3QgxJHhu4MgcGjDqXAgY2hpYSBjw7MgZMawIGzDoCAkMyQuIn0seyJzdGF0ZW1lbnQiOiJI4buHIHBoxrDGoW5nIHRyw6xuaCBtw7QgdOG6oyBiw6BpIHRvw6FuIGzDoCAkXFxsZWZ0XFx7IFxcYmVnaW57YXJyYXl9e2x9IHgreT0xNSBcXFxcIHg9MnkrMyBcXGVuZHthcnJheX0gXFxyaWdodC4kLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6Ikjhu4cgcGjGsMahbmcgdHLDrG5oIG3DtCB04bqjIGLDoGkgdG/DoW4gbMOgICRcXGxlZnRcXHsgXFxiZWdpbnthcnJheX17bH0geCt5PTE1IFxcXFwgeD0yeSszIFxcZW5ke2FycmF5fSBcXHJpZ2h0LiQuIn0seyJzdGF0ZW1lbnQiOiJIYWkgc+G7kSBj4bqnbiB0w6xtIGzDoCAkMTAkIHbDoCAkNSQuIiwiaXNfY29ycmVjdCI6ZmFsc2UsInJlbmRlcmVkX3N0YXRlbWVudCI6IkhhaSBz4buRIGPhuqduIHTDrG0gbMOgICQxMCQgdsOgICQ1JC4ifV0sInR5cGUiOiJ0cnVlLWZhbHNlIiwiaXNEaXJ0eSI6ZmFsc2UsImV4cGxhbmF0aW9uIjpudWxsLCJzaHVmZmxlT3B0aW9ucyI6eyJzdGVtIjp0cnVlLCJhbnN3ZXJzIjp0cnVlfSwicXVlc3Rpb25OdW1iZXIiOjcsImlkIjoicV84OTA5MzIwNzMiLCJxdWVzdGlvblNuaXBwZXQiOiJU4buVbmcgY+G7p2EgaGFpIHPhu5EgYuG6sW5nICQxNSQuIE7hur91IGzhuqV5IHPhu5EgdGjhu6kgbmjhuqV0IGNoaWEgY2hvIHPhu5EgdGjhu6kgaGFpIHRow6wuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IlThu5VuZyBj4bunYSBoYWkgc+G7kSBi4bqxbmcgJDE1JC4gTuG6v3UgbOG6pXkgc+G7kSB0aOG7qSBuaOG6pXQgY2hpYSBjaG8gc+G7kSB0aOG7qSBoYWkgdGjDrCDEkcaw4bujYyB0aMawxqFuZyBsw6AgJDIkIHbDoCBz4buRIGTGsCBsw6AgJDMkLiJ9LHsibWFpbl9xdWVzdGlvbiI6Ik3hu5l0IGPhu61hIGjDoG5nIGLDoW4gdMOhbyB2w6AgY2FtLiBM4bqnbiB0aOG7qSBuaOG6pXQsIG3hu5l0IGtow6FjaCBow6BuZyBtdWEgJDMkIGtnIHTDoW8gdsOgICQyJCBrZyBjYW0gaOG6v3QgdOG7lW5nIGPhu5luZyAkOTUwMDAkIMSR4buTbmcuIEzhuqduIHRo4bupIGhhaSwgbeG7mXQga2jDoWNoIGjDoG5nIGtow6FjIG11YSAkMiQga2cgdMOhbyB2w6AgJDQkIGtnIGNhbSBo4bq/dCB04buVbmcgY+G7mW5nICQxMzAwMDAkIMSR4buTbmcuIEdp4bqjIHPhu60gZ2nDoSB0aeG7gW4gbeG7l2kgbG/huqFpIHF14bqjIGtow7RuZyDEkeG7lWkuIiwic3RhdGVtZW50cyI6W3sic3RhdGVtZW50IjoiTuG6v3UgZ+G7jWkgZ2nDoSB0aeG7gW4gJDEkIGtnIHTDoW8gbMOgICR4JCAoxJHhu5NuZykgdsOgIGdpw6EgdGnhu4FuICQxJCBrZyBjYW0gbMOgICR5JCAoxJHhu5NuZyksIHRow6wgdOG7lW5nIHPhu5EgdGnhu4FuIGtow6FjaCBow6BuZyB0cuG6oyBs4bqnbiB0aOG7qSBuaOG6pXQgxJHGsOG7o2MgYmnhu4N1IGRp4buFbiBsw6AgJDN4KzJ5JC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJO4bq/dSBn4buNaSBnacOhIHRp4buBbiAkMSQga2cgdMOhbyBsw6AgJHgkICjEkeG7k25nKSB2w6AgZ2nDoSB0aeG7gW4gJDEkIGtnIGNhbSBsw6AgJHkkICjEkeG7k25nKSwgdGjDrCB04buVbmcgc+G7kSB0aeG7gW4ga2jDoWNoIGjDoG5nIHRy4bqjIGzhuqduIHRo4bupIG5o4bqldCDEkcaw4bujYyBiaeG7g3UgZGnhu4VuIGzDoCAkM3grMnkkLiJ9LHsic3RhdGVtZW50IjoiSOG7hyBwaMawxqFuZyB0csOsbmggYmnhu4N1IGRp4buFbiBt4buRaSBxdWFuIGjhu4cgZ2nhu69hIGdpw6EgdGnhu4FuIHbDoCBz4buRIGzGsOG7o25nIG11YSBj4bunYSBoYWkgbOG6p24gZ2lhbyBk4buLY2ggbMOgICRcYmVnaW57Y2FzZXN9IDN4KzJ5PTk1MDAwIFxcIDJ4KzR5PTEzMDAwMCBcXFxuXFxuXFxlbmR7Y2FzZXN9JC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJI4buHIHBoxrDGoW5nIHRyw6xuaCBiaeG7g3UgZGnhu4VuIG3hu5FpIHF1YW4gaOG7hyBnaeG7r2EgZ2nDoSB0aeG7gW4gdsOgIHPhu5EgbMaw4bujbmcgbXVhIGPhu6dhIGhhaSBs4bqnbiBnaWFvIGThu4tjaCBsw6AgJFxiZWdpbntjYXNlc30gM3grMnk9OTUwMDAgXFwgMngrNHk9MTMwMDAwIFxcPGJyPlxcblxcZW5ke2Nhc2VzfSQuIn0seyJzdGF0ZW1lbnQiOiJHacOhIHRp4buBbiAkMSQga2cgdMOhbyBsw6AgJDIwMDAwJCDEkeG7k25nLiIsImlzX2NvcnJlY3QiOmZhbHNlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJHacOhIHRp4buBbiAkMSQga2cgdMOhbyBsw6AgJDIwMDAwJCDEkeG7k25nLiJ9LHsic3RhdGVtZW50IjoiTuG6v3UgbXVhICQ1JCBrZyB0w6FvIHbDoCAkMyQga2cgY2FtLCBraMOhY2ggaMOgbmcgcGjhuqNpIHRy4bqjICQxNTUwMDAkIMSR4buTbmcuIiwiaXNfY29ycmVjdCI6ZmFsc2UsInJlbmRlcmVkX3N0YXRlbWVudCI6Ik7hur91IG11YSAkNSQga2cgdMOhbyB2w6AgJDMkIGtnIGNhbSwga2jDoWNoIGjDoG5nIHBo4bqjaSB0cuG6oyAkMTU1MDAwJCDEkeG7k25nLiJ9XSwidHlwZSI6InRydWUtZmFsc2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6OCwiaWQiOiJxXzEwMDAwNjcyNjAiLCJxdWVzdGlvblNuaXBwZXQiOiJN4buZdCBj4butYSBow6BuZyBiw6FuIHTDoW8gdsOgIGNhbS4gTOG6p24gdGjhu6kgbmjhuqV0LCBt4buZdCBraMOhY2ggaMOgbmcgbXVhICQzJCBrZyB0Li4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJN4buZdCBj4butYSBow6BuZyBiw6FuIHTDoW8gdsOgIGNhbS4gTOG6p24gdGjhu6kgbmjhuqV0LCBt4buZdCBraMOhY2ggaMOgbmcgbXVhICQzJCBrZyB0w6FvIHbDoCAkMiQga2cgY2FtIGjhur90IHThu5VuZyBj4buZbmcgJDk1MDAwJCDEkeG7k25nLiBM4bqnbiB0aOG7qSBoYWksIG3hu5l0IGtow6FjaCBow6BuZyBraMOhYyBtdWEgJDIkIGtnIHTDoW8gdsOgICQ0JCBrZyBjYW0gaOG6v3QgdOG7lW5nIGPhu5luZyAkMTMwMDAwJCDEkeG7k25nLiBHaeG6oyBz4butIGdpw6EgdGnhu4FuIG3hu5dpIGxv4bqhaSBxdeG6oyBraMO0bmcgxJHhu5VpLiJ9LHsibWFpbl9xdWVzdGlvbiI6IkhhaSB04buVIHPhuqNuIHh14bqldCBjw7luZyBsw6BtIG3hu5l0IGPDtG5nIHZp4buHYy4gVHJvbmcgdGjDoW5nIMSR4bqndSwgaGFpIHThu5Ugc+G6o24geHXhuqV0IMSRxrDhu6NjIHThu5VuZyBj4buZbmcgJDkwMCQgc+G6o24gcGjhuqltLiBTYW5nIHRow6FuZyB0aOG7qSBoYWksIGRvIGPhuqNpIHRp4bq/biBrxKkgdGh14bqtdCBuw6puIHThu5UgbeG7mXQgdsaw4bujdCBt4bupYyAkMTBcXCUkIHbDoCB04buVIGhhaSB2xrDhu6N0IG3hu6ljICQxNVxcJSQgc28gduG7m2kgdGjDoW5nIMSR4bqndSwgbsOqbiB04buVbmcgc+G7kSBz4bqjbiBwaOG6qW0gY+G7p2EgY+G6oyBoYWkgdOG7lSBsw6BtIMSRxrDhu6NjIGzDoCAkMTAxMCQgc+G6o24gcGjhuqltLiBI4buPaSB0cm9uZyB0aMOhbmcgxJHhuqd1IG3hu5dpIHThu5Ugc+G6o24geHXhuqV0IMSRxrDhu6NjIGJhbyBuaGnDqnUgc+G6o24gcGjhuqltPyIsInN0YXRlbWVudHMiOlt7InN0YXRlbWVudCI6Ik7hur91IGfhu41pIHPhu5Egc+G6o24gcGjhuqltIHThu5UgbeG7mXQgbMOgbSDEkcaw4bujYyB0cm9uZyB0aMOhbmcgxJHhuqd1IGzDoCAkeCQgdsOgIHThu5UgaGFpIGzDoCAkeSQsIHRow6wgdOG7lW5nIHPhu5Egc+G6o24gcGjhuqltIHRyb25nIHRow6FuZyDEkeG6p3UgxJHGsOG7o2MgYmnhu4N1IGRp4buFbiBsw6AgJHgreT05MDAkLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6Ik7hur91IGfhu41pIHPhu5Egc+G6o24gcGjhuqltIHThu5UgbeG7mXQgbMOgbSDEkcaw4bujYyB0cm9uZyB0aMOhbmcgxJHhuqd1IGzDoCAkeCQgdsOgIHThu5UgaGFpIGzDoCAkeSQsIHRow6wgdOG7lW5nIHPhu5Egc+G6o24gcGjhuqltIHRyb25nIHRow6FuZyDEkeG6p3UgxJHGsOG7o2MgYmnhu4N1IGRp4buFbiBsw6AgJHgreT05MDAkLiJ9LHsic3RhdGVtZW50IjoiU+G7kSBz4bqjbiBwaOG6qW0gdOG7lSBt4buZdCBsw6BtIMSRxrDhu6NjIHRyb25nIHRow6FuZyB0aOG7qSBoYWkgbMOgICQxLjF4JCB2w6Agc+G7kSBz4bqjbiBwaOG6qW0gdOG7lSBoYWkgbMOgbSDEkcaw4bujYyBsw6AgJDEuMTV5JC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJT4buRIHPhuqNuIHBo4bqpbSB04buVIG3hu5l0IGzDoG0gxJHGsOG7o2MgdHJvbmcgdGjDoW5nIHRo4bupIGhhaSBsw6AgJDEuMXgkIHbDoCBz4buRIHPhuqNuIHBo4bqpbSB04buVIGhhaSBsw6BtIMSRxrDhu6NjIGzDoCAkMS4xNXkkLiJ9LHsic3RhdGVtZW50IjoiVHJvbmcgdGjDoW5nIMSR4bqndSwgdOG7lSBt4buZdCBz4bqjbiB4deG6pXQgxJHGsOG7o2MgJDQwMCQgc+G6o24gcGjhuqltLiIsImlzX2NvcnJlY3QiOmZhbHNlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJUcm9uZyB0aMOhbmcgxJHhuqd1LCB04buVIG3hu5l0IHPhuqNuIHh14bqldCDEkcaw4bujYyAkNDAwJCBz4bqjbiBwaOG6qW0uIn0seyJzdGF0ZW1lbnQiOiJUcm9uZyB0aMOhbmcgdGjhu6kgaGFpLCB04buVIGhhaSBz4bqjbiB4deG6pXQgxJHGsOG7o2MgJDQ1MCQgc+G6o24gcGjhuqltLiIsImlzX2NvcnJlY3QiOmZhbHNlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJUcm9uZyB0aMOhbmcgdGjhu6kgaGFpLCB04buVIGhhaSBz4bqjbiB4deG6pXQgxJHGsOG7o2MgJDQ1MCQgc+G6o24gcGjhuqltLiJ9XSwidHlwZSI6InRydWUtZmFsc2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6OSwiaWQiOiJxXzQ3OTYyMDA0NyIsInF1ZXN0aW9uU25pcHBldCI6IkhhaSB04buVIHPhuqNuIHh14bqldCBjw7luZyBsw6BtIG3hu5l0IGPDtG5nIHZp4buHYy4gVHJvbmcgdGjDoW5nIMSR4bqndSwgaGFpIHThu5Ugc+G6o24geHUuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IkhhaSB04buVIHPhuqNuIHh14bqldCBjw7luZyBsw6BtIG3hu5l0IGPDtG5nIHZp4buHYy4gVHJvbmcgdGjDoW5nIMSR4bqndSwgaGFpIHThu5Ugc+G6o24geHXhuqV0IMSRxrDhu6NjIHThu5VuZyBj4buZbmcgJDkwMCQgc+G6o24gcGjhuqltLiBTYW5nIHRow6FuZyB0aOG7qSBoYWksIGRvIGPhuqNpIHRp4bq/biBrxKkgdGh14bqtdCBuw6puIHThu5UgbeG7mXQgdsaw4bujdCBt4bupYyAkMTBcXCUkIHbDoCB04buVIGhhaSB2xrDhu6N0IG3hu6ljICQxNVxcJSQgc28gduG7m2kgdGjDoW5nIMSR4bqndSwgbsOqbiB04buVbmcgc+G7kSBz4bqjbiBwaOG6qW0gY+G7p2EgY+G6oyBoYWkgdOG7lSBsw6BtIMSRxrDhu6NjIGzDoCAkMTAxMCQgc+G6o24gcGjhuqltLiBI4buPaSB0cm9uZyB0aMOhbmcgxJHhuqd1IG3hu5dpIHThu5Ugc+G6o24geHXhuqV0IMSRxrDhu6NjIGJhbyBuaGnDqnUgc+G6o24gcGjhuqltPyJ9XQ=="))));
+    const options = JSON.parse(decodeURIComponent(escape(atob("eyJ0aW1lTGltaXQiOjQ1LCJyZXRyaWVzIjoxLCJzdGFydFRpbWUiOiIyMDI2LTAxLTEzVDE2OjMyOjAwLjAwMFoiLCJlbmRUaW1lIjoiMjAyNi0wMS0xNFQwNDozMzowMC4wMDBaIiwic2hvcnRBbnN3ZXJGb3JtYXQiOiJmb3JtIiwicG9pbnRzTUMiOjUsInBvaW50c1RGIjoyLCJwb2ludHNTQSI6MywicG9pbnRzRXNzYXkiOjAsInBvaW50c1RGTWV0aG9kIjoicHJvZ3Jlc3NpdmUiLCJzaG93QW5zd2VycyI6ZmFsc2UsInNob3dFeHBsYW5hdGlvbiI6ZmFsc2UsImFpQXNzZXNzbWVudCI6dHJ1ZSwidGVhY2hlck5hbWUiOiJOZ3V54buFbiBUaOG7iyBIdeG7s25oIExpw6puIn0="))));
+    const apiKeysEncoded = JSON.parse(decodeURIComponent(escape(atob("eyJnZW1pbmkiOiJRVWw2WVZONVFuTjZaV3d0TjJwQlNXSnNObkIzVVhFNVpFTnhUSFpsYW5sd2N6Vk9WMGhCIiwib3BlbmFpIjoiYzJzdGNISnZhaTA0WnpoWVJWVnJkVGxvY1MxNVoyaFdkRFI2Vm1WdmVuUkpkalJaY2pablQxZEpUM28zUms1emFFYzVkVGhSZVZCWVVFWlVlQzEyT1VJMVdVOHdTVTVtWkVzNGRFWnVkMFZ5TkZRelFteGlhMFpLYUZjeFpVcFhZalkxVjFwZmJHczRRM2h3Ykd0YVVVRk5OMEZqZURRNWMzQXhUVWxSVVhOQ2QzRndXVWcwWjJKSmRsOUJOMnR1Y0hoYWFGcFdVa1pDVFRoeFlVRmhSRVV3UVVFPSIsImRlZXBzZWVrIjoiYzJzdFlUTTFZVFV4TnpVd01HVmpOREF6TkRobU16aGtaalZpTURFeFpERTRabU09In0="))));
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxrVRaYjV1DCdatuNfMNKQ23NdATjFs7zzfmSreTA_MrvjDMGgSVti2knGpmyln4rhP/exec";
+    const examCode = "Q7VPI3";
+    const teacherName = "Nguyễn Thị Huỳnh Liên";
+
+    const apiKeys = {
+        gemini: atob(apiKeysEncoded.gemini),
+    };
+
+    // --- 2. STATE ---
+    let userAnswers = {};
+    let timeLeft = options.timeLimit * 60;
+    let timerInterval;
+    let isSubmitted = false;
+    let startTime = new Date();
+    let currentQuestionIndex = 0; // Track view for mobile nav
+    let monitorLog = {
+        thoatManHinh: 0,
+        saoChep: 0,
+        dan: 0
+    };
+
+    // --- 3. DOM ELEMENTS ---
+    const dom = {
+        welcomeScreen: document.getElementById('welcome-screen'),
+        quizScreen: document.getElementById('quiz-screen'),
+        resultScreen: document.getElementById('result-screen'),
+        nameInput: document.getElementById('name'),
+        classInput: document.getElementById('class'),
+        studentApiKeyInput: document.getElementById('student-api-key'),
+        startBtn: document.getElementById('start-btn'),
+        studentNameDisplay: document.getElementById('student-name-display'),
+        timerDisplay: document.getElementById('timer'),
+        questionsContainer: document.getElementById('questions-container'),
+        navGrid: document.getElementById('nav-grid'),
+        submitBtn: document.getElementById('submit-btn'),
+        drawerSubmitBtn: document.getElementById('drawer-submit-btn'),
+        scoreDisplay: document.getElementById('score-display'),
+        resultName: document.getElementById('result-name'),
+        resultClass: document.getElementById('result-class'),
+        resultTime: document.getElementById('result-time'),
+        detailedAnswers: document.getElementById('detailed-answers'),
+        viewAnswersBtn: document.getElementById('view-answers-btn'),
+        aiAssessmentContainer: document.getElementById('ai-assessment-container'),
+        aiAssessmentContent: document.getElementById('ai-assessment-content'),
+        progressBar: document.getElementById('progress-bar'),
+        progressText: document.getElementById('progress-text'),
+        navPanel: document.getElementById('nav-panel'),
+        navOverlay: document.getElementById('nav-overlay'),
+        mobilePrevBtn: document.getElementById('mobile-prev-btn'),
+        mobileNextBtn: document.getElementById('mobile-next-btn'),
+        mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+        mobileCurrentQ: document.getElementById('mobile-current-q')
+    };
+
+    // --- 4. INIT ---
+    dom.startBtn.addEventListener('click', startQuiz);
+    
+    // Mobile Nav Listeners
+    if(dom.mobilePrevBtn) dom.mobilePrevBtn.addEventListener('click', () => scrollToQ(currentQuestionIndex - 1));
+    if(dom.mobileNextBtn) dom.mobileNextBtn.addEventListener('click', () => scrollToQ(currentQuestionIndex + 1));
+    if(dom.mobileMenuBtn) dom.mobileMenuBtn.addEventListener('click', toggleNav);
+    if(dom.navOverlay) dom.navOverlay.addEventListener('click', closeNav);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && !isSubmitted && dom.quizScreen.style.display !== 'none') {
+            monitorLog.thoatManHinh++;
+        }
+    });
+    
+    document.addEventListener('copy', () => { if(!isSubmitted) monitorLog.saoChep++; });
+    document.addEventListener('paste', () => { if(!isSubmitted) monitorLog.dan++; });
+
+    function startQuiz() {
+        const name = dom.nameInput.value.trim();
+        const className = dom.classInput.value.trim();
+        if (!name || !className) {
+            alert('Vui lòng nhập đầy đủ Họ tên và Lớp!');
+            return;
+        }
+        
+        if (dom.studentApiKeyInput && dom.studentApiKeyInput.value.trim()) {
+            apiKeys.gemini = dom.studentApiKeyInput.value.trim();
+        }
+
+        dom.studentNameDisplay.textContent = name;
+        dom.welcomeScreen.classList.add('hidden');
+        dom.quizScreen.classList.remove('hidden');
+        
+        renderQuestions();
+        renderNav();
+        updateProgress();
+        
+        if (options.timeLimit > 0) {
+            startTimer();
+        } else {
+            dom.timerDisplay.textContent = "--:--";
+        }
+        
+        // Setup intersection observer to update current question index on scroll
+        setupScrollObserver();
+        
+        window.scrollTo(0, 0);
+    }
+
+    function startTimer() {
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitQuiz(true);
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        dom.timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        
+        // Change color when time is running out (< 5 mins)
+        if (timeLeft < 300) {
+            dom.timerDisplay.classList.add('text-red-600', 'animate-pulse');
+            dom.timerDisplay.classList.remove('text-indigo-600');
+        }
+    }
+
+    function updateProgress() {
+        const total = quizData.length;
+        const answered = Object.keys(userAnswers).length;
+        const percent = (answered / total) * 100;
+        dom.progressBar.style.width = `${percent}%`;
+        if(dom.progressText) dom.progressText.textContent = `${answered}/${total}`;
+        
+        // Update Grid Colors
+        quizData.forEach((_, idx) => {
+            const btn = document.getElementById(`nav-${idx}`);
+            if (btn) {
+                if (userAnswers[idx] !== undefined) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                    btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                } else {
+                    btn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                }
+                
+                // Highlight current
+                if (idx === currentQuestionIndex) {
+                     btn.classList.add('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                } else {
+                     btn.classList.remove('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                }
+            }
+        });
+    }
+
+    function toggleNav() {
+        const isOpen = !dom.navPanel.classList.contains('translate-x-full');
+        if (isOpen) closeNav();
+        else openNav();
+    }
+    
+    function openNav() {
+        dom.navPanel.classList.remove('translate-x-full');
+        if(dom.navOverlay) dom.navOverlay.classList.remove('hidden');
+    }
+    
+    function closeNav() {
+        dom.navPanel.classList.add('translate-x-full');
+        if(dom.navOverlay) dom.navOverlay.classList.add('hidden');
+    }
+    
+    function scrollToQ(index) {
+        if (index < 0 || index >= quizData.length) return;
+        currentQuestionIndex = index;
+        const qEl = document.getElementById(`q-${index}`);
+        if (qEl) {
+            // Scroll with offset for sticky header
+            const headerOffset = 100;
+            const elementPosition = qEl.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        }
+        updateMobileControls();
+        updateProgress(); // To update grid highlight
+    }
+    
+    function updateMobileControls() {
+        if(dom.mobileCurrentQ) dom.mobileCurrentQ.textContent = `Câu ${currentQuestionIndex + 1}/${quizData.length}`;
+        dom.mobilePrevBtn.disabled = currentQuestionIndex === 0;
+        dom.mobileNextBtn.disabled = currentQuestionIndex === quizData.length - 1;
+        
+        dom.mobilePrevBtn.classList.toggle('opacity-50', currentQuestionIndex === 0);
+        dom.mobileNextBtn.classList.toggle('opacity-50', currentQuestionIndex === quizData.length - 1);
+    }
+    
+    function setupScrollObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id; // q-0, q-1...
+                    const idx = parseInt(id.split('-')[1]);
+                    currentQuestionIndex = idx;
+                    updateMobileControls();
+                    updateProgress();
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        quizData.forEach((_, idx) => {
+            const el = document.getElementById(`q-${idx}`);
+            if(el) observer.observe(el);
+        });
+    }
+
+    // --- 5. RENDER ---
+    function renderQuestions() {
+        dom.questionsContainer.innerHTML = '';
+        quizData.forEach((item, index) => {
+            const qDiv = document.createElement('div');
+            qDiv.id = `q-${index}`;
+            qDiv.className = "bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-4 sm:mb-6 scroll-mt-24";
+            
+            let html = `<div class="mb-3">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="inline-flex items-center justify-center bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-md">Câu ${index + 1}</span>
+                    ${item.type !== 'multiple-choice' ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${getVNType(item.type)}</span>` : ''}
+                </div>
+                <div class="font-medium text-gray-800 text-base sm:text-lg leading-relaxed">${item.rendered_question || item.question}</div>
+            </div>`;
+
+            if (item.type === 'multiple-choice' || item.type.startsWith('mc-')) {
+                html += `<div class="grid grid-cols-1 gap-3">`;
+                item.rendered_options.forEach((opt, i) => {
+                    html += `
+                    <label class="cursor-pointer group">
+                        <div class="flex items-start p-3 rounded-lg border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 transition-all">
+                            <div class="flex items-center h-5">
+                                <input type="radio" name="q-${index}" value="${i}" class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500" onchange="selectAnswer(${index}, ${i})">
+                            </div>
+                            <span class="ml-3 text-sm sm:text-base text-gray-700 group-hover:text-indigo-900">${String.fromCharCode(65+i)}. ${opt}</span>
+                        </div>
+                    </label>`;
+                });
+                html += `</div>`;
+            } else if (item.type === 'true-false' || item.type.startsWith('tf-')) {
+                 html += `<div class="overflow-x-auto border border-gray-200 rounded-lg">
+                 <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mệnh đề</th><th class="px-2 py-2 text-center text-xs font-medium text-gray-500 w-16">Đúng</th><th class="px-2 py-2 text-center text-xs font-medium text-gray-500 w-16">Sai</th></tr></thead>
+                    <tbody class="bg-white divide-y divide-gray-200">`;
+                 item.statements.forEach((stmt, i) => {
+                     html += `<tr>
+                        <td class="px-3 py-2 text-sm">${stmt.rendered_statement || stmt.statement}</td>
+                        <td class="px-2 py-2 text-center"><input type="radio" name="q-${index}-${i}" value="true" class="h-4 w-4 text-indigo-600" onchange="selectTFAnswer(${index}, ${i}, true)"></td>
+                        <td class="px-2 py-2 text-center"><input type="radio" name="q-${index}-${i}" value="false" class="h-4 w-4 text-indigo-600" onchange="selectTFAnswer(${index}, ${i}, false)"></td>
+                     </tr>`;
+                 });
+                 html += `</tbody></table></div>`;
+            } else {
+                 html += `<textarea class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" rows="3" placeholder="Nhập câu trả lời của bạn..." oninput="inputAnswer(${index}, this.value)"></textarea>`;
+            }
+
+            qDiv.innerHTML = html;
+            dom.questionsContainer.appendChild(qDiv);
+        });
+        
+        // Add a spacer at the bottom for mobile nav bar
+        const spacer = document.createElement('div');
+        spacer.className = "h-20 sm:hidden"; 
+        dom.questionsContainer.appendChild(spacer);
+
+        if (window.MathJax) {
+            window.MathJax.typesetPromise();
+        }
+    }
+    
+    function getVNType(type) {
+        if(type === 'short-answer') return 'Trả lời ngắn';
+        if(type === 'essay') return 'Tự luận';
+        if(type === 'true-false') return 'Đúng/Sai';
+        return '';
+    }
+
+    function renderNav() {
+        dom.navGrid.innerHTML = '';
+        quizData.forEach((_, index) => {
+            const btn = document.createElement('button');
+            btn.id = `nav-${index}`;
+            btn.className = "w-full aspect-square flex items-center justify-center rounded border border-gray-200 bg-gray-100 text-gray-600 text-xs font-bold hover:bg-gray-200 transition-all";
+            btn.textContent = index + 1;
+            btn.onclick = () => {
+                scrollToQ(index);
+                if(window.innerWidth < 1024) closeNav();
+            };
+            dom.navGrid.appendChild(btn);
+        });
+    }
+
+    window.selectAnswer = (qIndex, oIndex) => {
+        userAnswers[qIndex] = oIndex;
+        updateProgress();
+    };
+
+    window.selectTFAnswer = (qIndex, sIndex, val) => {
+        if (!userAnswers[qIndex]) userAnswers[qIndex] = {};
+        userAnswers[qIndex][sIndex] = val;
+        // Check if all statements in this question are answered? 
+        // Logic: if user touched any, mark as in-progress. 
+        // Or strictly check length. Let's strictly check length for 'done' status.
+        if (Object.keys(userAnswers[qIndex]).length === quizData[qIndex].statements.length) {
+            updateProgress();
+        } else {
+             // Optional: mark partially done? For now just rely on updateProgress logic which checks userAnswers[idx] !== undefined
+             updateProgress(); 
+        }
+    };
+
+    window.inputAnswer = (qIndex, val) => {
+        if (val.trim()) {
+            userAnswers[qIndex] = val.trim();
+        } else {
+            delete userAnswers[qIndex];
+        }
+        updateProgress();
+    };
+
+    // Submit handlers
+    const handleSubmit = () => {
+        const answeredCount = Object.keys(userAnswers).length;
+        const total = quizData.length;
+        let confirmMsg = `Bạn đã làm ${answeredCount}/${total} câu.`;
+        if (answeredCount < total) confirmMsg += "\nBạn vẫn còn câu chưa làm!";
+        confirmMsg += "\nBạn có chắc chắn muốn nộp bài?";
+        
+        if (confirm(confirmMsg)) {
+            submitQuiz();
+        }
+    };
+
+    if(dom.submitBtn) dom.submitBtn.addEventListener('click', handleSubmit);
+    if(dom.drawerSubmitBtn) dom.drawerSubmitBtn.addEventListener('click', handleSubmit);
+
+
+    async function submitQuiz(autoSubmit = false) {
+        if (isSubmitted) return;
+        isSubmitted = true;
+        clearInterval(timerInterval);
+
+        let score = 0;
+        let detailResults = [];
+
+        quizData.forEach((item, index) => {
+            let isCorrect = false;
+            let detail = {};
+            let scoreEarned = 0;
+            const maxScorePerQ = 10 / quizData.length;
+
+            if (item.type === 'multiple-choice' || item.type.startsWith('mc-')) {
+                if (userAnswers[index] === item.correctAnswerIndex) {
+                    isCorrect = true;
+                    scoreEarned = maxScorePerQ;
+                }
+                detail = { userAnswer: userAnswers[index], correctAnswer: item.correctAnswerIndex };
+            } else if (item.type === 'true-false' || item.type.startsWith('tf-')) {
+                let correctStmtCount = 0;
+                let stmtResults = [];
+                item.statements.forEach((stmt, i) => {
+                    const userVal = userAnswers[index] ? userAnswers[index][i] : null;
+                    const stmtCorrect = userVal === stmt.is_correct;
+                    if (stmtCorrect) correctStmtCount++;
+                    stmtResults.push({ statement: i, user: userVal, correct: stmt.is_correct, isCorrect: stmtCorrect });
+                });
+                
+                // Progressive scoring for True/False
+                if(correctStmtCount === 1) scoreEarned = maxScorePerQ * 0.1;
+                else if(correctStmtCount === 2) scoreEarned = maxScorePerQ * 0.25;
+                else if(correctStmtCount === 3) scoreEarned = maxScorePerQ * 0.5;
+                else if(correctStmtCount === 4) { scoreEarned = maxScorePerQ; isCorrect = true; }
+                
+                detail = { statements: stmtResults };
+            }
+            // For Essay/Short Answer, auto-grading is hard, score is 0 by default or needs manual review logic.
+            // Here we assume 0 for now unless exact match (simple short answer)
+            
+            score += scoreEarned;
+
+            detailResults.push({
+                id: item.id, // ID để thống kê câu hay sai
+                questionNumber: index + 1,
+                type: item.type,
+                isCorrect: isCorrect,
+                scoreEarned: scoreEarned,
+                details: detail
+            });
+        });
+
+        score = Math.min(10, Math.max(0, score));
+
+        dom.quizScreen.classList.add('hidden');
+        dom.resultScreen.classList.remove('hidden');
+        
+        dom.scoreDisplay.textContent = score.toFixed(2);
+        dom.resultName.textContent = dom.nameInput.value;
+        dom.resultClass.textContent = dom.classInput.value;
+        dom.resultTime.textContent = new Date().toLocaleString();
+
+        if (googleScriptUrl) {
+            const payload = {
+                timestamp: new Date().toISOString(),
+                name: dom.nameInput.value,
+                class: dom.classInput.value,
+                score: score.toFixed(2),
+                examCode: examCode,
+                monitoringLog: JSON.stringify(monitorLog),
+                answerDetails: JSON.stringify(detailResults)
+            };
+            
+            fetch(googleScriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.error("Lỗi gửi điểm:", e));
+        }
+
+        if (options.showAnswers) {
+            dom.viewAnswersBtn.classList.remove('hidden');
+            renderDetailedAnswers(detailResults);
+        }
+        
+        if (options.aiAssessment && apiKeys.gemini) {
+            generateAIAssessment(score, detailResults);
+        }
+    }
+
+    function renderDetailedAnswers(results) {
+        let html = '<h3 class="text-xl font-bold mb-4 text-gray-800">Chi tiết đáp án</h3>';
+        
+        quizData.forEach((item, index) => {
+            const result = results[index];
+            const isCorrect = result.isCorrect;
+            const color = isCorrect ? 'text-green-600' : 'text-red-600';
+            
+            html += `<div class="mb-6 p-4 border rounded-lg ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}">
+                <div class="font-bold mb-2 ${color}">Câu ${index + 1}: ${isCorrect ? 'ĐÚNG' : 'SAI'} <span class="text-xs text-gray-500">(${result.scoreEarned.toFixed(2)} điểm)</span></div>
+                <div class="mb-2 text-gray-800">${item.rendered_question || item.question}</div>`;
+
+            if (item.type === 'multiple-choice') {
+                const userIdx = userAnswers[index];
+                const correctIdx = item.correctAnswerIndex;
+                html += `<div class="text-sm">
+                    <p>Bạn chọn: <span class="font-semibold">${userIdx !== undefined ? String.fromCharCode(65+userIdx) : 'Không trả lời'}</span></p>
+                    <p class="font-bold text-green-700">Đáp án đúng: ${String.fromCharCode(65+correctIdx)}. ${item.options[correctIdx]}</p>
+                </div>`;
+            } else if (item.type === 'true-false') {
+                 html += '<ul class="list-disc pl-5 text-sm">';
+                 item.statements.forEach((s, i) => {
+                     const userVal = userAnswers[index] ? userAnswers[index][i] : null;
+                     const isStmtCorrect = userVal === s.is_correct;
+                     html += `<li class="${isStmtCorrect ? 'text-green-700' : 'text-red-700'}">
+                        Ý ${String.fromCharCode(97+i)}: ${s.statement} (Đáp án: ${s.is_correct ? 'Đúng' : 'Sai'} - Bạn chọn: ${userVal === null ? 'Trống' : (userVal ? 'Đúng' : 'Sai')})
+                     </li>`;
+                 });
+                 html += '</ul>';
+            }
+            
+            if (options.showExplanation && item.rendered_answer) {
+                 html += `<div class="mt-3 pt-2 border-t border-gray-200 text-sm text-gray-600">
+                    <strong>Giải thích/Đáp án chi tiết:</strong><br>
+                    ${item.rendered_answer}
+                 </div>`;
+            }
+
+            html += `</div>`;
+        });
+        
+        dom.detailedAnswers.innerHTML = html;
+        if (window.MathJax) window.MathJax.typesetPromise();
+    }
+    
+    dom.viewAnswersBtn.addEventListener('click', () => {
+        dom.detailedAnswers.classList.remove('hidden');
+        dom.viewAnswersBtn.classList.add('hidden');
+    });
+
+    async function generateAIAssessment(score, results) {
+        dom.aiAssessmentContainer.classList.remove('hidden');
+        dom.aiAssessmentContent.textContent = "AI đang phân tích bài làm của bạn...";
+        
+        const summary = results.map(r => `Câu ${r.questionNumber} (${r.type}): ${r.isCorrect ? 'Đúng' : 'Sai'}`).join('; ');
+        
+        try {
+            const genAI = new GoogleGenAI({ apiKey: apiKeys.gemini });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const prompt = `Hãy đóng vai một giáo viên, nhận xét ngắn gọn (khoảng 100 từ) về kết quả bài kiểm tra này của học sinh. 
+            Điểm số: ${score}/10. 
+            Chi tiết: ${summary}. 
+            Hãy đưa ra lời khuyên để học sinh cải thiện, giọng điệu khích lệ.`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            
+            dom.aiAssessmentContent.innerHTML = text.replace(/\n/g, '<br>');
+        } catch (e) {
+            console.error("AI Error:", e);
+            dom.aiAssessmentContent.textContent = "Không thể tải nhận xét từ AI lúc này.";
+        }
+    }
+    
+    </script>
+</body>
+</html>
