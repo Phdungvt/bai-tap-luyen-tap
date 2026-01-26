@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bài kiểm tra Tin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- MathLive for Equation Input -->
+    <script defer src="//unpkg.com/mathlive"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif; background-color: #f9fafb; -webkit-tap-highlight-color: transparent; }
+        .prose img { border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 100%; height: auto; }
+        .hidden { display: none !important; }
+        /* Sticky Header Progress */
+        #header-progress { position: sticky; top: 0; z-index: 40; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* Mobile Navigation Bottom Bar */
+        .mobile-bottom-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 1px solid #e5e7eb;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.75rem 1rem; z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Drawer Transition */
+        #nav-panel { transition: transform 0.3s ease-in-out; }
+
+        /* MathLive Field Style */
+        math-field {
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            width: 100%;
+            background-color: white;
+        }
+        math-field:focus-within {
+            outline: 2px solid #4f46e5;
+            border-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col text-gray-800">
+
+    <!-- WELCOME SCREEN -->
+    <div id="welcome-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md border border-indigo-50">
+            <div class="text-center mb-6">
+                <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-800 mb-1 leading-tight">Bài kiểm tra Tin</h1>
+                <p class="text-gray-500 text-sm">Giáo viên: Đàng Năng Nhanh</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                    <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none" placeholder="Nhập họ tên của bạn">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+                    <input type="text" id="class" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none" placeholder="Nhập lớp (VD: 12A1)">
+                </div>
+                 
+                <div id="api-key-input-container">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-medium text-gray-700">Gemini API Key (Nhập key nếu GV yêu cầu)</label>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-red-600 hover:text-red-800 font-bold hover:underline">Link lấy API KEY miễn phí</a>
+                    </div>
+                    <input type="password" id="student-api-key" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none" placeholder="Nhập API Key">
+                </div>
+                <button id="start-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-transform transform active:scale-95 mt-2 text-base">
+                    BẮT ĐẦU LÀM BÀI
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz-screen" class="hidden flex flex-col h-screen bg-gray-50">
+        <!-- Sticky Header with Info & Progress -->
+        <header id="header-progress" class="flex-shrink-0 bg-white shadow-sm z-40">
+            <div class="px-4 py-3 flex items-center justify-between border-b border-gray-100">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">HS</div>
+                    <div class="flex flex-col min-w-0">
+                        <div class="font-bold text-gray-800 text-sm truncate" id="student-name-display">--</div>
+                        <div class="text-xs text-gray-500 truncate" id="progress-text">0/50</div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Thời gian</span>
+                    <span id="timer" class="text-lg font-mono font-bold text-indigo-600">00:00</span>
+                </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="h-1 w-full bg-gray-200">
+                <div class="h-1 bg-green-500 transition-all duration-300" style="width: 0%" id="progress-bar"></div>
+            </div>
+        </header>
+
+        <!-- Body Container -->
+        <div class="flex flex-1 overflow-hidden relative">
+            <!-- Main Scrollable Area (Questions) -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50 scroll-smooth relative" id="main-scroll-area">
+                <div class="max-w-6xl mx-auto" id="questions-wrapper">
+                     <div id="questions-container">
+                        <!-- Questions injected here -->
+                     </div>
+                     <!-- NEW SUBMIT BUTTON -->
+                    <div class="mt-8 mb-20 text-center">
+                        <button id="main-submit-btn" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl shadow-lg transition-transform transform active:scale-95 text-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" /></svg>
+                            NỘP BÀI THI
+                        </button>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Navigation Sidebar (Desktop) -->
+            <aside id="nav-panel" class="w-80 bg-white border-l border-gray-200 overflow-y-auto hidden md:flex flex-col z-30 shadow-lg md:shadow-none">
+                <div class="p-4 border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
+                    <h3 class="font-bold text-gray-700 text-lg">Danh sách câu hỏi</h3>
+                </div>
+                
+                <div class="flex-1 p-4">
+                    <div class="grid grid-cols-5 gap-3" id="nav-grid">
+                        <!-- Nav buttons injected here -->
+                    </div>
+                </div>
+                
+                <div class="p-4 border-t border-gray-100 bg-white sticky bottom-0 z-10">
+                     <div class="grid grid-cols-2 gap-2 text-xs text-center mb-4 text-gray-500">
+                        <div class="flex items-center gap-1 justify-center"><span class="w-3 h-3 rounded bg-gray-100 border border-gray-200"></span> Chưa làm</div>
+                        <div class="flex items-center gap-1 justify-center"><span class="w-3 h-3 rounded bg-indigo-600 border border-indigo-600"></span> Đã làm</div>
+                    </div>
+                    <button id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" /></svg>
+                        NỘP BÀI
+                    </button>
+                </div>
+            </aside>
+        </div>
+        
+        <!-- Mobile Bottom Navigation Bar -->
+        <div class="mobile-bottom-bar md:hidden">
+            <button id="mobile-prev-btn" class="p-2 text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            
+            <button id="mobile-menu-btn" class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full font-semibold text-sm hover:bg-indigo-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                <span id="mobile-current-q">Câu 1/50</span>
+            </button>
+            
+            <button id="mobile-next-btn" class="p-2 text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+        </div>
+
+        <!-- Mobile Drawer Overlay -->
+        <div id="nav-overlay" class="fixed inset-0 bg-black/30 z-40 hidden md:hidden glass-effect" onclick="document.getElementById('mobile-drawer').classList.add('translate-x-full'); this.classList.add('hidden');"></div>
+        
+        <!-- Mobile Drawer -->
+        <aside id="mobile-drawer" class="fixed inset-y-0 right-0 w-72 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 flex flex-col md:hidden">
+             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-700 text-lg">Danh sách câu hỏi</h3>
+                <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200" onclick="document.getElementById('mobile-drawer').classList.add('translate-x-full'); document.getElementById('nav-overlay').classList.add('hidden');">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4" id="mobile-nav-grid-container">
+                <!-- Will duplicate nav grid here via JS -->
+            </div>
+             <div class="p-4 border-t border-gray-100 bg-white">
+                 <button id="drawer-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" /></svg>
+                    NỘP BÀI THI
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" class="hidden flex-grow bg-gray-50 overflow-y-auto p-4">
+        <div class="max-w-4xl mx-auto space-y-6">
+            <!-- Score Card -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden text-center p-8 border border-gray-200 relative">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-blue-500"></div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Kết Quả Bài Làm</h2>
+                <div class="text-6xl font-black text-indigo-600 my-6 tracking-tighter" id="score-display">--</div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Họ tên</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-name">--</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Lớp</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-class">--</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 uppercase text-xs font-semibold">Thời gian</p>
+                        <p class="font-medium text-gray-900 text-lg" id="result-time">--</p>
+                    </div>
+                </div>
+
+                <div id="ai-assessment-container" class="mt-8 hidden text-left bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                    <h3 class="flex items-center gap-2 font-bold text-indigo-800 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        Nhận xét từ AI
+                    </h3>
+                    <div id="ai-assessment-content" class="prose prose-sm prose-indigo max-w-none text-gray-700"></div>
+                </div>
+
+                <div class="mt-8">
+                     <button id="view-answers-btn" class="hidden inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Xem đáp án chi tiết
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detailed Answers -->
+            <div id="detailed-answers" class="hidden bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CLIENT LOGIC SCRIPT -->
+    <script type="module">
+        
+    import { GoogleGenAI } from "https://esm.sh/@google/genai@^1.13.0";
+
+    // --- 1. DECODE DATA ---
+    const quizData = JSON.parse(decodeURIComponent(escape(atob("W3sicXVlc3Rpb24iOiJUcm9uZyBwaOG6p24gbeG7gW0gYuG6o25nIHTDrW5oLCBow6BtIG7DoG8gZMaw4bubaSDEkcOieSDEkcaw4bujYyBz4butIGThu6VuZyDEkeG7gyDEkeG6v20gc+G7kSBsxrDhu6NuZyBjw6FjIMO0IHRyb25nIG3hu5l0IHbDuW5nIGThu68gbGnhu4d1IHRo4buPYSBtw6NuIG3hu5l0IMSRaeG7gXUga2nhu4duIGNobyB0csaw4bubYz8iLCJvcHRpb25zIjpbIkjDoG0gJFNVTSQiLCJIw6BtICRBVkVSQUdFJCIsIkjDoG0gJENPVU5USUYkIiwiSMOgbSAkTUFYJCJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjIsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6MSwiaWQiOiJxXzUyNjk1Mzg1NyIsInF1ZXN0aW9uU25pcHBldCI6IlRyb25nIHBo4bqnbiBt4buBbSBi4bqjbmcgdMOtbmgsIGjDoG0gbsOgbyBkxrDhu5tpIMSRw6J5IMSRxrDhu6NjIHPhu60gZOG7pW5nIMSR4buDIMSR4bq/bSBz4buRIGzGsOG7o24uLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IlRyb25nIHBo4bqnbiBt4buBbSBi4bqjbmcgdMOtbmgsIGjDoG0gbsOgbyBkxrDhu5tpIMSRw6J5IMSRxrDhu6NjIHPhu60gZOG7pW5nIMSR4buDIMSR4bq/bSBz4buRIGzGsOG7o25nIGPDoWMgw7QgdHJvbmcgbeG7mXQgdsO5bmcgZOG7ryBsaeG7h3UgdGjhu49hIG3Do24gbeG7mXQgxJFp4buBdSBraeG7h24gY2hvIHRyxrDhu5tjPyIsInJlbmRlcmVkX29wdGlvbnMiOlsiSMOgbSAkU1VNJCIsIkjDoG0gJEFWRVJBR0UkIiwiSMOgbSAkQ09VTlRJRiQiLCJIw6BtICRNQVgkIl19LHsicXVlc3Rpb24iOiJDw7ogcGjDoXAgxJHDum5nIGPhu6dhIGjDoG0gJENPVU5USUYkIHRyb25nIHBo4bqnbiBt4buBbSBi4bqjbmcgdMOtbmggbMOgIGfDrD8iLCJvcHRpb25zIjpbIiQ9Q09VTlRJRihcXHRleHR7xJFp4buBdSBraeG7h259LCBcXHRleHR7dsO5bmcgxJFp4buBdSBraeG7h259KSQiLCIkPUNPVU5USUYoXFx0ZXh0e3bDuW5nIMSRaeG7gXUga2nhu4dufSwgXFx0ZXh0e8SRaeG7gXUga2nhu4dufSkkIiwiJD1DT1VOVElGKFxcdGV4dHt2w7luZyBk4buvIGxp4buHdX0pJCIsIiQ9Q09VTlRJRihcXHRleHR7dsO5bmcgxJFp4buBdSBraeG7h259OyBcXHRleHR7dsO5bmcgdMOtbmggdOG7lW5nfTsgXFx0ZXh0e8SRaeG7gXUga2nhu4dufSkkIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MSwidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjoyLCJpZCI6InFfMTY0ODQ2NjQxMSIsInF1ZXN0aW9uU25pcHBldCI6IkPDuiBwaMOhcCDEkcO6bmcgY+G7p2EgaMOgbSAkQ09VTlRJRiQgdHJvbmcgcGjhuqduIG3hu4FtIGLhuqNuZyB0w61uaCBsw6AgZ8OsPyIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiQ8O6IHBow6FwIMSRw7puZyBj4bunYSBow6BtICRDT1VOVElGJCB0cm9uZyBwaOG6p24gbeG7gW0gYuG6o25nIHTDrW5oIGzDoCBnw6w/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyIkPUNPVU5USUYoXFx0ZXh0e8SRaeG7gXUga2nhu4dufSwgXFx0ZXh0e3bDuW5nIMSRaeG7gXUga2nhu4dufSkkIiwiJD1DT1VOVElGKFxcdGV4dHt2w7luZyDEkWnhu4F1IGtp4buHbn0sIFxcdGV4dHvEkWnhu4F1IGtp4buHbn0pJCIsIiQ9Q09VTlRJRihcXHRleHR7dsO5bmcgZOG7ryBsaeG7h3V9KSQiLCIkPUNPVU5USUYoXFx0ZXh0e3bDuW5nIMSRaeG7gXUga2nhu4dufTsgXFx0ZXh0e3bDuW5nIHTDrW5oIHThu5VuZ307IFxcdGV4dHvEkWnhu4F1IGtp4buHbn0pJCJdfSx7InF1ZXN0aW9uIjoiQ2hvIGLhuqNuZyBxdeG6o24gbMOtIGNoaSB0acOqdSBuaMawIHNhdTogJCRcXGJlZ2lue2FycmF5fXt8Y3xsfGN8fVxcaGxpbmUgJiBcXHRleHR7QX0gJiBcXHRleHR7Qn0gXFxcXCBcXGhsaW5lIDEgJiBcXHRleHR7S2hv4bqjbiBjaGl9ICYgXFx0ZXh0e1Phu5EgdGnhu4FuIChWTsSQKX0gXFxcXCBcXGhsaW5lIDIgJiBcXHRleHR7xIJuIHRyxrBhfSAmIDUwMDAwIFxcXFwgXFxobGluZSAzICYgXFx0ZXh0e0fhu61pIHhlfSAmIDUwMDAgXFxcXCBcXGhsaW5lIDQgJiBcXHRleHR7xIJuIHRyxrBhfSAmIDQ1MDAwIFxcXFwgXFxobGluZSBcXGVuZHthcnJheX0kJCDEkOG7gyDEkeG6v20gc+G7kSBs4bqnbiBjaGkgY2hvIG3hu6VjIFwixIJuIHRyxrBhXCIgdHJvbmcgdsO5bmcgZOG7ryBsaeG7h3UgJEEyOkE0JCwgY8O0bmcgdGjhu6ljIG7DoG8gc2F1IMSRw6J5IGzDoCDEkcO6bmc/Iiwib3B0aW9ucyI6WyIkPUNPVU5USUYoQTI6QTQsIFxcdGV4dHtcIsSCbiB0csawYVwifSkkIiwiJD1TVU1JRihBMjpBNCwgXFx0ZXh0e1wixIJuIHRyxrBhXCJ9KSQiLCIkPUNPVU5UKEEyOkE0LCBcXHRleHR7XCLEgm4gdHLGsGFcIn0pJCIsIiQ9Q09VTlRJRihcXHRleHR7XCLEgm4gdHLGsGFcIn0sIEEyOkE0KSQiXSwiY29ycmVjdEFuc3dlckluZGV4IjowLCJ0eXBlIjoibXVsdGlwbGUtY2hvaWNlIiwiaXNEaXJ0eSI6ZmFsc2UsImV4cGxhbmF0aW9uIjpudWxsLCJzaHVmZmxlT3B0aW9ucyI6eyJzdGVtIjp0cnVlLCJhbnN3ZXJzIjp0cnVlfSwicXVlc3Rpb25OdW1iZXIiOjMsImlkIjoicV8zMDcxNjgzMjkiLCJxdWVzdGlvblNuaXBwZXQiOiJDaG8gYuG6o25nIHF14bqjbiBsw60gY2hpIHRpw6p1IG5oxrAgc2F1OiAkJFxcYmVnaW57YXJyYXl9e3xjfGx8Y3x9XFxobGluZSAmIFxcdC4uLiIsInJlbmRlcmVkX3F1ZXN0aW9uIjoiQ2hvIGLhuqNuZyBxdeG6o24gbMOtIGNoaSB0acOqdSBuaMawIHNhdTogJCRcXGJlZ2lue2FycmF5fXt8Y3xsfGN8fVxcaGxpbmUgJiBcXHRleHR7QX0gJiBcXHRleHR7Qn0gXFxcXCBcXGhsaW5lIDEgJiBcXHRleHR7S2hv4bqjbiBjaGl9ICYgXFx0ZXh0e1Phu5EgdGnhu4FuIChWTsSQKX0gXFxcXCBcXGhsaW5lIDIgJiBcXHRleHR7xIJuIHRyxrBhfSAmIDUwMDAwIFxcXFwgXFxobGluZSAzICYgXFx0ZXh0e0fhu61pIHhlfSAmIDUwMDAgXFxcXCBcXGhsaW5lIDQgJiBcXHRleHR7xIJuIHRyxrBhfSAmIDQ1MDAwIFxcXFwgXFxobGluZSBcXGVuZHthcnJheX0kJCDEkOG7gyDEkeG6v20gc+G7kSBs4bqnbiBjaGkgY2hvIG3hu6VjIFwixIJuIHRyxrBhXCIgdHJvbmcgdsO5bmcgZOG7ryBsaeG7h3UgJEEyOkE0JCwgY8O0bmcgdGjhu6ljIG7DoG8gc2F1IMSRw6J5IGzDoCDEkcO6bmc/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyIkPUNPVU5USUYoQTI6QTQsIFxcdGV4dHtcIsSCbiB0csawYVwifSkkIiwiJD1TVU1JRihBMjpBNCwgXFx0ZXh0e1wixIJuIHRyxrBhXCJ9KSQiLCIkPUNPVU5UKEEyOkE0LCBcXHRleHR7XCLEgm4gdHLGsGFcIn0pJCIsIiQ9Q09VTlRJRihcXHRleHR7XCLEgm4gdHLGsGFcIn0sIEEyOkE0KSQiXX0seyJxdWVzdGlvbiI6Ikdp4bqjIHPhu60gZW0gY8OzIGLhuqNuZyBk4buvIGxp4buHdSBxdeG6o24gbMOtIGNoaSB0acOqdSBnaWEgxJHDrG5oIG5oxrAgc2F1OiAkJCBcXGJlZ2lue2FycmF5fXt8Y3xsfGN8fSBcXGhsaW5lICYgXFx0ZXh0e0EgKEjhuqFuZyBt4bulYyl9ICYgXFx0ZXh0e0IgKFPhu5EgdGnhu4FuKX0gXFxcXCBcXGhsaW5lIDIgJiBcXHRleHR7xIJuIHPDoW5nfSAmIDM1MDAwIFxcXFwgXFxobGluZSAzICYgXFx0ZXh0e1Rp4buBbiBuxrDhu5tjfSAmIDE1MDAwMCBcXFxcIFxcaGxpbmUgNCAmIFxcdGV4dHvEgm4gc8Ohbmd9ICYgMzAwMDAgXFxcXCBcXGhsaW5lIFxcZW5ke2FycmF5fSAkJCDEkOG7gyB0w61uaCB04buVbmcgc+G7kSB0aeG7gW4gxJHDoyBjaGkgY2hvIGjhuqFuZyBt4bulYyBcIsSCbiBzw6FuZ1wiLCBjw7RuZyB0aOG7qWMgbsOgbyBzYXUgxJHDonkgbMOgIMSRw7puZz8iLCJvcHRpb25zIjpbIiQ9U1VNSUYoQTI6QTQsIFwixIJuIHPDoW5nXCIsIEIyOkI0KSQiLCIkPVNVTUlGKEIyOkI0LCBcIsSCbiBzw6FuZ1wiLCBBMjpBNCkkIiwiJD1TVU1JRihBMjpCNCwgXCLEgm4gc8OhbmdcIikkIiwiJD1TVU1JRihcIsSCbiBzw6FuZ1wiLCBBMjpBNCwgQjI6QjQpJCJdLCJjb3JyZWN0QW5zd2VySW5kZXgiOjAsInR5cGUiOiJtdWx0aXBsZS1jaG9pY2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6NCwiaWQiOiJxXzgzODAyMDMxNiIsInF1ZXN0aW9uU25pcHBldCI6Ikdp4bqjIHPhu60gZW0gY8OzIGLhuqNuZyBk4buvIGxp4buHdSBxdeG6o24gbMOtIGNoaSB0acOqdSBnaWEgxJHDrG5oIG5oxrAgc2F1OiAkJCBcXGJlZ2luLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJHaeG6oyBz4butIGVtIGPDsyBi4bqjbmcgZOG7ryBsaeG7h3UgcXXhuqNuIGzDrSBjaGkgdGnDqnUgZ2lhIMSRw6xuaCBuaMawIHNhdTogJCQgXFxiZWdpbnthcnJheX17fGN8bHxjfH0gXFxobGluZSAmIFxcdGV4dHtBIChI4bqhbmcgbeG7pWMpfSAmIFxcdGV4dHtCIChT4buRIHRp4buBbil9IFxcXFwgXFxobGluZSAyICYgXFx0ZXh0e8SCbiBzw6FuZ30gJiAzNTAwMCBcXFxcIFxcaGxpbmUgMyAmIFxcdGV4dHtUaeG7gW4gbsaw4bubY30gJiAxNTAwMDAgXFxcXCBcXGhsaW5lIDQgJiBcXHRleHR7xIJuIHPDoW5nfSAmIDMwMDAwIFxcXFwgXFxobGluZSBcXGVuZHthcnJheX0gJCQgxJDhu4MgdMOtbmggdOG7lW5nIHPhu5EgdGnhu4FuIMSRw6MgY2hpIGNobyBo4bqhbmcgbeG7pWMgXCLEgm4gc8OhbmdcIiwgY8O0bmcgdGjhu6ljIG7DoG8gc2F1IMSRw6J5IGzDoCDEkcO6bmc/IiwicmVuZGVyZWRfb3B0aW9ucyI6WyIkPVNVTUlGKEEyOkE0LCBcIsSCbiBzw6FuZ1wiLCBCMjpCNCkkIiwiJD1TVU1JRihCMjpCNCwgXCLEgm4gc8OhbmdcIiwgQTI6QTQpJCIsIiQ9U1VNSUYoQTI6QjQsIFwixIJuIHPDoW5nXCIpJCIsIiQ9U1VNSUYoXCLEgm4gc8OhbmdcIiwgQTI6QTQsIEIyOkI0KSQiXX0seyJxdWVzdGlvbiI6IlRyb25nIHBo4bqnbiBt4buBbSBi4bqjbmcgdMOtbmgsIGtoaSB0aOG7sWMgaGnhu4duIGLDoGkgdG/DoW4gcXXhuqNuIGzDrSB0aHUgY2hpIGdpYSDEkcOsbmgsIG3hu5l0IGLhuqFuIGjhu41jIHNpbmggc+G7rSBk4bulbmcgY8O0bmcgdGjhu6ljICQ9U1VNSUYoQzM6QzEyLCBcIj41MDAwMDBcIikkICh24bubaSB2w7luZyBk4buvIGxp4buHdSAkQzM6QzEyJCBjaOG7qWEgc+G7kSB0aeG7gW4gY+G7p2EgY8OhYyBraG/huqNuIHRodSkuIMOdIG5naMSpYSBj4bunYSBjw7RuZyB0aOG7qWMgbsOgeSBsw6AgZ8OsPyIsIm9wdGlvbnMiOlsiVMOtbmggdOG7lW5nIGPDoWMga2hv4bqjbiB0aHUgY8OzIGdpw6EgdHLhu4sgbOG7m24gaMahbiAkNTAwMDAwJCB0cm9uZyBwaOG6oW0gdmkgdOG7qyDDtCAkQzMkIMSR4bq/biDDtCAkQzEyJC4iLCLEkOG6v20gc+G7kSBsxrDhu6NuZyBjw6FjIGtob+G6o24gdGh1IGPDsyBnacOhIHRy4buLIGzhu5tuIGjGoW4gJDUwMDAwMCQgdHJvbmcgcGjhuqFtIHZpIHThu6sgw7QgJEMzJCDEkeG6v24gw7QgJEMxMiQuIiwiVMOtbmggdOG7lW5nIHThuqV0IGPhuqMgY8OhYyBraG/huqNuIHRodSBjw7MgdHJvbmcgdsO5bmcgdOG7qyDDtCAkQzMkIMSR4bq/biDDtCAkQzEyJC4iLCJUw6xtIHJhIGtob+G6o24gdGh1IGPDsyBnacOhIHRy4buLIGNhbyBuaOG6pXQgdHJvbmcgcGjhuqFtIHZpIHThu6sgw7QgJEMzJCDEkeG6v24gw7QgJEMxMiQuIl0sImNvcnJlY3RBbnN3ZXJJbmRleCI6MCwidHlwZSI6Im11bHRpcGxlLWNob2ljZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo1LCJpZCI6InFfMzA2NzY3OTM4IiwicXVlc3Rpb25TbmlwcGV0IjoiVHJvbmcgcGjhuqduIG3hu4FtIGLhuqNuZyB0w61uaCwga2hpIHRo4buxYyBoaeG7h24gYsOgaSB0b8OhbiBxdeG6o24gbMOtIHRodSBjaGkgZ2lhIMSRLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJUcm9uZyBwaOG6p24gbeG7gW0gYuG6o25nIHTDrW5oLCBraGkgdGjhu7FjIGhp4buHbiBiw6BpIHRvw6FuIHF14bqjbiBsw60gdGh1IGNoaSBnaWEgxJHDrG5oLCBt4buZdCBi4bqhbiBo4buNYyBzaW5oIHPhu60gZOG7pW5nIGPDtG5nIHRo4bupYyAkPVNVTUlGKEMzOkMxMiwgXCI+NTAwMDAwXCIpJCAoduG7m2kgdsO5bmcgZOG7ryBsaeG7h3UgJEMzOkMxMiQgY2jhu6lhIHPhu5EgdGnhu4FuIGPhu6dhIGPDoWMga2hv4bqjbiB0aHUpLiDDnSBuZ2jEqWEgY+G7p2EgY8O0bmcgdGjhu6ljIG7DoHkgbMOgIGfDrD8iLCJyZW5kZXJlZF9vcHRpb25zIjpbIlTDrW5oIHThu5VuZyBjw6FjIGtob+G6o24gdGh1IGPDsyBnacOhIHRy4buLIGzhu5tuIGjGoW4gJDUwMDAwMCQgdHJvbmcgcGjhuqFtIHZpIHThu6sgw7QgJEMzJCDEkeG6v24gw7QgJEMxMiQuIiwixJDhur9tIHPhu5EgbMaw4bujbmcgY8OhYyBraG/huqNuIHRodSBjw7MgZ2nDoSB0cuG7iyBs4bubbiBoxqFuICQ1MDAwMDAkIHRyb25nIHBo4bqhbSB2aSB04burIMO0ICRDMyQgxJHhur9uIMO0ICRDMTIkLiIsIlTDrW5oIHThu5VuZyB04bqldCBj4bqjIGPDoWMga2hv4bqjbiB0aHUgY8OzIHRyb25nIHbDuW5nIHThu6sgw7QgJEMzJCDEkeG6v24gw7QgJEMxMiQuIiwiVMOsbSByYSBraG/huqNuIHRodSBjw7MgZ2nDoSB0cuG7iyBjYW8gbmjhuqV0IHRyb25nIHBo4bqhbSB2aSB04burIMO0ICRDMyQgxJHhur9uIMO0ICRDMTIkLiJdfSx7Im1haW5fcXVlc3Rpb24iOiJUcm9uZyBwaOG6p24gbeG7gW0gYuG6o25nIHTDrW5oLCBraGkgdMOsbSBoaeG7g3UgduG7gSBow6BtICRDT1VOVElGJCBkw7luZyDEkeG7gyDEkeG6v20gZOG7ryBsaeG7h3UgdGjhu49hIG3Do24gbeG7mXQgxJFp4buBdSBraeG7h24gbmjhuqV0IMSR4buLbmgsIGPDoWMgbmjhuq1uIMSR4buLbmggc2F1IMSRw6J5IMSRw7puZyBoYXkgc2FpPyIsInN0YXRlbWVudHMiOlt7InN0YXRlbWVudCI6IkjDoG0gJENPVU5USUYkIGzDoCBow6BtIGTDuW5nIMSR4buDIHTDrW5oIHThu5VuZyBjw6FjIGdpw6EgdHLhu4sgdHJvbmcgY8OhYyDDtCB0aOG7j2EgbcOjbiBt4buZdCDEkWnhu4F1IGtp4buHbiBjaG8gdHLGsOG7m2MuIiwiaXNfY29ycmVjdCI6ZmFsc2UsInJlbmRlcmVkX3N0YXRlbWVudCI6IkjDoG0gJENPVU5USUYkIGzDoCBow6BtIGTDuW5nIMSR4buDIHTDrW5oIHThu5VuZyBjw6FjIGdpw6EgdHLhu4sgdHJvbmcgY8OhYyDDtCB0aOG7j2EgbcOjbiBt4buZdCDEkWnhu4F1IGtp4buHbiBjaG8gdHLGsOG7m2MuIn0seyJzdGF0ZW1lbnQiOiJDw7ogcGjDoXAgY+G7p2EgaMOgbSAkQ09VTlRJRiQgYmFvIGfhu5NtIGhhaSDEkeG7kWkgc+G7kSBi4bqvdCBideG7mWMgbMOgICRyYW5nZSQgKHbDuW5nIGThu68gbGnhu4d1KSB2w6AgJGNyaXRlcmlhJCAoxJFp4buBdSBraeG7h24pLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6IkPDuiBwaMOhcCBj4bunYSBow6BtICRDT1VOVElGJCBiYW8gZ+G7k20gaGFpIMSR4buRaSBz4buRIGLhuq90IGJ14buZYyBsw6AgJHJhbmdlJCAodsO5bmcgZOG7ryBsaeG7h3UpIHbDoCAkY3JpdGVyaWEkICjEkWnhu4F1IGtp4buHbikuIn0seyJzdGF0ZW1lbnQiOiLEkOG7gyDEkeG6v20gc+G7kSBs4bqnbiB4deG6pXQgaGnhu4duIGPhu6dhIHThu6sgXCJUaeG7gW4gxJFp4buHblwiIHRyb25nIGto4buRaSDDtCB04burICRCMiQgxJHhur9uICRCMTAkLCB0YSBjw7MgdGjhu4Mgc+G7rSBk4bulbmcgY8O0bmcgdGjhu6ljICQ9Q09VTlRJRihCMjpCMTAsIFxcdGV4dHtcIlRp4buBbiDEkWnhu4duXCJ9KSQuIiwiaXNfY29ycmVjdCI6dHJ1ZSwicmVuZGVyZWRfc3RhdGVtZW50IjoixJDhu4MgxJHhur9tIHPhu5EgbOG6p24geHXhuqV0IGhp4buHbiBj4bunYSB04burIFwiVGnhu4FuIMSRaeG7h25cIiB0cm9uZyBraOG7kWkgw7QgdOG7qyAkQjIkIMSR4bq/biAkQjEwJCwgdGEgY8OzIHRo4buDIHPhu60gZOG7pW5nIGPDtG5nIHRo4bupYyAkPUNPVU5USUYoQjI6QjEwLCBcXHRleHR7XCJUaeG7gW4gxJFp4buHblwifSkkLiJ9LHsic3RhdGVtZW50IjoiS2hpIMSR4buRaSBz4buRIMSRaeG7gXUga2nhu4duIGzDoCBt4buZdCBnacOhIHRy4buLIHPhu5EsIHbDrSBk4bulIHPhu5EgJDEwMCQsIHRhIGLhuq90IGJ14buZYyBwaOG6o2kgxJHhurd0IHPhu5EgxJHDsyB0cm9uZyBk4bqldSBuZ2/hurdjIGvDqXAgKGThuqFuZyAkXFx0ZXh0e1wiMTAwXCJ9JCkgdGjDrCBow6BtIG3hu5tpIHRy4bqjIHbhu4Ega+G6v3QgcXXhuqMgxJHDum5nLiIsImlzX2NvcnJlY3QiOmZhbHNlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJLaGkgxJHhu5FpIHPhu5EgxJFp4buBdSBraeG7h24gbMOgIG3hu5l0IGdpw6EgdHLhu4sgc+G7kSwgdsOtIGThu6Ugc+G7kSAkMTAwJCwgdGEgYuG6r3QgYnXhu5ljIHBo4bqjaSDEkeG6t3Qgc+G7kSDEkcOzIHRyb25nIGThuqV1IG5nb+G6t2Mga8OpcCAoZOG6oW5nICRcXHRleHR7XCIxMDBcIn0kKSB0aMOsIGjDoG0gbeG7m2kgdHLhuqMgduG7gSBr4bq/dCBxdeG6oyDEkcO6bmcuIn1dLCJ0eXBlIjoidHJ1ZS1mYWxzZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo2LCJpZCI6InFfMTQ1MzkwOTc2OSIsInF1ZXN0aW9uU25pcHBldCI6IlRyb25nIHBo4bqnbiBt4buBbSBi4bqjbmcgdMOtbmgsIGtoaSB0w6xtIGhp4buDdSB24buBIGjDoG0gJENPVU5USUYkIGTDuW5nIMSR4buDIMSR4bq/bSBk4buvLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJUcm9uZyBwaOG6p24gbeG7gW0gYuG6o25nIHTDrW5oLCBraGkgdMOsbSBoaeG7g3UgduG7gSBow6BtICRDT1VOVElGJCBkw7luZyDEkeG7gyDEkeG6v20gZOG7ryBsaeG7h3UgdGjhu49hIG3Do24gbeG7mXQgxJFp4buBdSBraeG7h24gbmjhuqV0IMSR4buLbmgsIGPDoWMgbmjhuq1uIMSR4buLbmggc2F1IMSRw6J5IMSRw7puZyBoYXkgc2FpPyJ9LHsibWFpbl9xdWVzdGlvbiI6IkNobyBi4bqjbmcgZOG7ryBsaeG7h3UgcXXhuqNuIGzDrSBjaGkgdGnDqnUgY8OhIG5ow6JuIHRyb25nIG3hu5l0IHR14bqnbiBj4bunYSBt4buZdCBo4buNYyBzaW5oIG5oxrAgc2F1OlxuJCRcblxcYmVnaW57YXJyYXl9e3xjfGx8bHxjfH1cblxcaGxpbmVcbiAmIFxcdGV4dGJme0F9ICYgXFx0ZXh0YmZ7Qn0gJiBcXHRleHRiZntDfSBcXFxcXG5cXGhsaW5lXG4xICYgXFx0ZXh0e05nw6B5fSAmIFxcdGV4dHtLaG/huqNuIGNoaX0gJiBcXHRleHR7U+G7kSB0aeG7gW4gKFZOxJApfSBcXFxcXG5cXGhsaW5lXG4yICYgMDEvMTAgJiBcXHRleHR7xIJuIHPDoW5nfSAmIDIwMDAwIFxcXFxcblxcaGxpbmVcbjMgJiAwMi8xMCAmIFxcdGV4dHtE4bulbmcgY+G7pSBo4buNYyB04bqtcH0gJiAxNTAwMCBcXFxcXG5cXGhsaW5lXG40ICYgMDMvMTAgJiBcXHRleHR7xIJuIHPDoW5nfSAmIDIwMDAwIFxcXFxcblxcaGxpbmVcbjUgJiAwNC8xMCAmIFxcdGV4dHtUaeG6v3Qga2nhu4dtfSAmIDEwMDAwIFxcXFxcblxcaGxpbmVcblxcZW5ke2FycmF5fVxuJCRcbkThu7FhIHRyw6puIGLhuqNuZyBk4buvIGxp4buHdSBuw6B5LCBow6N5IMSRw6FuaCBnacOhIHTDrW5oIMSRw7puZy9zYWkgY+G7p2EgY8OhYyBwaMOhdCBiaeG7g3Ugc2F1OiIsInN0YXRlbWVudHMiOlt7InN0YXRlbWVudCI6IkjDoG0gJENPVU5USUYkIGNo4buJIGPDsyB0aOG7gyDDoXAgZOG7pW5nIHRyw6puIGPhu5l0IGThu68gbGnhu4d1IHbEg24gYuG6o24gKGPhu5l0IEIpLCBraMO0bmcgdGjhu4Mgw6FwIGThu6VuZyB0csOqbiBj4buZdCBk4buvIGxp4buHdSBz4buRIChj4buZdCBDKS4iLCJpc19jb3JyZWN0IjpmYWxzZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiSMOgbSAkQ09VTlRJRiQgY2jhu4kgY8OzIHRo4buDIMOhcCBk4bulbmcgdHLDqm4gY+G7mXQgZOG7ryBsaeG7h3UgdsSDbiBi4bqjbiAoY+G7mXQgQiksIGtow7RuZyB0aOG7gyDDoXAgZOG7pW5nIHRyw6puIGPhu5l0IGThu68gbGnhu4d1IHPhu5EgKGPhu5l0IEMpLiJ9LHsic3RhdGVtZW50IjoiQ8O0bmcgdGjhu6ljICQ9Q09VTlRJRihCMjpCNSwgXFx0ZXh0e1wixIJuIHPDoW5nXCJ9KSQgc+G6vSB0cuG6oyB24buBIGdpw6EgdHLhu4sga+G6v3QgcXXhuqMgbMOgICQyJC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJDw7RuZyB0aOG7qWMgJD1DT1VOVElGKEIyOkI1LCBcXHRleHR7XCLEgm4gc8OhbmdcIn0pJCBz4bq9IHRy4bqjIHbhu4EgZ2nDoSB0cuG7iyBr4bq/dCBxdeG6oyBsw6AgJDIkLiJ9LHsic3RhdGVtZW50IjoixJDhu4MgxJHhur9tIHhlbSBjw7MgYmFvIG5oacOqdSBraG/huqNuIGNoaSBjw7Mgc+G7kSB0aeG7gW4gdOG7qyAkMTUwMDAkIFZOxJAgdHLhu58gbMOqbiwgdGEgc+G7rSBk4bulbmcgY8O0bmcgdGjhu6ljICQ9Q09VTlRJRihDMjpDNSwgXFx0ZXh0e1wiPj0xNTAwMFwifSkkLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6IsSQ4buDIMSR4bq/bSB4ZW0gY8OzIGJhbyBuaGnDqnUga2hv4bqjbiBjaGkgY8OzIHPhu5EgdGnhu4FuIHThu6sgJDE1MDAwJCBWTsSQIHRy4bufIGzDqm4sIHRhIHPhu60gZOG7pW5nIGPDtG5nIHRo4bupYyAkPUNPVU5USUYoQzI6QzUsIFxcdGV4dHtcIj49MTUwMDBcIn0pJC4ifSx7InN0YXRlbWVudCI6Ik7hur91IG3hu5l0IMO0IHRyb25nIHbDuW5nICRCMjpCNSQgY2jhu6lhIGNodeG7l2kgXCLEgm4gc8OhbmcgXCIgKGPDsyBt4buZdCBk4bqldSBjw6FjaCDhu58gY3Xhu5FpKSwgaMOgbSAkPUNPVU5USUYoQjI6QjUsIFxcdGV4dHtcIsSCbiBzw6FuZ1wifSkkIHbhuqtuIHTDrW5oIMO0IMSRw7MgbMOgIG3hu5l0IGvhur90IHF14bqjIGto4bubcC4iLCJpc19jb3JyZWN0IjpmYWxzZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiTuG6v3UgbeG7mXQgw7QgdHJvbmcgdsO5bmcgJEIyOkI1JCBjaOG7qWEgY2h14buXaSBcIsSCbiBzw6FuZyBcIiAoY8OzIG3hu5l0IGThuqV1IGPDoWNoIOG7nyBjdeG7kWkpLCBow6BtICQ9Q09VTlRJRihCMjpCNSwgXFx0ZXh0e1wixIJuIHPDoW5nXCJ9KSQgduG6q24gdMOtbmggw7QgxJHDsyBsw6AgbeG7mXQga+G6v3QgcXXhuqMga2jhu5twLiJ9XSwidHlwZSI6InRydWUtZmFsc2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6NywiaWQiOiJxXzcwNzU1OTg2MSIsInF1ZXN0aW9uU25pcHBldCI6IkNobyBi4bqjbmcgZOG7ryBsaeG7h3UgcXXhuqNuIGzDrSBjaGkgdGnDqnUgY8OhIG5ow6JuIHRyb25nIG3hu5l0IHR14bqnbiBj4bunYSBt4buZdCBo4buNYyBzLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJDaG8gYuG6o25nIGThu68gbGnhu4d1IHF14bqjbiBsw60gY2hpIHRpw6p1IGPDoSBuaMOibiB0cm9uZyBt4buZdCB0deG6p24gY+G7p2EgbeG7mXQgaOG7jWMgc2luaCBuaMawIHNhdTo8YnI+JCQ8YnI+XFxiZWdpbnthcnJheX17fGN8bHxsfGN8fTxicj5cXGhsaW5lPGJyPiAmIFxcdGV4dGJme0F9ICYgXFx0ZXh0YmZ7Qn0gJiBcXHRleHRiZntDfSBcXFxcPGJyPlxcaGxpbmU8YnI+MSAmIFxcdGV4dHtOZ8OgeX0gJiBcXHRleHR7S2hv4bqjbiBjaGl9ICYgXFx0ZXh0e1Phu5EgdGnhu4FuIChWTsSQKX0gXFxcXDxicj5cXGhsaW5lPGJyPjIgJiAwMS8xMCAmIFxcdGV4dHvEgm4gc8Ohbmd9ICYgMjAwMDAgXFxcXDxicj5cXGhsaW5lPGJyPjMgJiAwMi8xMCAmIFxcdGV4dHtE4bulbmcgY+G7pSBo4buNYyB04bqtcH0gJiAxNTAwMCBcXFxcPGJyPlxcaGxpbmU8YnI+NCAmIDAzLzEwICYgXFx0ZXh0e8SCbiBzw6FuZ30gJiAyMDAwMCBcXFxcPGJyPlxcaGxpbmU8YnI+NSAmIDA0LzEwICYgXFx0ZXh0e1Rp4bq/dCBraeG7h219ICYgMTAwMDAgXFxcXDxicj5cXGhsaW5lPGJyPlxcZW5ke2FycmF5fTxicj4kJDxicj5E4buxYSB0csOqbiBi4bqjbmcgZOG7ryBsaeG7h3UgbsOgeSwgaMOjeSDEkcOhbmggZ2nDoSB0w61uaCDEkcO6bmcvc2FpIGPhu6dhIGPDoWMgcGjDoXQgYmnhu4N1IHNhdToifSx7Im1haW5fcXVlc3Rpb24iOiJLaGkgdGjhu7FjIGhp4buHbiBjw6FjIHRoYW8gdMOhYyBuw6JuZyBjYW8gdsOgIHjhu60gbMOtIGzhu5dpIHbhu5tpIGjDoG0gJENPVU5USUYkIHRyb25nIGLhuqNuZyB0w61uaCwgY8OhYyBuaOG6rW4gxJHhu4tuaCBzYXUgxJHDonkgxJHDum5nIGhheSBzYWk/Iiwic3RhdGVtZW50cyI6W3sic3RhdGVtZW50IjoiVHJvbmcgY8O0bmcgdGjhu6ljICQ9Q09VTlRJRihBMTpBMjAsIFxcdGV4dHtcIj41MFwifSkkLCB0aMOgbmggcGjhuqduICRBMTpBMjAkIMSRw7NuZyB2YWkgdHLDsiBsw6AgxJFp4buBdSBraeG7h24gxJHhu4MgxJHhur9tLiIsImlzX2NvcnJlY3QiOmZhbHNlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJUcm9uZyBjw7RuZyB0aOG7qWMgJD1DT1VOVElGKEExOkEyMCwgXFx0ZXh0e1wiPjUwXCJ9KSQsIHRow6BuaCBwaOG6p24gJEExOkEyMCQgxJHDs25nIHZhaSB0csOyIGzDoCDEkWnhu4F1IGtp4buHbiDEkeG7gyDEkeG6v20uIn0seyJzdGF0ZW1lbnQiOiJIw6BtICRDT1VOVElGJCBraMO0bmcgcGjDom4gYmnhu4d0IGNo4buvIGhvYSB2w6AgY2jhu68gdGjGsOG7nW5nIGtoaSB0aOG7sWMgaGnhu4duIHNvIHPDoW5oIGPDoWMgY2h14buXaSB2xINuIGLhuqNuIHRyb25nIHBo4bqnbiDEkWnhu4F1IGtp4buHbi4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJIw6BtICRDT1VOVElGJCBraMO0bmcgcGjDom4gYmnhu4d0IGNo4buvIGhvYSB2w6AgY2jhu68gdGjGsOG7nW5nIGtoaSB0aOG7sWMgaGnhu4duIHNvIHPDoW5oIGPDoWMgY2h14buXaSB2xINuIGLhuqNuIHRyb25nIHBo4bqnbiDEkWnhu4F1IGtp4buHbi4ifSx7InN0YXRlbWVudCI6IkjDoG0gJENPVU5USUYkIGtow7RuZyBo4buXIHRy4bujIMSR4bq/bSBjw6FjIMO0IGNo4bupYSBuZ8OgeSB0aMOhbmcsIGNo4buJIGjhu5cgdHLhu6MgxJHhur9tIHPhu5EgdsOgIHbEg24gYuG6o24uIiwiaXNfY29ycmVjdCI6ZmFsc2UsInJlbmRlcmVkX3N0YXRlbWVudCI6IkjDoG0gJENPVU5USUYkIGtow7RuZyBo4buXIHRy4bujIMSR4bq/bSBjw6FjIMO0IGNo4bupYSBuZ8OgeSB0aMOhbmcsIGNo4buJIGjhu5cgdHLhu6MgxJHhur9tIHPhu5EgdsOgIHbEg24gYuG6o24uIn0seyJzdGF0ZW1lbnQiOiJLaGkgc2FvIGNow6lwIGPDtG5nIHRo4bupYyAkPUNPVU5USUYoQzI6QzUsIFxcdGV4dHtcIj4xMFwifSkkIHThu6sgw7QgJEQyJCB4deG7kW5nIMO0ICREMyQsIG7hur91IGtow7RuZyBkw7luZyDEkeG7i2EgY2jhu4kgdHV54buHdCDEkeG7kWksIGThuqNpIMO0IHTDrG0ga2nhur9tIHThuqFpIMO0ICREMyQgc+G6vSB04buxIMSR4buZbmcgYuG7iyDEkeG6qXkgdGjDoG5oICRDMzpDNiQuIiwiaXNfY29ycmVjdCI6dHJ1ZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiS2hpIHNhbyBjaMOpcCBjw7RuZyB0aOG7qWMgJD1DT1VOVElGKEMyOkM1LCBcXHRleHR7XCI+MTBcIn0pJCB04burIMO0ICREMiQgeHXhu5FuZyDDtCAkRDMkLCBu4bq/dSBraMO0bmcgZMO5bmcgxJHhu4thIGNo4buJIHR1eeG7h3QgxJHhu5FpLCBk4bqjaSDDtCB0w6xtIGtp4bq/bSB04bqhaSDDtCAkRDMkIHPhur0gdOG7sSDEkeG7mW5nIGLhu4sgxJHhuql5IHRow6BuaCAkQzM6QzYkLiJ9XSwidHlwZSI6InRydWUtZmFsc2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6OCwiaWQiOiJxXzUyNTkxNzk2MyIsInF1ZXN0aW9uU25pcHBldCI6IktoaSB0aOG7sWMgaGnhu4duIGPDoWMgdGhhbyB0w6FjIG7Dom5nIGNhbyB2w6AgeOG7rSBsw60gbOG7l2kgduG7m2kgaMOgbSAkQ09VTlRJRiQgdHJvLi4uIiwicmVuZGVyZWRfcXVlc3Rpb24iOiJLaGkgdGjhu7FjIGhp4buHbiBjw6FjIHRoYW8gdMOhYyBuw6JuZyBjYW8gdsOgIHjhu60gbMOtIGzhu5dpIHbhu5tpIGjDoG0gJENPVU5USUYkIHRyb25nIGLhuqNuZyB0w61uaCwgY8OhYyBuaOG6rW4gxJHhu4tuaCBzYXUgxJHDonkgxJHDum5nIGhheSBzYWk/In0seyJtYWluX3F1ZXN0aW9uIjoiVHJvbmcgcGjhuqduIG3hu4FtIGLhuqNuZyB0w61uaCwgZ2nhuqMgc+G7rSBi4bqhbiBjw7MgbeG7mXQgYuG6o25nIGThu68gbGnhu4d1IHF14bqjbiBsw60gY2hpIHRpw6p1IGdpYSDEkcOsbmggduG7m2kgY+G7mXQgJEEkIHThu6sgZMOybmcgJDIkIMSR4bq/biAkMTUkICgkQTI6QTE1JCkgZ2hpIHTDqm4gY8OhYyBsb+G6oWkgY2hpIHBow60gKG5oxrAgXCLEgm4gdeG7kW5nXCIsIFwiVGnhu4FuIMSRaeG7h25cIiwgXCJUaeG7gW4gbsaw4bubY1wiKSB2w6AgY+G7mXQgJEMkIHThu6sgZMOybmcgJDIkIMSR4bq/biAkMTUkICgkQzI6QzE1JCkgZ2hpIHPhu5EgdGnhu4FuIHTGsMahbmcg4bupbmcuIEjDo3kgxJHDoW5oIGdpw6EgY8OhYyBwaMOhdCBiaeG7g3Ugc2F1IMSRw6J5IHbhu4Egdmnhu4djIHPhu60gZOG7pW5nIGjDoG0gJFNVTUlGJC4iLCJzdGF0ZW1lbnRzIjpbeyJzdGF0ZW1lbnQiOiJIw6BtICRTVU1JRiQgbMOgIGjDoG0gxJHGsOG7o2Mgc+G7rSBk4bulbmcgxJHhu4MgdMOtbmggdOG7lW5nIGPDoWMgZ2nDoSB0cuG7iyB0cm9uZyBt4buZdCB2w7luZyBk4buvIGxp4buHdSBk4buxYSB0csOqbiBt4buZdCDEkWnhu4F1IGtp4buHbiBj4bulIHRo4buDLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6IkjDoG0gJFNVTUlGJCBsw6AgaMOgbSDEkcaw4bujYyBz4butIGThu6VuZyDEkeG7gyB0w61uaCB04buVbmcgY8OhYyBnacOhIHRy4buLIHRyb25nIG3hu5l0IHbDuW5nIGThu68gbGnhu4d1IGThu7FhIHRyw6puIG3hu5l0IMSRaeG7gXUga2nhu4duIGPhu6UgdGjhu4MuIn0seyJzdGF0ZW1lbnQiOiJDw7ogcGjDoXAgY+G7p2EgaMOgbSBsw6AgJD1TVU1JRihyYW5nZSwgY3JpdGVyaWEsIFtzdW1fcmFuZ2VdKSQsIHRyb25nIMSRw7MgJHJhbmdlJCBsw6AgdsO5bmcgY2jhu6lhIGPDoWMgZ2nDoSB0cuG7iyBkw7luZyDEkeG7gyBraeG7g20gdHJhIMSRaeG7gXUga2nhu4duLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6IkPDuiBwaMOhcCBj4bunYSBow6BtIGzDoCAkPVNVTUlGKHJhbmdlLCBjcml0ZXJpYSwgW3N1bV9yYW5nZV0pJCwgdHJvbmcgxJHDsyAkcmFuZ2UkIGzDoCB2w7luZyBjaOG7qWEgY8OhYyBnacOhIHRy4buLIGTDuW5nIMSR4buDIGtp4buDbSB0cmEgxJFp4buBdSBraeG7h24uIn0seyJzdGF0ZW1lbnQiOiLEkOG7gyB0w61uaCB04buVbmcgc+G7kSB0aeG7gW4gxJHDoyBjaGkgY2hvIG3hu6VjIFwixIJuIHXhu5FuZ1wiLCBjw7RuZyB0aOG7qWMgxJHDum5nIGzDoCAkPVNVTUlGKEEyOkExNTsgXCLEgm4gdeG7kW5nXCI7IEMyOkMxNSkkLiIsImlzX2NvcnJlY3QiOnRydWUsInJlbmRlcmVkX3N0YXRlbWVudCI6IsSQ4buDIHTDrW5oIHThu5VuZyBz4buRIHRp4buBbiDEkcOjIGNoaSBjaG8gbeG7pWMgXCLEgm4gdeG7kW5nXCIsIGPDtG5nIHRo4bupYyDEkcO6bmcgbMOgICQ9U1VNSUYoQTI6QTE1OyBcIsSCbiB14buRbmdcIjsgQzI6QzE1KSQuIn0seyJzdGF0ZW1lbnQiOiJO4bq/dSBtdeG7kW4gdMOtbmggdOG7lW5nIGPDoWMga2hv4bqjbiBjaGkgY8OzIHPhu5EgdGnhu4FuIGzhu5tuIGjGoW4gJDUwMC4wMDAkLCB0YSBjw7MgdGjhu4Mgdmnhur90IMSRaeG7gXUga2nhu4duIHRyb25nIGjDoG0gbMOgICRTVU1JRihDMjpDMTU7ID41MDAwMDApJCBtw6Aga2jDtG5nIGPhuqduIHPhu60gZOG7pW5nIGThuqV1IG5nb+G6t2Mga8OpcCBjaG8gYmnhu4N1IHRo4bupYyBzbyBzw6FuaC4iLCJpc19jb3JyZWN0IjpmYWxzZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiTuG6v3UgbXXhu5FuIHTDrW5oIHThu5VuZyBjw6FjIGtob+G6o24gY2hpIGPDsyBz4buRIHRp4buBbiBs4bubbiBoxqFuICQ1MDAuMDAwJCwgdGEgY8OzIHRo4buDIHZp4bq/dCDEkWnhu4F1IGtp4buHbiB0cm9uZyBow6BtIGzDoCAkU1VNSUYoQzI6QzE1OyA+NTAwMDAwKSQgbcOgIGtow7RuZyBj4bqnbiBz4butIGThu6VuZyBk4bqldSBuZ2/hurdjIGvDqXAgY2hvIGJp4buDdSB0aOG7qWMgc28gc8OhbmguIn1dLCJ0eXBlIjoidHJ1ZS1mYWxzZSIsImlzRGlydHkiOmZhbHNlLCJleHBsYW5hdGlvbiI6bnVsbCwic2h1ZmZsZU9wdGlvbnMiOnsic3RlbSI6dHJ1ZSwiYW5zd2VycyI6dHJ1ZX0sInF1ZXN0aW9uTnVtYmVyIjo5LCJpZCI6InFfODk2NTc0OTcyIiwicXVlc3Rpb25TbmlwcGV0IjoiVHJvbmcgcGjhuqduIG3hu4FtIGLhuqNuZyB0w61uaCwgZ2nhuqMgc+G7rSBi4bqhbiBjw7MgbeG7mXQgYuG6o25nIGThu68gbGnhu4d1IHF14bqjbiBsw60gY2hpIHQuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IlRyb25nIHBo4bqnbiBt4buBbSBi4bqjbmcgdMOtbmgsIGdp4bqjIHPhu60gYuG6oW4gY8OzIG3hu5l0IGLhuqNuZyBk4buvIGxp4buHdSBxdeG6o24gbMOtIGNoaSB0acOqdSBnaWEgxJHDrG5oIHbhu5tpIGPhu5l0ICRBJCB04burIGTDsm5nICQyJCDEkeG6v24gJDE1JCAoJEEyOkExNSQpIGdoaSB0w6puIGPDoWMgbG/huqFpIGNoaSBwaMOtIChuaMawIFwixIJuIHXhu5FuZ1wiLCBcIlRp4buBbiDEkWnhu4duXCIsIFwiVGnhu4FuIG7GsOG7m2NcIikgdsOgIGPhu5l0ICRDJCB04burIGTDsm5nICQyJCDEkeG6v24gJDE1JCAoJEMyOkMxNSQpIGdoaSBz4buRIHRp4buBbiB0xrDGoW5nIOG7qW5nLiBIw6N5IMSRw6FuaCBnacOhIGPDoWMgcGjDoXQgYmnhu4N1IHNhdSDEkcOieSB24buBIHZp4buHYyBz4butIGThu6VuZyBow6BtICRTVU1JRiQuIn0seyJtYWluX3F1ZXN0aW9uIjoiWMOpdCBt4buZdCBi4bqjbmcgdMOtbmggcXXhuqNuIGzDrSB0aeG7gW4gdGnhur90IGtp4buHbSBj4bunYSBjw6FjIHRow6BuaCB2acOqbiB0cm9uZyBnaWEgxJHDrG5oLiBD4buZdCAkQiQgKHThu6sgJEIzJCDEkeG6v24gJEIyMCQpIGNo4bupYSB0w6puIHRow6BuaCB2acOqbiwgY+G7mXQgJEQkICh04burICREMyQgxJHhur9uICREMjAkKSBjaOG7qWEgc+G7kSB0aeG7gW4gdGnhur90IGtp4buHbSBow6BuZyB0aMOhbmcuIEjDo3kga2nhu4NtIHRyYSB0w61uaCDEkcO6bmcgxJHhuq9uIGPhu6dhIGPDoWMgbmjhuq1uIMSR4buLbmggc2F1IHbhu4EgaMOgbSAkU1VNSUYkLiIsInN0YXRlbWVudHMiOlt7InN0YXRlbWVudCI6IsSQ4buRaSBz4buRICRbc3VtX3JhbmdlXSQgdHJvbmcgaMOgbSAkU1VNSUYkIGzDoCB0aMOgbmggcGjhuqduIGLhuq90IGJ14buZYyBwaOG6o2kgY8OzIHRyb25nIG3hu41pIHRyxrDhu51uZyBo4bujcCBkw7kgdsO5bmcgdMOtbmggdOG7lW5nIGPDsyB0csO5bmcgduG7m2kgdsO5bmcgxJFp4buBdSBraeG7h24gaGF5IGtow7RuZy4iLCJpc19jb3JyZWN0IjpmYWxzZSwicmVuZGVyZWRfc3RhdGVtZW50IjoixJDhu5FpIHPhu5EgJFtzdW1fcmFuZ2VdJCB0cm9uZyBow6BtICRTVU1JRiQgbMOgIHRow6BuaCBwaOG6p24gYuG6r3QgYnXhu5ljIHBo4bqjaSBjw7MgdHJvbmcgbeG7jWkgdHLGsOG7nW5nIGjhu6NwIGTDuSB2w7luZyB0w61uaCB04buVbmcgY8OzIHRyw7luZyB24bubaSB2w7luZyDEkWnhu4F1IGtp4buHbiBoYXkga2jDtG5nLiJ9LHsic3RhdGVtZW50IjoiS2hpIHRo4buxYyBoaeG7h24gY8O0bmcgdGjhu6ljICQ9U1VNSUYoQjM6QjIwOyBcIkLhu5FcIjsgRDM6RDIwKSQsIHBo4bqnbiBt4buBbSBz4bq9IHTDrG0gdOG6pXQgY+G6oyBjw6FjIMO0IHRyb25nIHbDuW5nICRCMzpCMjAkIGPDsyBu4buZaSBkdW5nIGzDoCBcIkLhu5FcIiBy4buTaSBj4buZbmcgY8OhYyBnacOhIHRy4buLIHTGsMahbmcg4bupbmcg4bufIGPhu5l0ICREJC4iLCJpc19jb3JyZWN0Ijp0cnVlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJLaGkgdGjhu7FjIGhp4buHbiBjw7RuZyB0aOG7qWMgJD1TVU1JRihCMzpCMjA7IFwiQuG7kVwiOyBEMzpEMjApJCwgcGjhuqduIG3hu4FtIHPhur0gdMOsbSB04bqldCBj4bqjIGPDoWMgw7QgdHJvbmcgdsO5bmcgJEIzOkIyMCQgY8OzIG7hu5lpIGR1bmcgbMOgIFwiQuG7kVwiIHLhu5NpIGPhu5luZyBjw6FjIGdpw6EgdHLhu4sgdMawxqFuZyDhu6luZyDhu58gY+G7mXQgJEQkLiJ9LHsic3RhdGVtZW50IjoiTuG6v3UgdHJvbmcgdsO5bmcgxJFp4buBdSBraeG7h24gJEIzOkIyMCQga2jDtG5nIGPDsyBnacOhIHRy4buLIG7DoG8gdGjhu49hIG3Do24gxJFp4buBdSBraeG7h24gxJHGsGEgcmEsIGjDoG0gJFNVTUlGJCBz4bq9IHRy4bqjIHbhu4EgdGjDtG5nIGLDoW8gbOG7l2kgJCNWQUxVRSEkLiIsImlzX2NvcnJlY3QiOmZhbHNlLCJyZW5kZXJlZF9zdGF0ZW1lbnQiOiJO4bq/dSB0cm9uZyB2w7luZyDEkWnhu4F1IGtp4buHbiAkQjM6QjIwJCBraMO0bmcgY8OzIGdpw6EgdHLhu4sgbsOgbyB0aOG7j2EgbcOjbiDEkWnhu4F1IGtp4buHbiDEkcawYSByYSwgaMOgbSAkU1VNSUYkIHPhur0gdHLhuqMgduG7gSB0aMO0bmcgYsOhbyBs4buXaSAkI1ZBTFVFISQuIn0seyJzdGF0ZW1lbnQiOiJUYSBjw7MgdGjhu4Mgc+G7rSBk4bulbmcga8O9IHThu7EgxJHhuqFpIGRp4buHbiBuaMawIGThuqV1IHNhbyAoJCokKSB0cm9uZyDEkWnhu4F1IGtp4buHbiBj4bunYSBow6BtICRTVU1JRiQsIHbDrSBk4bulIFwiTSpcIiDEkeG7gyB0w61uaCB04buVbmcgY2hvIHThuqV0IGPhuqMgdGjDoG5oIHZpw6puIGPDsyB0w6puIGLhuq90IMSR4bqndSBi4bqxbmcgY2jhu68gXCJNXCIuIiwiaXNfY29ycmVjdCI6dHJ1ZSwicmVuZGVyZWRfc3RhdGVtZW50IjoiVGEgY8OzIHRo4buDIHPhu60gZOG7pW5nIGvDvSB04buxIMSR4bqhaSBkaeG7h24gbmjGsCBk4bqldSBzYW8gKCQqJCkgdHJvbmcgxJFp4buBdSBraeG7h24gY+G7p2EgaMOgbSAkU1VNSUYkLCB2w60gZOG7pSBcIk0qXCIgxJHhu4MgdMOtbmggdOG7lW5nIGNobyB04bqldCBj4bqjIHRow6BuaCB2acOqbiBjw7MgdMOqbiBi4bqvdCDEkeG6p3UgYuG6sW5nIGNo4buvIFwiTVwiLiJ9XSwidHlwZSI6InRydWUtZmFsc2UiLCJpc0RpcnR5IjpmYWxzZSwiZXhwbGFuYXRpb24iOm51bGwsInNodWZmbGVPcHRpb25zIjp7InN0ZW0iOnRydWUsImFuc3dlcnMiOnRydWV9LCJxdWVzdGlvbk51bWJlciI6MTAsImlkIjoicV85NzMxNjM5NjciLCJxdWVzdGlvblNuaXBwZXQiOiJYw6l0IG3hu5l0IGLhuqNuZyB0w61uaCBxdeG6o24gbMOtIHRp4buBbiB0aeG6v3Qga2nhu4dtIGPhu6dhIGPDoWMgdGjDoG5oIHZpw6puIHRyb25nIGdpYSAuLi4iLCJyZW5kZXJlZF9xdWVzdGlvbiI6IljDqXQgbeG7mXQgYuG6o25nIHTDrW5oIHF14bqjbiBsw60gdGnhu4FuIHRp4bq/dCBraeG7h20gY+G7p2EgY8OhYyB0aMOgbmggdmnDqm4gdHJvbmcgZ2lhIMSRw6xuaC4gQ+G7mXQgJEIkICh04burICRCMyQgxJHhur9uICRCMjAkKSBjaOG7qWEgdMOqbiB0aMOgbmggdmnDqm4sIGPhu5l0ICREJCAodOG7qyAkRDMkIMSR4bq/biAkRDIwJCkgY2jhu6lhIHPhu5EgdGnhu4FuIHRp4bq/dCBraeG7h20gaMOgbmcgdGjDoW5nLiBIw6N5IGtp4buDbSB0cmEgdMOtbmggxJHDum5nIMSR4bqvbiBj4bunYSBjw6FjIG5o4bqtbiDEkeG7i25oIHNhdSB24buBIGjDoG0gJFNVTUlGJC4ifV0="))));
+    const options = JSON.parse(decodeURIComponent(escape(atob("eyJ0aW1lTGltaXQiOjE1LCJyZXRyaWVzIjoxLCJzdGFydFRpbWUiOm51bGwsImVuZFRpbWUiOm51bGwsInNob3J0QW5zd2VyRm9ybWF0IjoiZnJlZWZvcm0iLCJwb2ludHNNQyI6NSwicG9pbnRzVEYiOjUsInBvaW50c1NBIjowLCJwb2ludHNFc3NheSI6MCwicG9pbnRzVEZNZXRob2QiOiJwcm9ncmVzc2l2ZSIsInNob3dBbnN3ZXJzIjp0cnVlLCJzaG93RXhwbGFuYXRpb24iOnRydWUsImFpQXNzZXNzbWVudCI6dHJ1ZSwidGVhY2hlck5hbWUiOiLEkMOgbmcgTsSDbmcgTmhhbmgifQ=="))));
+    const apiKeysEncoded = JSON.parse(decodeURIComponent(escape(atob("eyJnZW1pbmkiOiIiLCJvcGVuYWkiOiIiLCJkZWVwc2VlayI6IiJ9"))));
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxx-BtRQ4SJJG5DkUOTYicW5ATk6hQu3X_J6it2d9bucw53uGQYwBa4QgMsfFbtcHo3-g/exec";
+    const examCode = "EDSBRI";
+    const teacherName = "Đàng Năng Nhanh";
+
+    const apiKeys = {
+        gemini: atob(apiKeysEncoded.gemini),
+    };
+
+    // --- 2. STATE ---
+    let userAnswers = {};
+    let timeLeft = options.timeLimit * 60;
+    let timerInterval;
+    let isSubmitted = false;
+    let startTime = new Date();
+    let currentQuestionIndex = 0; // Track view for mobile nav
+    let monitorLog = {
+        thoatManHinh: 0,
+        saoChep: 0,
+        dan: 0
+    };
+
+    // --- 3. DOM ELEMENTS ---
+    const dom = {
+        welcomeScreen: document.getElementById('welcome-screen'),
+        quizScreen: document.getElementById('quiz-screen'),
+        resultScreen: document.getElementById('result-screen'),
+        nameInput: document.getElementById('name'),
+        classInput: document.getElementById('class'),
+        studentApiKeyInput: document.getElementById('student-api-key'),
+        startBtn: document.getElementById('start-btn'),
+        studentNameDisplay: document.getElementById('student-name-display'),
+        timerDisplay: document.getElementById('timer'),
+        questionsContainer: document.getElementById('questions-container'),
+        navGrid: document.getElementById('nav-grid'),
+        submitBtn: document.getElementById('submit-btn'),
+        drawerSubmitBtn: document.getElementById('drawer-submit-btn'),
+        mainSubmitBtn: document.getElementById('main-submit-btn'),
+        scoreDisplay: document.getElementById('score-display'),
+        resultName: document.getElementById('result-name'),
+        resultClass: document.getElementById('result-class'),
+        resultTime: document.getElementById('result-time'),
+        detailedAnswers: document.getElementById('detailed-answers'),
+        viewAnswersBtn: document.getElementById('view-answers-btn'),
+        aiAssessmentContainer: document.getElementById('ai-assessment-container'),
+        aiAssessmentContent: document.getElementById('ai-assessment-content'),
+        progressBar: document.getElementById('progress-bar'),
+        progressText: document.getElementById('progress-text'),
+        navPanel: document.getElementById('nav-panel'),
+        navOverlay: document.getElementById('nav-overlay'),
+        mobilePrevBtn: document.getElementById('mobile-prev-btn'),
+        mobileNextBtn: document.getElementById('mobile-next-btn'),
+        mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+        mobileCurrentQ: document.getElementById('mobile-current-q')
+    };
+
+    // --- 4. INIT ---
+    dom.startBtn.addEventListener('click', startQuiz);
+    
+    // Mobile Nav Listeners
+    if(dom.mobilePrevBtn) dom.mobilePrevBtn.addEventListener('click', () => scrollToQ(currentQuestionIndex - 1));
+    if(dom.mobileNextBtn) dom.mobileNextBtn.addEventListener('click', () => scrollToQ(currentQuestionIndex + 1));
+    if(dom.mobileMenuBtn) dom.mobileMenuBtn.addEventListener('click', toggleNav);
+    if(dom.navOverlay) dom.navOverlay.addEventListener('click', closeNav);
+
+    // --- MONITORING SYSTEM (CẬP NHẬT) ---
+    function showWarning(message) {
+        const toast = document.createElement('div');
+        toast.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-2xl z-50 flex items-center gap-3 animate-bounce";
+        toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <span>${message}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && !isSubmitted && !dom.quizScreen.classList.contains('hidden')) {
+            monitorLog.thoatManHinh++;
+            document.title = "⚠️ CẢNH BÁO: QUAY LẠI LÀM BÀI!";
+        } else if (!document.hidden && !isSubmitted && !dom.quizScreen.classList.contains('hidden')) {
+            document.title = "Bài kiểm tra Tin"; // Reset title
+            if (monitorLog.thoatManHinh > 0) {
+                showWarning(`Hệ thống phát hiện bạn đã rời màn hình. (Lần thứ ${monitorLog.thoatManHinh})`);
+            }
+        }
+    });
+
+    document.addEventListener('copy', (e) => {
+        if (!isSubmitted && !dom.quizScreen.classList.contains('hidden')) {
+            monitorLog.saoChep++;
+            showWarning("Cảnh báo: Hành động sao chép được ghi lại!");
+        }
+    });
+
+    document.addEventListener('paste', (e) => {
+        if (!isSubmitted && !dom.quizScreen.classList.contains('hidden')) {
+            monitorLog.dan++;
+            showWarning("Cảnh báo: Hành động dán được ghi lại!");
+        }
+    });
+    
+    // Prevent right click (optional but often requested with monitoring)
+    document.addEventListener('contextmenu', (e) => {
+         if (!isSubmitted && !dom.quizScreen.classList.contains('hidden')) {
+            e.preventDefault();
+         }
+    });
+
+    function startQuiz() {
+        const name = dom.nameInput.value.trim();
+        const className = dom.classInput.value.trim();
+        if (!name || !className) {
+            alert('Vui lòng nhập đầy đủ Họ tên và Lớp!');
+            return;
+        }
+        
+        // NEW: Get Student API Key if provided
+        if (dom.studentApiKeyInput && dom.studentApiKeyInput.value.trim()) {
+            apiKeys.gemini = dom.studentApiKeyInput.value.trim();
+        }
+
+        dom.studentNameDisplay.textContent = name;
+        dom.welcomeScreen.classList.add('hidden');
+        dom.quizScreen.classList.remove('hidden');
+        
+        renderQuestions();
+        renderNav();
+        updateProgress();
+        
+        if (options.timeLimit > 0) {
+            startTimer();
+        } else {
+            dom.timerDisplay.textContent = "--:--";
+        }
+        
+        // Setup intersection observer to update current question index on scroll
+        setupScrollObserver();
+        
+        window.scrollTo(0, 0);
+    }
+
+    function startTimer() {
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitQuiz(true);
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        dom.timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        
+        // Change color when time is running out (< 5 mins)
+        if (timeLeft < 300) {
+            dom.timerDisplay.classList.add('text-red-600', 'animate-pulse');
+            dom.timerDisplay.classList.remove('text-indigo-600');
+        }
+    }
+
+    function updateProgress() {
+        const total = quizData.length;
+        const answered = Object.keys(userAnswers).length;
+        const percent = (answered / total) * 100;
+        dom.progressBar.style.width = `${percent}%`;
+        if(dom.progressText) dom.progressText.textContent = `${answered}/${total}`;
+        
+        // Update Grid Colors
+        quizData.forEach((_, idx) => {
+            const btn = document.getElementById(`nav-${idx}`);
+            if (btn) {
+                if (userAnswers[idx] !== undefined) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                    btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                } else {
+                    btn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                }
+                
+                // Highlight current
+                if (idx === currentQuestionIndex) {
+                     btn.classList.add('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                } else {
+                     btn.classList.remove('ring-2', 'ring-offset-2', 'ring-indigo-500');
+                }
+            }
+        });
+    }
+
+    function toggleNav() {
+        const isOpen = !dom.navPanel.classList.contains('translate-x-full');
+        if (isOpen) closeNav();
+        else openNav();
+    }
+    
+    function openNav() {
+        dom.navPanel.classList.remove('translate-x-full');
+        if(dom.navOverlay) dom.navOverlay.classList.remove('hidden');
+    }
+    
+    function closeNav() {
+        dom.navPanel.classList.add('translate-x-full');
+        if(dom.navOverlay) dom.navOverlay.classList.add('hidden');
+    }
+    
+    function scrollToQ(index) {
+        if (index < 0 || index >= quizData.length) return;
+        currentQuestionIndex = index;
+        const qEl = document.getElementById(`q-${index}`);
+        if (qEl) {
+            // Scroll with offset for sticky header
+            const headerOffset = 100;
+            const elementPosition = qEl.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        }
+        updateMobileControls();
+        updateProgress(); // To update grid highlight
+    }
+    
+    function updateMobileControls() {
+        if(dom.mobileCurrentQ) dom.mobileCurrentQ.textContent = `Câu ${currentQuestionIndex + 1}/${quizData.length}`;
+        dom.mobilePrevBtn.disabled = currentQuestionIndex === 0;
+        dom.mobileNextBtn.disabled = currentQuestionIndex === quizData.length - 1;
+        
+        dom.mobilePrevBtn.classList.toggle('opacity-50', currentQuestionIndex === 0);
+        dom.mobileNextBtn.classList.toggle('opacity-50', currentQuestionIndex === quizData.length - 1);
+    }
+    
+    function setupScrollObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id; // q-0, q-1...
+                    const idx = parseInt(id.split('-')[1]);
+                    currentQuestionIndex = idx;
+                    updateMobileControls();
+                    updateProgress();
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        quizData.forEach((_, idx) => {
+            const el = document.getElementById(`q-${idx}`);
+            if(el) observer.observe(el);
+        });
+    }
+
+    // --- 5. RENDER ---
+    // Helper function inside client script to format AI text
+    function formatAIText(text) {
+        if (!text) return '';
+        // Bold
+        let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Fixed escaping
+        // Newlines
+        formatted = formatted.replace(/\n/g, '<br>'); // Fixed escaping
+        return formatted;
+    }
+
+    // --- LOGIC CHẤM ĐIỂM THÔNG MINH ---
+    function normalizeMathString(str) {
+        if (!str) return '';
+        let s = str.toString().toLowerCase().trim();
+        // Replace decimal comma
+        s = s.replace(/,(\d)/g, '.$1');
+        // Remove spaces
+        s = s.split(' ').join('');
+        // Remove basic latex symbols commonly used for grouping
+        s = s.split('\\left').join(''); 
+        s = s.split('\\right').join('');
+        s = s.split('{').join('');
+        s = s.split('}').join('');
+        s = s.split('$').join('');
+        // Remove *
+        s = s.split('*').join('');
+        s = s.split(':').join('/');
+        return s;
+    }
+
+    function checkAnswerSmart(userVal, correctVal) {
+        if (!correctVal) return false;
+        if (!userVal) return false;
+
+        // Cách 1: So sánh chính xác (sau khi trim)
+        if (userVal.trim().toLowerCase() === correctVal.trim().toLowerCase()) return true;
+
+        // Cách 2: So sánh thông minh dạng Toán học (xóa khoảng trắng, latex)
+        const cleanUser = normalizeMathString(userVal);
+        const cleanCorrect = normalizeMathString(correctVal);
+        if (cleanUser === cleanCorrect && cleanUser !== '') return true;
+
+        // Cách 3: So sánh số học (nếu cả 2 là số)
+        const numUser = parseFloat(userVal.replace(',', '.'));
+        const numCorrect = parseFloat(correctVal.replace(',', '.'));
+        if (!isNaN(numUser) && !isNaN(numCorrect)) {
+            // Chấp nhận sai số nhỏ
+            return Math.abs(numUser - numCorrect) < 0.0001; 
+        }
+
+        return false;
+    }
+    
+    // --- CHẤM ĐIỂM TỰ LUẬN BẰNG AI ---
+    async function gradeEssayWithAI(question, modelAnswer, studentAnswer, maxPoints) {
+        if (!studentAnswer || !studentAnswer.trim()) {
+             return { isCorrect: false, scoreEarned: 0, details: { textAnswer: "", feedback: "Không có câu trả lời.", rubric: "Chưa chấm" } };
+        }
+        
+        const prompt = `Đóng vai một giáo viên chấm thi nghiêm túc. Hãy chấm điểm câu trả lời tự luận của học sinh dựa trên đáp án mẫu.
+        
+        Thông tin câu hỏi:
+        - Câu hỏi: ${question}
+        - Đáp án mẫu: ${modelAnswer}
+        - Bài làm của học sinh: ${studentAnswer}
+        - Điểm tối đa cho câu hỏi này là: ${maxPoints} điểm.
+
+        Nhiệm vụ:
+        1. Phân tích đáp án mẫu và bài làm học sinh.
+        2. Tính điểm số cụ thể (số thực, thang điểm ${maxPoints} điểm).
+        3. Phân bổ điểm số cho từng ý (nếu có), tổng điểm không vượt quá ${maxPoints}.
+        4. Tạo bảng điểm (rubric) ngắn gọn giải thích cách tính điểm.
+        5. Đưa ra nhận xét ngắn gọn về lỗi sai (nếu có). KHÔNG đưa ra lời khuyên chung chung hay động viên dài dòng.
+
+        YÊU CẦU TRẢ VỀ JSON DUY NHẤT:
+        {
+            "score": <số điểm học sinh đạt được (tối đa ${maxPoints})>,
+            "rubric": "<Mô tả ngắn gọn cách chấm điểm>",
+            "feedback": "<Đáp án chi tiết và nhận xét ngắn gọn>"
+        }`;
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: apiKeys.gemini });
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            
+            const result = JSON.parse(response.text);
+            return {
+                isCorrect: result.score >= (maxPoints / 2),
+                scoreEarned: parseFloat(result.score),
+                details: {
+                    textAnswer: studentAnswer,
+                    aiFeedback: result.feedback,
+                    aiRubric: result.rubric,
+                    aiGraded: true
+                }
+            };
+        } catch (e) {
+            console.error("Lỗi chấm điểm AI:", e);
+            return {
+                isCorrect: false,
+                scoreEarned: 0, 
+                details: { textAnswer: studentAnswer, feedback: "Lỗi AI. Vui lòng chấm tay.", aiGraded: false }
+            };
+        }
+    }
+    
+    // --- Helper để lấy điểm tối đa của câu hỏi từ nội dung ---
+    function getQuestionMaxScore(questionText, defaultScore) {
+        // Tìm các mẫu như (2 điểm), [2đ], (2.5đ), [1.5 điểm] ở đầu hoặc cuối câu
+        const regex = /[([]s*(d+([.,]d+)?)s*(đ|điểm)s*[)]]/i;
+        const match = questionText.match(regex);
+        if (match) {
+            return parseFloat(match[1].replace(',', '.'));
+        }
+        return defaultScore;
+    }
+
+    function renderQuestions() {
+        dom.questionsContainer.innerHTML = '';
+        
+        // --- ADDED: Header Mapping ---
+        const typeHeaders = {
+            'multiple-choice': 'PHẦN I. TRẮC NGHIỆM NHIỀU LỰA CHỌN',
+            'true-false': 'PHẦN II. TRẮC NGHIỆM ĐÚNG/ SAI',
+            'short-answer': 'PHẦN III. TRẢ LỜI NGẮN',
+            'essay': 'PHẦN IV. TỰ LUẬN'
+        };
+        let currentType = '';
+        
+        // Calculate points per question type for display
+        let countMC = 0, countTF = 0, countSA = 0, countEssay = 0;
+        quizData.forEach(q => {
+            const type = q.type;
+            if (type === 'multiple-choice' || type.startsWith('mc-')) countMC++;
+            else if (type === 'true-false' || type.startsWith('tf-')) countTF++;
+            else if (type === 'short-answer' || type.startsWith('sentence-')) countSA++;
+            else countEssay++;
+        });
+
+        const scorePerMC = countMC > 0 ? (options.pointsMC || 0) / countMC : 0;
+        const scorePerTF = countTF > 0 ? (options.pointsTF || 0) / countTF : 0; // Avg score, actual varies
+        const scorePerSA = countSA > 0 ? (options.pointsSA || 0) / countSA : 0;
+        const scorePerEssayAvg = countEssay > 0 ? (options.pointsEssay || 0) / countEssay : 0;
+
+
+        quizData.forEach((item, index) => {
+            // --- ADDED: Inject Header if Type Changes ---
+            let mappedType = item.type;
+            if (mappedType.startsWith('mc-')) mappedType = 'multiple-choice';
+            else if (mappedType.startsWith('tf-')) mappedType = 'true-false';
+            else if (mappedType === 'sentence-transformation') mappedType = 'short-answer';
+            else if (mappedType === 'paragraph-writing') mappedType = 'essay';
+
+            if (mappedType !== currentType) {
+                currentType = mappedType;
+                if (typeHeaders[currentType]) {
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = "flex items-center justify-between mt-8 mb-4 pb-2 border-b-2 border-indigo-100";
+                    headerDiv.innerHTML = `<h2 class="text-xl font-bold text-indigo-700 uppercase">${typeHeaders[currentType]}</h2>`;
+                    dom.questionsContainer.appendChild(headerDiv);
+                }
+            }
+
+            const qDiv = document.createElement('div');
+            qDiv.id = `q-${index}`;
+            qDiv.className = "bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-4 sm:mb-6 scroll-mt-24";
+            
+            // Determine score display string
+            let scoreDisplay = '';
+            if (mappedType === 'multiple-choice') scoreDisplay = `(${scorePerMC.toFixed(2)} điểm)`;
+            else if (mappedType === 'short-answer') scoreDisplay = `(${scorePerSA.toFixed(2)} điểm)`;
+            else if (mappedType === 'essay') {
+                 // Check if score is embedded in text
+                 const specificScore = getQuestionMaxScore(item.question, scorePerEssayAvg);
+                 scoreDisplay = `(${specificScore.toFixed(2)} điểm)`;
+            }
+            else if (mappedType === 'true-false') scoreDisplay = `(Tối đa ${scorePerTF.toFixed(2)} điểm)`;
+            
+            let html = `<div class="mb-3">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="inline-flex items-center justify-center bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-md mr-2">Câu ${index + 1}</span>
+                        <span class="text-xs text-gray-500 font-semibold">${scoreDisplay}</span>
+                    </div>
+                    ${item.type !== 'multiple-choice' ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${getVNType(item.type)}</span>` : ''}
+                </div>
+                <div class="font-medium text-gray-800 text-base sm:text-lg leading-relaxed">${item.rendered_question || item.question}</div>
+            </div>`;
+
+            if (item.type === 'multiple-choice' || item.type.startsWith('mc-')) {
+                html += `<div class="grid grid-cols-1 gap-3">`;
+                item.rendered_options.forEach((opt, i) => {
+                    html += `
+                    <label class="cursor-pointer group">
+                        <div class="flex items-start p-3 rounded-lg border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 transition-all">
+                            <div class="flex items-center h-5">
+                                <input type="radio" name="q-${index}" value="${i}" class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500" onchange="selectAnswer(${index}, ${i})">
+                            </div>
+                            <span class="ml-3 text-sm sm:text-base text-gray-700 group-hover:text-indigo-900">${String.fromCharCode(65+i)}. ${opt}</span>
+                        </div>
+                    </label>`;
+                });
+                html += `</div>`;
+            } else if (item.type === 'true-false' || item.type.startsWith('tf-')) {
+                 html += `<div class="overflow-x-auto border border-gray-200 rounded-lg">
+                 <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50"><tr><th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mệnh đề</th><th class="px-2 py-2 text-center text-xs font-medium text-gray-500 w-16">Đúng</th><th class="px-2 py-2 text-center text-xs font-medium text-gray-500 w-16">Sai</th></tr></thead>
+                    <tbody class="bg-white divide-y divide-gray-200">`;
+                 item.statements.forEach((stmt, i) => {
+                     html += `<tr>
+                        <td class="px-3 py-2 text-sm">${stmt.rendered_statement || stmt.statement}</td>
+                        <td class="px-2 py-2 text-center"><input type="radio" name="q-${index}-${i}" value="true" class="h-4 w-4 text-indigo-600" onchange="selectTFAnswer(${index}, ${i}, true)"></td>
+                        <td class="px-2 py-2 text-center"><input type="radio" name="q-${index}-${i}" value="false" class="h-4 w-4 text-indigo-600" onchange="selectTFAnswer(${index}, ${i}, false)"></td>
+                     </tr>`;
+                 });
+                 html += `</tbody></table></div>`;
+            } else if (item.type === 'short-answer' || item.type === 'sentence-transformation') {
+                 if (options.shortAnswerFormat === 'form') {
+                     // --- UPDATED: 4 small boxes for characters ---
+                     html += `<div class="mt-3">
+                        <p class="text-xs text-gray-500 mb-2 italic">Điền kết quả vào các ô bên dưới (Mỗi ô 1 kí tự, kể cả dấu phẩy):</p>
+                        <div class="flex gap-2 justify-start">`;
+                     for(let i=0; i<4; i++) {
+                         html += `<input type="text" maxlength="1" id="q-${index}-part-${i}" class="w-12 h-14 text-center text-2xl font-mono font-bold border-2 border-gray-300 rounded focus:border-indigo-600 focus:ring-0 outline-none uppercase transition-colors shadow-sm" oninput="inputShortAnswerForm(${index}, ${i}, this.value, this)">`;
+                     }
+                     html += `</div></div>`;
+                 } else {
+                     // --- MATH KEYBOARD INTEGRATION START ---
+                     html += `
+                     <div class="relative w-full">
+                         <div id="math-input-container-${index}" class="hidden mb-2 border rounded-lg p-1 bg-gray-50">
+                             <math-field id="math-field-${index}" class="w-full p-2 text-lg border-b border-gray-200 focus:outline-none bg-white rounded" virtual-keyboard-mode="manual"></math-field>
+                         </div>
+                         <textarea id="textarea-${index}" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" rows="3" placeholder="Nhập câu trả lời của bạn..." oninput="inputAnswer(${index}, this.value)"></textarea>
+                         <button type="button" class="absolute bottom-2 right-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition-colors flex items-center gap-1" onclick="toggleMathInput(${index})">
+                             ⌨️ Nhập công thức Toán
+                         </button>
+                     </div>`;
+                     // --- MATH KEYBOARD INTEGRATION END ---
+                 }
+            } else { // Essay
+                 // --- MATH KEYBOARD INTEGRATION START ---
+                 html += `
+                 <div class="relative w-full">
+                     <div id="math-input-container-${index}" class="hidden mb-2 border rounded-lg p-1 bg-gray-50">
+                         <math-field id="math-field-${index}" class="w-full p-2 text-lg border-b border-gray-200 focus:outline-none bg-white rounded" virtual-keyboard-mode="manual"></math-field>
+                     </div>
+                     <textarea id="textarea-${index}" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" rows="6" placeholder="Nhập câu trả lời tự luận của bạn..." oninput="inputAnswer(${index}, this.value)"></textarea>
+                     <button type="button" class="absolute bottom-2 right-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition-colors flex items-center gap-1" onclick="toggleMathInput(${index})">
+                         ⌨️ Nhập công thức Toán
+                     </button>
+                 </div>`;
+                 // --- MATH KEYBOARD INTEGRATION END ---
+            }
+
+            qDiv.innerHTML = html;
+            dom.questionsContainer.appendChild(qDiv);
+        });
+        
+        const spacer = document.createElement('div');
+        spacer.className = "h-20 sm:hidden"; 
+        dom.questionsContainer.appendChild(spacer);
+
+        if (window.MathJax) {
+            window.MathJax.typesetPromise();
+        }
+    }
+    
+    // --- NEW FUNCTION: Toggle Math Input ---
+    window.toggleMathInput = (index) => {
+        const container = document.getElementById(`math-input-container-${index}`);
+        const textarea = document.getElementById(`textarea-${index}`);
+        const mathField = document.getElementById(`math-field-${index}`);
+        
+        if (container.classList.contains('hidden')) {
+            // Switch to Math Mode
+            container.classList.remove('hidden');
+            textarea.classList.add('hidden');
+            
+            // Sync content from textarea to mathfield if needed (optional, simplistic)
+            mathField.setValue(textarea.value);
+            
+            // Add listener to sync back to userAnswers
+            mathField.addEventListener('input', (e) => {
+                const latex = e.target.getValue(); // Get LaTeX
+                userAnswers[index] = latex;
+                updateProgress();
+            });
+            
+            mathField.focus();
+        } else {
+            // Switch to Text Mode
+            container.classList.add('hidden');
+            textarea.classList.remove('hidden');
+            
+            // Sync content back
+            textarea.value = mathField.getValue();
+            userAnswers[index] = textarea.value;
+            
+            textarea.focus();
+        }
+    };
+
+    function getVNType(type) {
+        if(type === 'short-answer') return 'Trả lời ngắn';
+        if(type === 'essay') return 'Tự luận';
+        if(type === 'true-false') return 'Đúng/Sai';
+        return '';
+    }
+
+    function renderNav() {
+        dom.navGrid.innerHTML = '';
+        quizData.forEach((_, index) => {
+            const btn = document.createElement('button');
+            btn.id = `nav-${index}`;
+            btn.className = "w-full aspect-square flex items-center justify-center rounded border border-gray-200 bg-gray-100 text-gray-600 text-xs font-bold hover:bg-gray-200 transition-all";
+            btn.textContent = index + 1;
+            btn.onclick = () => {
+                scrollToQ(index);
+                if(window.innerWidth < 1024) closeNav();
+            };
+            dom.navGrid.appendChild(btn);
+        });
+    }
+
+    window.selectAnswer = (qIndex, oIndex) => {
+        userAnswers[qIndex] = oIndex;
+        updateProgress();
+    };
+
+    window.selectTFAnswer = (qIndex, sIndex, val) => {
+        if (!userAnswers[qIndex]) userAnswers[qIndex] = {};
+        userAnswers[qIndex][sIndex] = val;
+        if (Object.keys(userAnswers[qIndex]).length === quizData[qIndex].statements.length) {
+            updateProgress();
+        } else {
+             updateProgress(); 
+        }
+    };
+    
+    window.inputShortAnswerForm = (qIndex, partIndex, val, inputEl) => {
+        if (!userAnswers[qIndex]) userAnswers[qIndex] = {};
+        if (val.trim()) {
+            userAnswers[qIndex][partIndex] = val.trim();
+             // Auto focus next
+            if(inputEl && inputEl.nextElementSibling && val.length === 1) {
+                inputEl.nextElementSibling.focus();
+            }
+        } else {
+            delete userAnswers[qIndex][partIndex];
+            if (Object.keys(userAnswers[qIndex]).length === 0) delete userAnswers[qIndex];
+        }
+        updateProgress();
+    };
+
+    window.inputAnswer = (qIndex, val) => {
+        if (val.trim()) {
+            userAnswers[qIndex] = val.trim();
+        } else {
+            delete userAnswers[qIndex];
+        }
+        updateProgress();
+    };
+
+    // Submit handlers
+    const handleSubmit = () => {
+        const answeredCount = Object.keys(userAnswers).length;
+        const total = quizData.length;
+        let confirmMsg = `Bạn đã làm ${answeredCount}/${total} câu.`;
+        if (answeredCount < total) confirmMsg += "\nBạn vẫn còn câu chưa làm!";
+        confirmMsg += "\nBạn có chắc chắn muốn nộp bài?";
+        
+        if (confirm(confirmMsg)) {
+            submitQuiz();
+        }
+    };
+
+    if(dom.submitBtn) dom.submitBtn.addEventListener('click', handleSubmit);
+    if(dom.drawerSubmitBtn) dom.drawerSubmitBtn.addEventListener('click', handleSubmit);
+    if(dom.mainSubmitBtn) dom.mainSubmitBtn.addEventListener('click', handleSubmit);
+
+    async function submitQuiz(autoSubmit = false) {
+        if (isSubmitted) return;
+        isSubmitted = true;
+        clearInterval(timerInterval);
+        
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = "fixed inset-0 bg-white bg-opacity-90 z-50 flex flex-col items-center justify-center";
+        loadingOverlay.innerHTML = `<svg class="animate-spin h-12 w-12 text-indigo-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p class="text-lg font-semibold text-gray-700">Đang chấm điểm và phân tích bài làm...</p>`;
+        document.body.appendChild(loadingOverlay);
+
+        try {
+            // 1. Tính toán trọng số điểm cho từng phần (Dựa trên cấu hình lúc xuất đề)
+            let countMC = 0, countTF = 0, countSA = 0, countEssay = 0;
+            quizData.forEach(q => {
+                const type = q.type;
+                if (type === 'multiple-choice' || type.startsWith('mc-')) countMC++;
+                else if (type === 'true-false' || type.startsWith('tf-')) countTF++;
+                else if (type === 'short-answer' || type.startsWith('sentence-')) countSA++;
+                else countEssay++;
+            });
+
+            const scorePerMC = countMC > 0 ? (options.pointsMC || 0) / countMC : 0;
+            const scorePerTF = countTF > 0 ? (options.pointsTF || 0) / countTF : 0;
+            const scorePerSA = countSA > 0 ? (options.pointsSA || 0) / countSA : 0;
+            const scorePerEssayAvg = countEssay > 0 ? (options.pointsEssay || 0) / countEssay : 0;
+
+            let totalScore = 0;
+            let detailResults = [];
+            
+            // Prepare promises for AI grading if needed
+            const gradingPromises = quizData.map(async (item, index) => {
+                let isCorrect = false;
+                let detail = {};
+                let scoreEarned = 0;
+                let aiGradingResult = null;
+
+                try {
+                    // --- XỬ LÝ TRẮC NGHIỆM (Multiple Choice) ---
+                    if (item.type === 'multiple-choice' || item.type.startsWith('mc-')) {
+                        // Priority: Individual score > Group average score
+                        let maxPoint = item.score > 0 ? item.score : scorePerMC;
+                        if (userAnswers[index] === item.correctAnswerIndex) {
+                            isCorrect = true;
+                            scoreEarned = maxPoint;
+                        }
+                        detail = { userAnswer: userAnswers[index], correctAnswer: item.correctAnswerIndex };
+                    } 
+                    
+                    // --- XỬ LÝ ĐÚNG/SAI (True/False) ---
+                    else if (item.type === 'true-false' || item.type.startsWith('tf-')) {
+                        let correctStmtCount = 0;
+                        let stmtResults = [];
+                        // Priority: Individual score > Group average score
+                        let maxPoint = item.score > 0 ? item.score : scorePerTF;
+
+                        item.statements.forEach((stmt, i) => {
+                            const userVal = userAnswers[index] ? userAnswers[index][i] : null;
+                            const stmtCorrect = (String(userVal) === String(stmt.is_correct)); 
+                            if (stmtCorrect) correctStmtCount++;
+                            stmtResults.push({ statement: i, user: userVal, correct: stmt.is_correct, isCorrect: stmtCorrect });
+                        });
+
+                        if (options.pointsTFMethod === 'even') {
+                            scoreEarned = (correctStmtCount / 4) * maxPoint;
+                            if (correctStmtCount === 4) isCorrect = true;
+                        } else {
+                            if (correctStmtCount === 1) scoreEarned = maxPoint * 0.1;
+                            else if (correctStmtCount === 2) scoreEarned = maxPoint * 0.25;
+                            else if (correctStmtCount === 3) scoreEarned = maxPoint * 0.5;
+                            else if (correctStmtCount === 4) { scoreEarned = maxPoint; isCorrect = true; }
+                            else scoreEarned = 0;
+                        }
+                        detail = { statements: stmtResults };
+                    } 
+                    
+                    // --- XỬ LÝ TRẢ LỜI NGẮN (Short Answer) ---
+                    else if (item.type === 'short-answer' || item.type === 'sentence-transformation') {
+                         // Priority: Individual score > Group average score
+                        let maxPoint = item.score > 0 ? item.score : scorePerSA;
+
+                        if (options.shortAnswerFormat === 'form') {
+                            const userParts = userAnswers[index] || {};
+                            // --- UPDATED LOGIC: Concatenate parts to check full string ---
+                            let userFullStr = "";
+                            for(let i=0; i<4; i++) {
+                                userFullStr += (userParts[i] || "").trim();
+                            }
+                            
+                            let correctStr = (item.answer || "").trim();
+                            
+                            // Check using smart comparison (handles 0,25 vs 0.25 etc)
+                            if (checkAnswerSmart(userFullStr, correctStr)) {
+                                isCorrect = true;
+                                scoreEarned = maxPoint;
+                            }
+                            
+                            // Save detailed object for better rendering
+                            detail = { 
+                                type: 'form-4',
+                                userParts: userParts,
+                                userFullStr: userFullStr,
+                                correctStr: correctStr
+                            };
+
+                        } else {
+                            const userText = userAnswers[index] || '';
+                            if (checkAnswerSmart(userText, item.answer)) {
+                                isCorrect = true;
+                                scoreEarned = maxPoint;
+                            }
+                            detail = { textAnswer: userText, correctAnswer: item.answer };
+                        }
+                    } 
+                    
+                    // --- XỬ LÝ TỰ LUẬN (Essay) ---
+                    else {
+                        const userText = userAnswers[index] || '';
+                        
+                        // Xác định điểm tối đa cho câu hỏi này
+                        // Ưu tiên: Điểm riêng (item.score) -> Điểm ghi trong text -> Trung bình
+                        let maxPointsForThisQuestion = scorePerEssayAvg;
+                        if (item.score > 0) {
+                             maxPointsForThisQuestion = item.score;
+                        } else if (item.type === 'essay') {
+                            // Fallback to text parsing if item.score is 0
+                            maxPointsForThisQuestion = getQuestionMaxScore(item.question, scorePerEssayAvg);
+                        }
+
+                        // Nếu có API Key và là câu tự luận -> Dùng AI chấm
+                        if (apiKeys.gemini && userText.trim()) {
+                            aiGradingResult = await gradeEssayWithAI(item.question, item.answer, userText, maxPointsForThisQuestion);
+                            scoreEarned = aiGradingResult.scoreEarned;
+                            isCorrect = aiGradingResult.isCorrect;
+                            detail = aiGradingResult.details;
+                        } else {
+                            // Fallback: Chấm thủ công đơn giản
+                            if (checkAnswerSmart(userText, item.answer)) { 
+                                isCorrect = true;
+                                scoreEarned = maxPointsForThisQuestion;
+                            }
+                            detail = { textAnswer: userText, correctAnswer: item.answer, feedback: "Chưa được chấm bởi AI (thiếu Key hoặc lỗi)." };
+                        }
+                    }
+                } catch (err) {
+                    console.error("Lỗi khi chấm điểm câu " + (index + 1), err);
+                    detail = { error: "Lỗi chấm điểm: " + err.message };
+                }
+                
+                return {
+                    id: item.id,
+                    questionNumber: index + 1,
+                    type: item.type,
+                    isCorrect: isCorrect,
+                    scoreEarned: scoreEarned,
+                    details: detail
+                };
+            });
+            
+            // Wait for all grading (including async AI calls) to finish
+            detailResults = await Promise.all(gradingPromises);
+            
+            // Calculate Total Score from results
+            totalScore = detailResults.reduce((sum, res) => sum + res.scoreEarned, 0);
+            let score = Math.min(10, Math.max(0, totalScore));
+
+            dom.quizScreen.classList.add('hidden');
+            dom.resultScreen.classList.remove('hidden');
+            
+            dom.scoreDisplay.textContent = score.toFixed(2);
+            dom.resultName.textContent = dom.nameInput.value;
+            dom.resultClass.textContent = dom.classInput.value;
+            dom.resultTime.textContent = new Date().toLocaleString();
+
+            if (googleScriptUrl) {
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    name: dom.nameInput.value,
+                    class: dom.classInput.value,
+                    score: score.toFixed(2),
+                    examCode: examCode,
+                    monitoringLog: JSON.stringify(monitorLog),
+                    answerDetails: JSON.stringify(detailResults)
+                };
+                
+                fetch(googleScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(e => console.error("Lỗi gửi điểm:", e));
+            }
+
+            if (options.showAnswers) {
+                dom.viewAnswersBtn.classList.remove('hidden');
+                renderDetailedAnswers(detailResults);
+            }
+            
+            if (options.aiAssessment) {
+                generateAIAssessment(score, detailResults);
+            }
+
+        } catch (error) {
+            console.error("Lỗi nghiêm trọng trong quá trình nộp bài:", error);
+            alert("Đã xảy ra lỗi khi nộp bài: " + error.message + ". Vui lòng chụp ảnh màn hình và báo cho giáo viên.");
+        } finally {
+            if (loadingOverlay && loadingOverlay.parentNode) {
+                loadingOverlay.parentNode.removeChild(loadingOverlay);
+            }
+        }
+    }
+
+    function renderDetailedAnswers(results) {
+        let html = '<h3 class="text-xl font-bold mb-4 text-gray-800">Chi tiết đáp án</h3>';
+        
+        quizData.forEach((item, index) => {
+            const result = results[index];
+            const isCorrect = result.isCorrect;
+            const color = isCorrect ? 'text-green-600' : 'text-red-600';
+            
+            html += `<div class="mb-6 p-4 border rounded-lg ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="font-bold ${color}">Câu ${index + 1}: ${isCorrect ? 'ĐÚNG/ĐẠT' : 'SAI/CHƯA ĐẠT'} <span class="text-xs text-gray-500">(${result.scoreEarned.toFixed(2)} điểm)</span></div>
+                    ${options.showExplanation ? `
+                    <button class="ai-explain-btn text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700 transition-colors flex items-center gap-1" data-index="${index}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        Giải thích chi tiết
+                    </button>`: ''}
+                </div>
+                <div class="mb-2 text-gray-800">${item.rendered_question || item.question}</div>`;
+
+            if (item.type === 'multiple-choice') {
+                const userIdx = userAnswers[index];
+                const correctIdx = item.correctAnswerIndex;
+                html += `<div class="text-sm">
+                    <p>Bạn chọn: <span class="font-semibold">${userIdx !== undefined ? String.fromCharCode(65+userIdx) : 'Không trả lời'}</span></p>
+                    <p class="font-bold text-green-700">Đáp án đúng: ${String.fromCharCode(65+correctIdx)}. ${item.options[correctIdx]}</p>
+                </div>`;
+            } else if (item.type === 'true-false') {
+                 html += '<ul class="list-disc pl-5 text-sm">';
+                 item.statements.forEach((s, i) => {
+                     const userVal = userAnswers[index] ? userAnswers[index][i] : null;
+                     const isStmtCorrect = userVal === s.is_correct;
+                     html += `<li class="${isStmtCorrect ? 'text-green-700' : 'text-red-700'}">
+                        Ý ${String.fromCharCode(97+i)}: ${s.statement} (Đáp án: ${s.is_correct ? 'Đúng' : 'Sai'} - Bạn chọn: ${userVal === null ? 'Trống' : (userVal ? 'Đúng' : 'Sai')})
+                     </li>`;
+                 });
+                 html += '</ul>';
+            } else if (item.type === 'short-answer' && options.shortAnswerFormat === 'form') {
+                 // --- HIỂN THỊ KẾT QUẢ DẠNG FORM 4 Ô (CẬP NHẬT) ---
+                 const userParts = userAnswers[index] || {};
+                 
+                 html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">';
+                 for(let i=0; i<4; i++) {
+                     const uVal = userParts[i] || '';
+                     // Style cho từng ô - Nếu câu đúng thì xanh, sai thì đỏ
+                     const boxClass = isCorrect ? 'bg-green-50 border-green-300 text-green-800' : 'bg-red-50 border-red-300 text-red-800';
+
+                     html += `
+                     <div class="p-2 border rounded-lg ${boxClass} flex flex-col items-center justify-center">
+                        <span class="text-[10px] font-bold uppercase text-gray-500">Ô ${i+1}</span>
+                        <span class="text-xl font-mono font-bold">${uVal || '_'}</span>
+                     </div>`;
+                 }
+                 html += '</div>';
+                 
+                 if (!isCorrect) {
+                     html += `<div class="mt-2 text-sm">
+                        <span class="font-bold text-green-700">Đáp án đúng: ${item.answer}</span>
+                     </div>`;
+                 }
+
+            } else if (item.type === 'essay') {
+                 // Sử dụng $$ để MathJax render kết quả trả về nếu đó là công thức toán
+                 // Nhưng cần cẩn thận vì userAnswers là string thô. 
+                 // Tốt nhất là bọc trong 1 div và để MathJax xử lý
+                 html += `<div class="text-sm"><p class="font-semibold">Bạn trả lời:</p><div class="bg-white p-2 border rounded whitespace-pre-wrap">${userAnswers[index] || '(Trống)'}</div></div>`;
+                 
+                 if (result.details && result.details.aiGraded) {
+                     html += `
+                        <div class="mt-3 p-3 bg-indigo-50 rounded border border-indigo-200">
+                            <h4 class="font-bold text-indigo-700 mb-1">🤖 AI Chấm điểm:</h4>
+                            <div class="text-sm mb-2">
+                                <strong>Thang điểm & Đáp án chi tiết:</strong><br>
+                                ${result.details.aiRubric.replace(/\n/g, '<br>')}
+                            </div>
+                             <div class="mt-2 font-bold text-red-600 border-t pt-2 border-indigo-200">Điểm chấm: ${result.scoreEarned}</div>
+                        </div>
+                     `;
+                 } else if (item.answer) {
+                      html += `<div class="text-sm mt-2 font-semibold text-green-700">Đáp án gốc (Gợi ý của GV): ${item.answer}</div>`;
+                 }
+            } else {
+                 html += `<div class="text-sm"><p>Bạn trả lời:</p><div class="bg-white p-2 border rounded">${userAnswers[index] || '(Trống)'}</div></div>`;
+                 if (item.answer) {
+                      html += `<div class="text-sm mt-1 font-semibold text-green-700">Đáp án gốc: ${item.answer}</div>`;
+                 }
+            }
+            
+            html += `<div id="ai-explanation-${index}" class="hidden mt-3 p-3 bg-blue-50 text-sm text-blue-800 rounded border border-blue-200">
+                <div class="font-bold mb-1">🤖 AI Giải thích thêm:</div>
+                <div class="ai-content">Đang tải...</div>
+            </div>`;
+            
+            if (options.showExplanation && item.rendered_answer && item.type !== 'essay') {
+                 html += `<div class="mt-3 pt-2 border-t border-gray-200 text-sm text-gray-600">
+                    <strong>Giải thích/Đáp án chi tiết (Có sẵn):</strong><br>
+                    ${item.rendered_answer}
+                 </div>`;
+            }
+
+            html += `</div>`;
+        });
+        
+        dom.detailedAnswers.innerHTML = html;
+        if (window.MathJax) window.MathJax.typesetPromise();
+
+        document.querySelectorAll('.ai-explain-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.closest('button').dataset.index);
+                explainQuestionWithAI(idx, results[idx]);
+            });
+        });
+    }
+    
+    dom.viewAnswersBtn.addEventListener('click', () => {
+        dom.detailedAnswers.classList.remove('hidden');
+        dom.viewAnswersBtn.classList.add('hidden');
+    });
+
+    async function explainQuestionWithAI(index, resultItem) {
+        if (!apiKeys.gemini) {
+            const key = prompt("Tính năng này yêu cầu Gemini API Key.\nVui lòng nhập API Key của bạn:");
+            if (key && key.trim()) {
+                apiKeys.gemini = key.trim();
+            } else {
+                return alert("Bạn cần nhập API Key để xem giải thích từ AI.");
+            }
+        }
+        
+        const explanationDiv = document.getElementById(`ai-explanation-${index}`);
+        const contentDiv = explanationDiv.querySelector('.ai-content');
+        
+        if (!explanationDiv.classList.contains('hidden') && contentDiv.innerHTML !== 'Đang tải...') {
+             explanationDiv.classList.add('hidden'); 
+             return;
+        }
+
+        explanationDiv.classList.remove('hidden');
+        contentDiv.textContent = "Đang phân tích câu hỏi...";
+
+        const item = quizData[index];
+        let prompt = "Hãy đóng vai một giáo viên giỏi, giải thích chi tiết câu hỏi sau cho học sinh:\n";
+        prompt += `Câu hỏi: ${item.question || item.main_question}\n`;
+        
+        if (item.type === 'multiple-choice') {
+            prompt += `Các lựa chọn: ${item.options.join(', ')}\n`;
+            prompt += `Đáp án đúng là: ${item.options[item.correctAnswerIndex]}\n`;
+            if (userAnswers[index] !== undefined) {
+                prompt += `Học sinh chọn: ${item.options[userAnswers[index]]} (Đây là đáp án ${resultItem.isCorrect ? 'đúng' : 'sai'}).\n`;
+            }
+        } else if (item.type === 'true-false') {
+             prompt += `Các mệnh đề:\n`;
+             item.statements.forEach((s, i) => {
+                 prompt += `${String.fromCharCode(97+i)}) ${s.statement} -> Đáp án: ${s.is_correct ? 'Đúng' : 'Sai'}\n`;
+             });
+        }
+        
+        prompt += "\nHãy giải thích tại sao đáp án đúng lại đúng. Ngắn gọn, dễ hiểu.";
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: apiKeys.gemini });
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt
+            });
+            
+            const text = response.text;
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            contentDiv.innerHTML = formattedText.replace(/\n/g, '<br>');
+
+            if (window.MathJax) window.MathJax.typesetPromise([contentDiv]);
+        } catch (e) {
+            contentDiv.textContent = "Lỗi khi gọi AI: " + e.message;
+        }
+    }
+
+    async function generateAIAssessment(score, results) {
+        if (!apiKeys.gemini) {
+             dom.aiAssessmentContainer.classList.remove('hidden');
+             dom.aiAssessmentContent.innerHTML = `
+                <div class="mb-2">
+                    <div class="flex justify-between items-center mb-1">
+                         <p class="text-red-600 font-medium">Cần có API Key để xem nhận xét.</p>
+                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-red-600 hover:text-red-800 font-bold hover:underline">Link lấy API KEY miễn phí</a>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="password" id="result-api-key" class="border p-2 rounded text-sm w-full outline-none focus:border-indigo-500" placeholder="Nhập Gemini API Key">
+                        <button id="submit-result-key" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-indigo-700 transition">Gửi</button>
+                    </div>
+                </div>
+             `;
+             document.getElementById('submit-result-key').addEventListener('click', () => {
+                const key = document.getElementById('result-api-key').value.trim();
+                if(key) {
+                    apiKeys.gemini = key;
+                    generateAIAssessment(score, results);
+                }
+             });
+             return;
+        }
+
+        dom.aiAssessmentContainer.classList.remove('hidden');
+        dom.aiAssessmentContent.textContent = "AI đang phân tích bài làm của bạn...";
+        
+        let summary = `Điểm số: ${score}/10.\n`;
+        const wrongAnswers = results.filter(r => r.isCorrect === false);
+        const correctAnswers = results.filter(r => r.isCorrect === true);
+        
+        summary += `Số câu đúng: ${correctAnswers.length}/${results.length}.\n`;
+        summary += `Các câu làm sai: ${wrongAnswers.map(w => w.questionNumber).join(', ')}.\n`;
+        
+        const prompt = `Hãy đóng vai một giáo viên tâm lý. Dựa vào kết quả bài kiểm tra dưới đây, hãy viết một đoạn nhận xét ngắn gọn (khoảng 100 từ) động viên và đưa ra lời khuyên học tập chung.
+        
+        Thông tin kết quả:
+        ${summary}`;
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: apiKeys.gemini });
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt
+            });
+            const text = response.text;
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            dom.aiAssessmentContent.innerHTML = formattedText.replace(/\n/g, '<br>');
+            
+        } catch (e) {
+            console.error("AI Error:", e);
+            dom.aiAssessmentContent.textContent = "Không thể tải nhận xét từ AI lúc này.";
+        }
+    }
+    
+    </script>
+</body>
+</html>
